@@ -29,7 +29,8 @@ const inStock = variant.stock > 0;
     <Picture
       alt={cover.alt}
       class="product-card__image"
-      formats={["avif", "webp"]}
+      fallbackFormat="webp"
+      formats={["avif"]}
       height={IMAGE_SIZE}
       loading="lazy"
       sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
@@ -89,13 +90,11 @@ const inStock = variant.stock > 0;
     background: var(--chalk);
   }
 
-  /* White studio photos melt into the chalk ground. */
   .product-card__image {
     inline-size: 100%;
     block-size: 100%;
     padding: 8%;
     object-fit: contain;
-    mix-blend-mode: multiply;
     transition: scale 700ms var(--ease);
   }
 

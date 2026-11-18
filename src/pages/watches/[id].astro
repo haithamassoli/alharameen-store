@@ -1,6 +1,6 @@
 ---
 import type { GetStaticPaths } from "astro";
-import { Image, Picture } from "astro:assets";
+import { getImage, Image, Picture } from "astro:assets";
 import { getCollection } from "astro:content";
 
 import ProductCard from "../../components/ProductCard.astro";
@@ -77,7 +77,14 @@ const orderMessage = [
 
 const orderUrl = whatsappUrl(store.contact.whatsapp, orderMessage);
 
-// Source photos are JPEG, which every link-preview bot can read.
+// Source photos are transparent cutouts; Google gets them as JPEG on white.
+// Link previews use the 1200×630 card from src/pages/og/[id].jpg.ts.
+const shareImages = await Promise.all(
+  data.images.map(({ src }) =>
+    getImage({ background: "#ffffff", format: "jpeg", src })
+  )
+);
+
 const [mainImage] = data.images;
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
 
@@ -87,7 +94,7 @@ const productJsonLd = {
   brand: { "@type": "Brand", name: "Al-Harameen" },
   category: categoryName(data.category.id),
   description: data.description,
-  image: data.images.map((image) => new URL(image.src.src, Astro.site).href),
+  image: shareImages.map((image) => new URL(image.src, Astro.site).href),
   model: data.model,
   name: data.name,
   offers: {
@@ -116,9 +123,9 @@ const productJsonLd = {
   description={data.description}
   image={{
     alt: mainImage.alt,
-    height: mainImage.src.height,
-    src: mainImage.src.src,
-    width: mainImage.src.width,
+    height: 630,
+    src: `/og/${id}.jpg`,
+    width: 1200,
   }}
   jsonLd={productJsonLd}
   title={data.name}
@@ -149,7 +156,8 @@ const productJsonLd = {
                 alt={image.alt}
                 class="gallery__image"
                 fetchpriority={index === 0 ? "high" : "auto"}
-                formats={["avif", "webp"]}
+                fallbackFormat="webp"
+                formats={["avif"]}
                 height={MAIN_SIZE}
                 loading={index === 0 ? "eager" : "lazy"}
                 sizes="(min-width: 56rem) 34rem, 92vw"
@@ -395,13 +403,11 @@ const productJsonLd = {
     display: none;
   }
 
-  /* White studio photos melt into the chalk ground. */
   .gallery__image {
     inline-size: 100%;
     block-size: 100%;
     padding: 6%;
     object-fit: contain;
-    mix-blend-mode: multiply;
   }
 
   .gallery:has(.gallery__thumb:nth-of-type(2) input:checked) .gallery__slide,
@@ -434,10 +440,6 @@ const productJsonLd = {
     background: var(--chalk);
     cursor: pointer;
     transition: border-color var(--duration) var(--ease);
-  }
-
-  .gallery__thumb img {
-    mix-blend-mode: multiply;
   }
 
   .gallery__thumb:hover {
