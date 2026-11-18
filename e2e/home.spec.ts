@@ -23,11 +23,13 @@ test("home page lists all eight products", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#watches article")).toHaveCount(8);
   await expect(page.locator("#watches [data-add-to-cart]")).toHaveCount(8);
-  await expect(page.locator("#why")).toBeVisible();
+  await expect(page.locator("#features li")).toHaveCount(5);
 });
 
 // Covers template a11y (alt text, labels, contrast) that static linting can't see in .astro.
 test("home page has no accessibility violations", async ({ page }) => {
+  // Scan the static, fully annotated drawing, not a frame of the scroll story.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);

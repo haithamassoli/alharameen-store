@@ -73,3 +73,9 @@ test("unknown pages show the Arabic 404", async ({ page }) => {
     "لم نجد هذه الصفحة"
   );
 });
+
+test("404 page has no accessibility violations", async ({ page }) => {
+  await page.goto("/watches/does-not-exist/");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});

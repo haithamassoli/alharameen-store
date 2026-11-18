@@ -1,7 +1,7 @@
 ---
 import { Picture } from "astro:assets";
-// One product in a grid or strip: photo on a parchment plate, model badge,
-// name (links to the product page), colour, price and an add-to-cart button.
+// One product in a grid or strip: photo on chalk, category, name (links to
+// the product page), price and an add-to-cart button.
 import type { CollectionEntry } from "astro:content";
 
 import { formatPrice } from "../lib/money";
@@ -9,16 +9,11 @@ import { formatPrice } from "../lib/money";
 interface Props {
   product: CollectionEntry<"products">;
   categoryName: string;
-  /** Position in its row; staggers the scroll reveal. */
-  index?: number;
-  /** The first cards on the home page are above the fold on wide screens. */
-  eager?: boolean;
 }
 
-const COLUMNS = 3;
-const IMAGE_SIZE = 640;
+const IMAGE_SIZE = 560;
 
-const { product, categoryName, index = 0, eager = false } = Astro.props;
+const { product, categoryName } = Astro.props;
 const { id, data } = product;
 const [cover] = data.images;
 const [variant] = data.variants;
@@ -26,31 +21,22 @@ const url = `/watches/${id}/`;
 const inStock = variant.stock > 0;
 ---
 
-<article
-  class="product-card reveal"
-  data-tilt
-  style={`--stagger: ${index % COLUMNS}`}
->
-  <div class="product-card__media">
-    <div
-      class="product-card__plate"
-      style={`view-transition-name: product-${id}-image`}
-    >
-      <Picture
-        alt={cover.alt}
-        class="product-card__image"
-        formats={["avif", "webp"]}
-        height={IMAGE_SIZE}
-        loading={eager ? "eager" : "lazy"}
-        sizes="(min-width: 64rem) 22rem, (min-width: 40rem) 45vw, 90vw"
-        src={cover.src}
-        width={IMAGE_SIZE}
-        widths={[320, 480, IMAGE_SIZE]}
-      />
-    </div>
-    <span class="product-card__model" dir="ltr">
-      {data.model}
-    </span>
+<article class="product-card">
+  <div
+    class="product-card__frame"
+    style={`view-transition-name: product-${id}-image`}
+  >
+    <Picture
+      alt={cover.alt}
+      class="product-card__image"
+      formats={["avif", "webp"]}
+      height={IMAGE_SIZE}
+      loading="lazy"
+      sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
+      src={cover.src}
+      width={IMAGE_SIZE}
+      widths={[280, 420, IMAGE_SIZE]}
+    />
   </div>
 
   <div class="product-card__body">
@@ -64,32 +50,20 @@ const inStock = variant.stock > 0;
         {data.name}
       </a>
     </h3>
-    {variant.color && (
-      <p class="product-card__color">
-        <span class="product-card__swatch" aria-hidden="true"></span>
-        {variant.color}
-      </p>
-    )}
 
     <div class="product-card__footer">
-      <p class="product-card__price">
+      <p class="product-card__price price">
         <span class="visually-hidden">السعر:</span>
         {formatPrice(data.price, data.currency)}
+        {data.compareAtPrice !== undefined && (
+          <s class="product-card__was">
+            <span class="visually-hidden">بدلًا من</span>
+            {formatPrice(data.compareAtPrice, data.currency)}
+          </s>
+        )}
       </p>
       {inStock ? (
-        <button
-          class="btn btn-ghost product-card__add"
-          data-add-to-cart={id}
-          type="button"
-        >
-          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-            <path
-              d="M12 5v14M5 12h14"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-width="2"
-            ></path>
-          </svg>
+        <button class="product-card__add" data-add-to-cart={id} type="button">
           أضف <span class="visually-hidden">{data.name}</span> للسلة
         </button>
       ) : (
@@ -97,151 +71,57 @@ const inStock = variant.stock > 0;
       )}
     </div>
   </div>
-  <span aria-hidden="true" class="product-card__shine"></span>
 </article>
-
-<script>
-  // Pointer tilt and a moving gold sheen, only for mouse users who allow
-  // motion. Everything else gets the plain card.
-  const TILT_DEG = 7;
-  const CENTER = 0.5;
-  const PERCENT = 100;
-
-  const canTilt = (): boolean =>
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const resetTilt = (card: HTMLElement): void => {
-    for (const property of ["--rx", "--ry", "--mx", "--my"]) {
-      card.style.removeProperty(property);
-    }
-  };
-
-  for (const card of document.querySelectorAll<HTMLElement>("[data-tilt]")) {
-    card.addEventListener("pointermove", (event) => {
-      if (!canTilt()) {
-        return;
-      }
-
-      const rect = card.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width;
-      const y = (event.clientY - rect.top) / rect.height;
-      card.style.setProperty("--rx", `${(CENTER - y) * TILT_DEG}deg`);
-      card.style.setProperty("--ry", `${(x - CENTER) * TILT_DEG}deg`);
-      card.style.setProperty("--mx", `${x * PERCENT}%`);
-      card.style.setProperty("--my", `${y * PERCENT}%`);
-    });
-
-    card.addEventListener("pointerleave", () => {
-      resetTilt(card);
-    });
-  }
-</script>
 
 <style>
   .product-card {
     position: relative;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(180deg, var(--color-sheen), transparent 40%),
-      var(--color-surface);
-    box-shadow: var(--shadow-glow);
-    /* Flat on purpose: with preserve-3d, z-index stops deciding hit testing
-       and the stretched name link covers the add button while tilted. */
-    transform: perspective(900px) rotateX(var(--rx, 0deg))
-      rotateY(var(--ry, 0deg));
-    transition:
-      transform 500ms var(--ease-out),
-      border-color var(--duration) var(--ease-out);
+    block-size: 100%;
   }
 
-  .product-card:hover {
-    border-color: var(--color-gold-deep);
-    transition:
-      transform 120ms linear,
-      border-color var(--duration) var(--ease-out);
-  }
-
-  /* Stagger by column: later columns start their reveal a little later. */
-  .product-card.reveal {
-    animation-range: entry calc(var(--stagger, 0) * 12%) entry
-      calc(70% + var(--stagger, 0) * 12%);
-  }
-
-  .product-card__media {
-    position: relative;
-    padding: var(--space-3);
-  }
-
-  /* White studio photos sit in a parchment niche under a mihrab arch, with
-     a khatam lattice toward the rim, leaving a clean field behind the
-     product so pale straps keep their silhouette (multiply turns the white backdrop
-     into the plate colour). The plate is lit parchment in both themes. */
-  .product-card__plate {
+  /* A grid, so the stretched <picture> has a definite height to fill. */
+  .product-card__frame {
+    display: grid;
     overflow: hidden;
-    border-radius: 50% 50% var(--radius-sm) var(--radius-sm) / 34% 34%
-      var(--radius-sm) var(--radius-sm);
-    background:
-      radial-gradient(circle at 50% 50%, #fbf4e4 50%, transparent 72%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%237d5f24' stroke-opacity='0.14'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E")
-        center,
-      radial-gradient(circle at 50% 40%, #fbf4e4 0%, #eadfc6 70%, #dccba6 100%);
-    box-shadow:
-      inset 0 0 0 1px rgb(117 88 34 / 0.22),
-      inset 0 0 0 6px rgb(255 250 240 / 0.5),
-      inset 0 0 0 7px rgb(117 88 34 / 0.18);
-    aspect-ratio: 4 / 4.4;
+    aspect-ratio: 4 / 5;
+    background: var(--chalk);
   }
 
+  /* White studio photos melt into the chalk ground. */
   .product-card__image {
     inline-size: 100%;
     block-size: 100%;
+    padding: 8%;
     object-fit: contain;
     mix-blend-mode: multiply;
-    transition: scale 600ms var(--ease-out);
+    transition: scale 700ms var(--ease);
   }
 
   .product-card:hover .product-card__image {
     scale: 1.04;
   }
 
-  /* The reference, engraved under the niche like a caseback. */
-  .product-card__model {
-    display: block;
-    margin-block-start: var(--space-3);
-    color: var(--color-gold);
-    font-family: var(--font-serif);
-    font-size: var(--text-sm);
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    line-height: 1;
-    text-align: center;
-  }
-
   .product-card__body {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: var(--space-1);
-    padding-block: var(--space-2) var(--space-5);
-    padding-inline: var(--space-5);
+    padding-block-start: var(--space-4);
   }
 
   .product-card__category {
-    color: var(--color-gold);
-    font-family: var(--font-display);
-    font-size: var(--text-sm);
+    color: var(--muted);
+    font-size: var(--text-xs);
   }
 
   .product-card__name {
-    font-size: var(--text-lg);
+    margin-block: 0.125rem 0.625rem;
+    font-size: var(--text-base);
+    line-height: 1.55;
   }
 
   .product-card__link {
-    color: var(--color-text);
     text-decoration: none;
   }
 
@@ -250,32 +130,16 @@ const inStock = variant.stock > 0;
     position: absolute;
     inset: 0;
     z-index: 1;
-    border-radius: inherit;
     content: "";
   }
 
   .product-card:has(.product-card__link:focus-visible) {
-    outline: 2px solid var(--color-gold-strong);
-    outline-offset: 3px;
+    outline: 2px solid var(--pine);
+    outline-offset: 6px;
   }
 
   .product-card__link:focus-visible {
     outline: none;
-  }
-
-  .product-card__color {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--color-muted);
-    font-size: var(--text-sm);
-  }
-
-  .product-card__swatch {
-    inline-size: 0.6rem;
-    block-size: 0.6rem;
-    border-radius: 50%;
-    background: var(--gold-leaf);
   }
 
   .product-card__footer {
@@ -283,59 +147,67 @@ const inStock = variant.stock > 0;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
+    gap: var(--space-2) var(--space-3);
     margin-block-start: auto;
-    padding-block-start: var(--space-4);
-    border-block-start: 1px solid var(--color-line);
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--hairline);
   }
 
   .product-card__price {
-    color: var(--color-gold-strong);
-    font-family: var(--font-serif);
-    font-size: var(--text-xl);
-    font-weight: 700;
-    line-height: 1.2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-base);
+    font-weight: 500;
   }
 
-  /* Outlined in solid gold so the control edge clears 3:1 on the card. */
+  .product-card__was {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: 400;
+  }
+
   .product-card__add {
     position: relative;
     z-index: 2;
-    border-color: var(--color-gold);
-    min-block-size: 2.75rem;
+    min-block-size: 2.5rem;
+    padding-block: 0;
     padding-inline: var(--space-4);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-pill);
+    background: var(--white);
     font-size: var(--text-sm);
+    font-weight: 500;
+    transition:
+      background-color var(--duration) var(--ease),
+      border-color var(--duration) var(--ease),
+      color var(--duration) var(--ease);
+  }
+
+  .product-card__add:hover {
+    border-color: var(--pine);
+    background: var(--pine);
+    color: var(--white);
   }
 
   .product-card__out {
-    color: var(--color-muted);
+    color: var(--muted);
     font-size: var(--text-sm);
   }
 
-  .product-card__shine {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(
-      circle at var(--mx, 50%) var(--my, 0%),
-      var(--color-shine),
-      transparent 45%
-    );
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--duration) var(--ease-out);
-  }
+  @media (max-width: 40rem) {
+    .product-card__name,
+    .product-card__price {
+      font-size: var(--text-md);
+    }
 
-  .product-card:hover .product-card__shine {
-    opacity: 1;
+    .product-card__add {
+      flex: 1 1 100%;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .product-card,
-    .product-card:hover {
-      transform: none;
-    }
-
     .product-card:hover .product-card__image {
       scale: 1;
     }
