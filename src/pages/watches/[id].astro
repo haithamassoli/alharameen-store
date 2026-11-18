@@ -1,0 +1,591 @@
+---
+import type { GetStaticPaths } from "astro";
+import { Image, Picture } from "astro:assets";
+import { getCollection, getEntry } from "astro:content";
+
+import ProductCard from "../../components/ProductCard.astro";
+import Layout from "../../layouts/Layout.astro";
+import { whatsappUrl } from "../../lib/cart";
+import { formatPrice } from "../../lib/money";
+
+export const getStaticPaths = (async () => {
+  const products = await getCollection("products");
+
+  return products.map((product) => ({
+    params: { id: product.id },
+    props: { product },
+  }));
+}) satisfies GetStaticPaths;
+
+const { product } = Astro.props;
+const { id, data } = product;
+const [variant] = data.variants;
+
+const store = await getEntry("store", "main");
+const category = await getEntry(data.category);
+
+if (!store || !category) {
+  throw new Error(`Missing store or category data for product "${id}"`);
+}
+
+const categories = await getCollection("categories");
+
+const categoryNames = new Map(
+  categories.map((entry) => [entry.id, entry.data.name])
+);
+
+const allProducts = await getCollection("products");
+
+const others = allProducts
+  .filter((entry) => entry.id !== id)
+  .toSorted(
+    (a, b) =>
+      Number(b.data.featured) - Number(a.data.featured) ||
+      a.data.price - b.data.price
+  );
+
+const zoneEntries = await getCollection("shippingZones");
+const zones = zoneEntries.toSorted((a, b) => a.data.fee - b.data.fee);
+
+const LOW_STOCK = 5;
+const MAIN_SIZE = 720;
+const THUMB_SIZE = 120;
+
+const digits = new Intl.NumberFormat("ar-JO");
+const price = formatPrice(data.price, data.currency);
+const inStock = variant.stock > 0;
+const isLowStock = inStock && variant.stock <= LOW_STOCK;
+
+const lowStockText = (stock: number): string => {
+  if (stock === 1) {
+    return "متوفر، بقيت قطعة واحدة فقط";
+  }
+
+  if (stock === 2) {
+    return "متوفر، بقيت قطعتان فقط";
+  }
+
+  return `متوفر، بقي ${digits.format(stock)} قطع فقط`;
+};
+
+const orderMessage = [
+  "السلام عليكم، أرغب بطلب:",
+  `${data.name} (${data.model})`,
+  `السعر: ${price}`,
+  `الكمية: ${digits.format(1)}`,
+  "",
+  "أرجو تأكيد الطلب وتفاصيل التوصيل.",
+].join("\n");
+
+const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
+---
+
+<Layout description={data.description} title={data.name}>
+  <main class="product container" id="main">
+    <a class="back-link" href="/#watches">
+      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <path
+          d="m9 6 6 6-6 6"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+        ></path>
+      </svg>
+      العودة إلى كل الساعات
+    </a>
+
+    <div class="product__top">
+      <div class="gallery">
+        <div
+          class="gallery__main"
+          style={`view-transition-name: product-${id}-image`}
+        >
+          {data.images.map((image, index) => (
+            <div class="gallery__slide">
+              <Picture
+                alt={image.alt}
+                class="gallery__image"
+                fetchpriority={index === 0 ? "high" : "auto"}
+                formats={["avif", "webp"]}
+                height={MAIN_SIZE}
+                loading={index === 0 ? "eager" : "lazy"}
+                sizes="(min-width: 56rem) 34rem, 92vw"
+                src={image.src}
+                width={MAIN_SIZE}
+                widths={[360, 540, MAIN_SIZE]}
+              />
+            </div>
+          ))}
+        </div>
+
+        {data.images.length > 1 && (
+          <fieldset class="gallery__thumbs">
+            <legend class="visually-hidden">اختر صورة لعرضها</legend>
+            {data.images.map((image, index) => (
+              <label class="gallery__thumb">
+                <input
+                  checked={index === 0}
+                  class="visually-hidden"
+                  name="gallery"
+                  type="radio"
+                  value={index}
+                />
+                <Image
+                  alt={`الصورة ${digits.format(index + 1)}: ${image.alt}`}
+                  format="webp"
+                  height={THUMB_SIZE}
+                  src={image.src}
+                  width={THUMB_SIZE}
+                />
+              </label>
+            ))}
+          </fieldset>
+        )}
+      </div>
+
+      <div class="summary">
+        <p class="summary__category">{category.data.name}</p>
+        <h1
+          class="summary__name"
+          style={`view-transition-name: product-${id}-name`}
+        >
+          {data.name}
+        </h1>
+        <p class="summary__model">
+          رقم الموديل: <span dir="ltr">{data.model}</span>
+        </p>
+
+        <p class="summary__price">
+          <span class="visually-hidden">السعر:</span>
+          {price}
+        </p>
+
+        <dl class="summary__facts">
+          {variant.color && (
+            <div>
+              <dt>اللون</dt>
+              <dd>{variant.color}</dd>
+            </div>
+          )}
+          <div>
+            <dt>التوفر</dt>
+            <dd
+              class:list={[
+                "stock",
+                { "stock--low": isLowStock, "stock--out": !inStock },
+              ]}
+            >
+              {!inStock && "نفدت الكمية حاليًا"}
+              {isLowStock && lowStockText(variant.stock)}
+              {inStock && !isLowStock && "متوفر وجاهز للتوصيل"}
+            </dd>
+          </div>
+        </dl>
+
+        <p class="summary__description">{data.description}</p>
+
+        <div class="summary__actions">
+          <button
+            class="btn btn-primary"
+            data-add-to-cart={id}
+            disabled={!inStock}
+            type="button"
+          >
+            أضف إلى السلة
+          </button>
+          <a
+            class="btn btn-ghost"
+            href={orderUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            اطلب مباشرة عبر واتساب
+            <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+          </a>
+        </div>
+
+        <ul class="summary__delivery">
+          {zones.map(({ data: zone }) => (
+            <li>
+              التوصيل {zone.name}: {formatPrice(zone.fee, zone.currency)}
+            </li>
+          ))}
+          <li>الدفع نقدًا عند الاستلام</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="details">
+      <section aria-labelledby="features-title" class="details__block">
+        <h2 id="features-title">المزايا</h2>
+        <ul class="feature-list">
+          {data.features.map((feature) => (
+            <li>{feature}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="specs-title" class="details__block">
+        <h2 id="specs-title">المواصفات</h2>
+        <table aria-labelledby="specs-title" class="specs">
+          <tbody>
+            <tr>
+              <th scope="row">رقم الموديل</th>
+              <td dir="ltr">{data.model}</td>
+            </tr>
+            {Object.entries(data.specs).map(([label, value]) => (
+              <tr>
+                <th scope="row">{label}</th>
+                <td>{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <section aria-labelledby="more-title" class="more">
+      <h2 id="more-title">ساعات أخرى قد تعجبك</h2>
+      <div class="more__strip">
+        {others.map((other, index) => (
+          <ProductCard
+            categoryName={categoryNames.get(other.data.category.id) ?? ""}
+            index={index}
+            product={other}
+          />
+        ))}
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .product {
+    padding-block: var(--space-5, 1.5rem) var(--space-8, 4.5rem);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 0.25rem);
+    margin-block-end: var(--space-5, 1.5rem);
+    font-size: var(--text-sm, 0.875rem);
+    text-decoration: none;
+  }
+
+  /* The chevron points "back", which is the inline-start side in RTL. */
+  .back-link svg {
+    inline-size: 1.1em;
+    block-size: 1.1em;
+  }
+
+  .back-link:dir(ltr) svg {
+    scale: -1 1;
+  }
+
+  .product__top {
+    display: grid;
+    gap: var(--space-6, 2rem);
+  }
+
+  @media (min-width: 56rem) {
+    .product__top {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-7, 3rem);
+    }
+
+    .gallery {
+      position: sticky;
+      inset-block-start: calc(
+        var(--header-height, 4.25rem) + var(--space-4, 1rem)
+      );
+    }
+  }
+
+  /* ---------- Gallery (CSS only: the checked radio picks the slide) ---------- */
+
+  .gallery {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+  }
+
+  .gallery__main {
+    overflow: hidden;
+    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: calc(var(--radius, 14px) * 1.6);
+    background: radial-gradient(
+      circle at 50% 40%,
+      #fffaf0 0%,
+      #efe5cf 70%,
+      #e2d3b1 100%
+    );
+    aspect-ratio: 1;
+  }
+
+  .gallery__slide {
+    block-size: 100%;
+  }
+
+  .gallery__slide + .gallery__slide {
+    display: none;
+  }
+
+  .gallery__image {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+
+  .gallery:has(.gallery__thumb:nth-of-type(2) input:checked) .gallery__slide,
+  .gallery:has(.gallery__thumb:nth-of-type(3) input:checked) .gallery__slide,
+  .gallery:has(.gallery__thumb:nth-of-type(4) input:checked) .gallery__slide {
+    display: none;
+  }
+
+  .gallery:has(.gallery__thumb:nth-of-type(2) input:checked)
+    .gallery__slide:nth-child(2),
+  .gallery:has(.gallery__thumb:nth-of-type(3) input:checked)
+    .gallery__slide:nth-child(3),
+  .gallery:has(.gallery__thumb:nth-of-type(4) input:checked)
+    .gallery__slide:nth-child(4) {
+    display: block;
+  }
+
+  .gallery__thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .gallery__thumb {
+    overflow: hidden;
+    inline-size: 5rem;
+    border: 2px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: var(--radius-sm, 8px);
+    background: #f4ecdb;
+    cursor: pointer;
+    transition: border-color var(--duration, 260ms) var(--ease-out, ease-out);
+  }
+
+  .gallery__thumb img {
+    mix-blend-mode: multiply;
+  }
+
+  .gallery__thumb:has(input:checked) {
+    border-color: var(--color-gold, #d9b56c);
+  }
+
+  .gallery__thumb:has(input:focus-visible) {
+    outline: 2px solid var(--color-gold-strong, #ecd08f);
+    outline-offset: 3px;
+  }
+
+  /* ---------- Summary ---------- */
+
+  .summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 0.75rem);
+  }
+
+  .summary__category {
+    color: var(--color-accent, #5fb39b);
+    font-family: var(--font-display, serif);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .summary__name {
+    font-size: var(--text-2xl, 2.25rem);
+    inline-size: fit-content;
+  }
+
+  .summary__model {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .summary__model span {
+    color: var(--color-gold, #d9b56c);
+    font-family: ui-monospace, "SF Mono", monospace;
+    unicode-bidi: isolate;
+  }
+
+  .summary__price {
+    color: var(--color-gold-strong, #ecd08f);
+    font-family: var(--font-display, serif);
+    font-size: var(--text-2xl, 2.25rem);
+    font-weight: 700;
+  }
+
+  .summary__facts {
+    display: grid;
+    gap: var(--space-2, 0.5rem);
+    padding-block: var(--space-3, 0.75rem);
+    border-block: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+  }
+
+  .summary__facts div {
+    display: flex;
+    gap: var(--space-3, 0.75rem);
+  }
+
+  .summary__facts dt {
+    min-inline-size: 4.5rem;
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .summary__facts dd {
+    margin: 0;
+  }
+
+  .stock {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  .stock::before {
+    inline-size: 0.55rem;
+    block-size: 0.55rem;
+    border-radius: 50%;
+    background: var(--color-accent, #5fb39b);
+    content: "";
+  }
+
+  .stock--low::before {
+    background: var(--color-gold, #d9b56c);
+  }
+
+  .stock--out::before {
+    background: var(--color-muted, #a8b8b0);
+  }
+
+  .summary__description {
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .summary__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3, 0.75rem);
+    margin-block-start: var(--space-2, 0.5rem);
+  }
+
+  .summary__actions .btn {
+    flex: 1 1 14rem;
+  }
+
+  .summary__delivery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1, 0.25rem) var(--space-5, 1.5rem);
+    padding: 0;
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+    list-style: none;
+  }
+
+  /* ---------- Details ---------- */
+
+  .details {
+    display: grid;
+    gap: var(--space-6, 2rem);
+    margin-block-start: var(--space-8, 4.5rem);
+  }
+
+  @media (min-width: 56rem) {
+    .details {
+      grid-template-columns: 1.2fr 1fr;
+      gap: var(--space-7, 3rem);
+    }
+  }
+
+  .details__block h2 {
+    margin-block-end: var(--space-4, 1rem);
+    font-size: var(--text-xl, 1.5625rem);
+  }
+
+  .feature-list {
+    display: grid;
+    gap: var(--space-2, 0.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .feature-list li {
+    position: relative;
+    padding-inline-start: var(--space-5, 1.5rem);
+  }
+
+  .feature-list li::before {
+    position: absolute;
+    inset-block-start: 0.75em;
+    inset-inline-start: 0.2rem;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    background: var(--color-gold, #d9b56c);
+    content: "";
+    rotate: 45deg;
+  }
+
+  .specs {
+    inline-size: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: var(--radius, 14px);
+    background: var(--color-surface, #0f2624);
+  }
+
+  .specs th,
+  .specs td {
+    padding-block: var(--space-3, 0.75rem);
+    padding-inline: var(--space-4, 1rem);
+    border-block-end: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .specs tr:last-child th,
+  .specs tr:last-child td {
+    border-block-end: 0;
+  }
+
+  .specs th {
+    inline-size: 40%;
+    color: var(--color-muted, #a8b8b0);
+    font-weight: 400;
+  }
+
+  /* ---------- More watches ---------- */
+
+  .more {
+    margin-block-start: var(--space-8, 4.5rem);
+  }
+
+  .more h2 {
+    margin-block-end: var(--space-5, 1.5rem);
+    font-size: var(--text-xl, 1.5625rem);
+  }
+
+  .more__strip {
+    display: grid;
+    grid-auto-columns: minmax(15rem, 18rem);
+    grid-auto-flow: column;
+    gap: var(--space-5, 1.5rem);
+    padding-block: var(--space-2, 0.5rem) var(--space-5, 1.5rem);
+    padding-inline: var(--space-1, 0.25rem);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+  }
+
+  .more__strip > :global(*) {
+    scroll-snap-align: start;
+  }
+</style>

@@ -1,0 +1,370 @@
+/*
+ * Al-Harameen design tokens and base styles.
+ * Night palette: deep emerald-midnight ground, parchment text, gold leaf accents.
+ * Display: Reem Kufi (geometric Kufic). Body: Noto Naskh Arabic (calligraphic Naskh).
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Colour */
+  --color-bg: #08191a;
+  --color-bg-deep: #051112;
+  --color-surface: #0f2624;
+  --color-surface-2: #153330;
+  --color-text: #f1e9d8;
+  --color-muted: #a8b8b0;
+  --color-gold: #d9b56c;
+  --color-gold-strong: #ecd08f;
+  --color-gold-deep: #9c7a3c;
+  --color-accent: #5fb39b;
+  --color-line: rgb(217 181 108 / 0.18);
+  --color-line-strong: rgb(217 181 108 / 0.4);
+  --color-on-gold: #10201c;
+  --gold-leaf: linear-gradient(
+    135deg,
+    #f3dc9f 0%,
+    #d9b56c 38%,
+    #b8914b 62%,
+    #e8cb85 100%
+  );
+
+  /* Type */
+  --font-display: "Reem Kufi Variable", "Noto Naskh Arabic Variable", serif;
+  --font-body: "Noto Naskh Arabic Variable", "Geeza Pro", "Arial", serif;
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5625rem;
+  --text-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  --text-3xl: clamp(2.25rem, 1.6rem + 3vw, 4rem);
+  --leading-body: 1.9;
+  --leading-tight: 1.3;
+
+  /* Space */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 7rem;
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --container: 74rem;
+  --measure: 62ch;
+
+  /* Shape and depth */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow-glow:
+    0 0 0 1px var(--color-line), 0 24px 60px -24px rgb(0 0 0 / 0.6);
+  --header-height: 4.25rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration: 260ms;
+
+  /* Eight-point star (khatam) lattice, stroked in gold at very low opacity. */
+  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23d9b56c' stroke-opacity='0.05' stroke-width='1'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---------- Reset ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-block-start: calc(var(--header-height) + var(--space-4));
+  scrollbar-color: var(--color-gold-deep) var(--color-bg-deep);
+  hanging-punctuation: first last;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-block-size: 100dvh;
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(
+      120% 70% at 50% -10%,
+      rgb(95 179 155 / 0.12),
+      transparent 60%
+    ),
+    radial-gradient(80% 50% at 50% 110%, rgb(217 181 108 / 0.08), transparent),
+    var(--pattern-star);
+  background-attachment: fixed, fixed, scroll;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+picture,
+svg,
+video,
+canvas {
+  display: block;
+  max-inline-size: 100%;
+}
+
+img {
+  block-size: auto;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+p,
+h1,
+h2,
+h3,
+h4 {
+  overflow-wrap: break-word;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* ---------- Typography ---------- */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: var(--text-2xl);
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
+
+h4 {
+  font-size: var(--text-lg);
+}
+
+p {
+  max-inline-size: var(--measure);
+}
+
+small {
+  font-size: var(--text-sm);
+}
+
+a {
+  color: var(--color-gold);
+  text-decoration-color: var(--color-line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.35em;
+  transition: color var(--duration) var(--ease-out);
+}
+
+a:hover {
+  color: var(--color-gold-strong);
+}
+
+::selection {
+  background-color: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+/* Focus: a gold ring offset from the element, visible on every surface. */
+:focus-visible {
+  outline: 2px solid var(--color-gold-strong);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Layout helpers ---------- */
+
+.container {
+  inline-size: min(100% - var(--gutter) * 2, var(--container));
+  margin-inline: auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+  font-family: var(--font-display);
+  text-decoration: none;
+  translate: 0 -200%;
+}
+
+.skip-link:focus-visible {
+  translate: 0 0;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 3rem;
+  padding-block: var(--space-2);
+  padding-inline: var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration) var(--ease-out),
+    border-color var(--duration) var(--ease-out),
+    color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    scale 120ms var(--ease-out);
+}
+
+.btn:active {
+  scale: 0.97;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn svg {
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  flex: none;
+}
+
+.btn-primary {
+  background: var(--gold-leaf);
+  color: var(--color-on-gold);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 10px 30px -12px rgb(217 181 108 / 0.55);
+}
+
+.btn-primary:hover {
+  color: var(--color-on-gold);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 14px 36px -10px rgb(217 181 108 / 0.75);
+}
+
+.btn-ghost {
+  border-color: var(--color-line-strong);
+  color: var(--color-text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-gold);
+  background-color: rgb(217 181 108 / 0.08);
+  color: var(--color-gold-strong);
+}
+
+/* ---------- Reveal on scroll (scroll-driven, CSS only) ---------- */
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    translate: 0 1.5rem;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+  }
+}
+
+/* ---------- Cross-document view transitions ---------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

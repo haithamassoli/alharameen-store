@@ -1,0 +1,195 @@
+---
+const links = [
+  { href: "/#watches", label: "الساعات" },
+  { href: "/#why", label: "لماذا الحرمين" },
+  { href: "/#contact", label: "تواصل معنا" },
+] as const;
+---
+
+<header class="site-header">
+  <div class="site-header__inner container">
+    <a aria-label="ساعات الحرمين، الصفحة الرئيسية" class="wordmark" href="/">
+      <svg aria-hidden="true" class="wordmark__star" viewBox="0 0 32 32">
+        <path d="M9.5 9.5h13v13h-13z"></path>
+        <path d="M16 6.8 25.2 16 16 25.2 6.8 16z"></path>
+        <circle cx="16" cy="16" r="2.4"></circle>
+      </svg>
+      <span>ساعات الحرمين</span>
+    </a>
+
+    <nav aria-label="التنقل الرئيسي" class="site-nav">
+      <ul>
+        {links.map((link) => (
+          <li>
+            <a href={link.href}>{link.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <button aria-label="السلة" class="cart-button" data-cart-open type="button">
+      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M5.5 8.5h13l-1 11.2a1.5 1.5 0 0 1-1.5 1.3H8a1.5 1.5 0 0 1-1.5-1.3z"
+          stroke="currentColor"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+        ></path>
+        <path
+          d="M9 10.5V7a3 3 0 0 1 6 0v3.5"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="1.5"
+        ></path>
+      </svg>
+      <span class="cart-button__count" data-cart-count data-count="0">
+        ٠
+      </span>
+    </button>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 50;
+    border-block-end: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    background-color: rgb(8 25 26 / 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    view-transition-name: site-header;
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5, 1.5rem);
+    min-block-size: var(--header-height, 4.25rem);
+  }
+
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    color: var(--color-text, #f1e9d8);
+    font-family: var(--font-display, serif);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .wordmark:hover {
+    color: var(--color-gold-strong, #ecd08f);
+  }
+
+  .wordmark__star {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    fill: none;
+    stroke: var(--color-gold, #d9b56c);
+    stroke-width: 1.4;
+  }
+
+  .site-nav {
+    margin-inline-start: auto;
+  }
+
+  .site-nav ul {
+    display: flex;
+    gap: var(--space-5, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav a {
+    display: inline-block;
+    padding-block: var(--space-2, 0.5rem);
+    color: var(--color-muted, #a8b8b0);
+    font-family: var(--font-display, serif);
+    font-size: 1rem;
+    text-decoration: none;
+  }
+
+  .site-nav a:hover {
+    color: var(--color-gold-strong, #ecd08f);
+  }
+
+  .cart-button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    flex: none;
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius-pill, 999px);
+    background: rgb(217 181 108 / 0.06);
+    color: var(--color-gold, #d9b56c);
+    transition:
+      background-color var(--duration, 260ms) ease,
+      border-color var(--duration, 260ms) ease;
+  }
+
+  .cart-button:hover {
+    border-color: var(--color-gold, #d9b56c);
+    background-color: rgb(217 181 108 / 0.14);
+  }
+
+  .cart-button svg {
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+  }
+
+  .cart-button__count {
+    position: absolute;
+    inset-block-start: -0.3rem;
+    inset-inline-end: -0.3rem;
+    display: grid;
+    place-items: center;
+    min-inline-size: 1.35rem;
+    block-size: 1.35rem;
+    padding-inline: 0.3rem;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--color-gold, #d9b56c);
+    color: var(--color-on-gold, #10201c);
+    font-family: var(--font-display, serif);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Nothing to count: no badge on an empty cart. */
+  .cart-button__count[data-count="0"] {
+    display: none;
+  }
+
+  /* Narrow screens: nav drops to its own row under the wordmark and cart. */
+  @media (max-width: 40rem) {
+    .site-header__inner {
+      flex-wrap: wrap;
+      row-gap: 0;
+      padding-block-start: var(--space-2, 0.5rem);
+    }
+
+    .wordmark {
+      margin-inline-end: auto;
+    }
+
+    .site-nav {
+      order: 3;
+      inline-size: 100%;
+      margin-inline-start: 0;
+    }
+
+    .site-nav ul {
+      justify-content: space-between;
+      gap: var(--space-3, 0.75rem);
+    }
+
+    .site-nav a {
+      font-size: 0.9375rem;
+    }
+  }
+</style>

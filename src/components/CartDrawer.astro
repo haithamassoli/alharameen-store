@@ -1,0 +1,1593 @@
+---
+// The cart: catalog data for client scripts, the slide-in cart dialog, the
+// add-to-cart toast and the script that ties them together. Include once, in
+// the Layout. Ordering happens on WhatsApp; nothing here is a payment flow.
+import { getImage } from "astro:assets";
+import { getCollection, getEntry } from "astro:content";
+
+import type { CartConfig, CatalogItem } from "../lib/cart";
+import { deliveryTime } from "../lib/delivery";
+import { formatPrice } from "../lib/money";
+
+const THUMB_SIZE = 160;
+
+const products = await getCollection("products");
+
+const catalog: CatalogItem[] = await Promise.all(
+  products.map(async ({ data, id }) => {
+    const [cover] = data.images;
+
+    const thumb = await getImage({
+      format: "webp",
+      src: cover.src,
+      width: THUMB_SIZE,
+    });
+
+    return {
+      currency: data.currency,
+      id,
+      image: thumb.src,
+      model: data.model,
+      name: data.name,
+      price: data.price,
+      url: `/watches/${id}/`,
+    };
+  })
+);
+
+const zoneEntries = await getCollection("shippingZones");
+const zones = zoneEntries.toSorted((a, b) => a.data.fee - b.data.fee);
+const store = await getEntry("store", "main");
+
+if (!store) {
+  throw new Error('Missing "main" entry in the store collection');
+}
+
+const config: CartConfig = {
+  whatsapp: store.data.contact.whatsapp,
+  zones: zones.map(({ data, id }) => ({ fee: data.fee, id, name: data.name })),
+};
+
+// "<" is escaped so catalog text can never close the script element early.
+const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
+  JSON.stringify(value).replaceAll("<", "\\u003c");
+---
+
+<script
+  id="catalog-data"
+  is:inline
+  set:html={toScriptJson(catalog)}
+  type="application/json"
+/>
+<script
+  id="cart-config"
+  is:inline
+  set:html={toScriptJson(config)}
+  type="application/json"
+/>
+<dialog aria-labelledby="cart-title" class="cart-drawer" data-cart-dialog>
+  <div class="cart-drawer__panel">
+    <div class="cart-drawer__header">
+      <h2 class="cart-drawer__title" id="cart-title">
+        سلة المشتريات
+        <span class="cart-drawer__count" data-cart-count>
+          ٠
+        </span>
+      </h2>
+      <button
+        aria-label="إغلاق السلة"
+        class="cart-drawer__icon-button"
+        data-cart-close
+        type="button"
+      >
+        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-width="1.75"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <p
+      aria-atomic="true"
+      class="visually-hidden"
+      data-cart-status
+      role="status"
+    ></p>
+
+    <div class="cart-drawer__empty" data-cart-empty>
+      <svg aria-hidden="true" fill="none" viewBox="0 0 64 64">
+        <circle
+          cx="32"
+          cy="32"
+          r="22"
+          stroke="currentColor"
+          stroke-width="2"
+        ></circle>
+        <circle
+          cx="32"
+          cy="32"
+          r="16"
+          stroke="currentColor"
+          stroke-dasharray="2 5"
+          stroke-width="2"
+        ></circle>
+        <path
+          d="M32 22v10l6 4"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-width="2.5"
+        ></path>
+      </svg>
+      <p class="cart-drawer__empty-title">سلتك فارغة الآن</p>
+      <p class="cart-drawer__empty-text">
+        اختر ساعتك من تشكيلتنا، وسنجهّز طلبك لترسله لنا على واتساب بضغطة واحدة.
+      </p>
+      <a class="btn btn-primary" data-cart-dismiss href="/#watches">
+        تصفّح الساعات
+      </a>
+    </div>
+
+    <form class="cart-drawer__form" data-cart-form hidden>
+      <div class="cart-drawer__body">
+        <ul
+          aria-label="المنتجات في السلة"
+          class="cart-drawer__lines"
+          data-cart-lines
+        ></ul>
+
+        <fieldset class="cart-drawer__fieldset">
+          <legend class="cart-drawer__legend">منطقة التوصيل</legend>
+          <div class="cart-drawer__zones">
+            {zones.map(({ data, id }) => (
+              <label class="zone">
+                <input
+                  class="zone__input"
+                  name="zone"
+                  required
+                  type="radio"
+                  value={id}
+                />
+                <span class="zone__name">{data.name}</span>
+                <span class="zone__fee">
+                  {formatPrice(data.fee, data.currency)}
+                </span>
+                <span class="zone__days">
+                  يصلك {deliveryTime(data.minDays, data.maxDays)}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset class="cart-drawer__fieldset">
+          <legend class="cart-drawer__legend">بيانات التوصيل</legend>
+          <div class="field">
+            <label class="field__label" for="cart-name">
+              الاسم الكامل
+            </label>
+            <input
+              autocomplete="name"
+              class="field__input"
+              id="cart-name"
+              maxlength="80"
+              name="name"
+              required
+              type="text"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" for="cart-phone">
+              رقم الهاتف
+            </label>
+            <input
+              aria-describedby="cart-phone-hint"
+              autocomplete="tel"
+              class="field__input"
+              dir="ltr"
+              id="cart-phone"
+              inputmode="tel"
+              maxlength="20"
+              name="phone"
+              placeholder="07XXXXXXXX"
+              required
+              type="tel"
+            />
+            <small class="field__hint" id="cart-phone-hint">
+              سنتواصل معك على هذا الرقم لتأكيد الطلب.
+            </small>
+          </div>
+          <div class="field">
+            <label class="field__label" for="cart-address">
+              المدينة والعنوان
+            </label>
+            <input
+              autocomplete="street-address"
+              class="field__input"
+              id="cart-address"
+              maxlength="200"
+              name="address"
+              placeholder="مثال: عمّان، خلدا، شارع وصفي التل"
+              required
+              type="text"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" for="cart-notes">
+              ملاحظات <span class="field__optional">(اختياري)</span>
+            </label>
+            <textarea
+              class="field__input"
+              id="cart-notes"
+              maxlength="300"
+              name="notes"
+              rows="2"
+            ></textarea>
+          </div>
+        </fieldset>
+
+        <dl class="totals">
+          <div class="totals__row">
+            <dt>المجموع الفرعي</dt>
+            <dd data-cart-subtotal></dd>
+          </div>
+          <div class="totals__row">
+            <dt>التوصيل</dt>
+            <dd data-cart-shipping>اختر المنطقة</dd>
+          </div>
+        </dl>
+        <p class="cart-drawer__payment">
+          الدفع نقدًا عند الاستلام، ونؤكد معك تفاصيل الطلب على واتساب.
+        </p>
+
+        <p class="cart-drawer__sent" data-cart-sent hidden>
+          فتحنا لك واتساب ورسالة الطلب جاهزة، أرسلها لنؤكد طلبك. إن لم تفتح
+          المحادثة،{" "}
+          <a
+            data-cart-sent-link
+            href="https://wa.me/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            افتحها من هنا
+          </a>
+        </p>
+      </div>
+
+      <div class="cart-drawer__footer">
+        <p class="cart-drawer__grand">
+          <span>الإجمالي</span>
+          <output data-cart-total></output>
+        </p>
+        <button class="btn btn-primary cart-drawer__checkout" type="submit">
+          <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"></path>
+          </svg>
+          إتمام الطلب عبر واتساب
+        </button>
+        <button class="cart-drawer__clear" data-cart-clear type="button">
+          تفريغ السلة
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <template data-cart-line-template>
+    <li class="line">
+      <img
+        alt=""
+        class="line__thumb"
+        data-line-image
+        decoding="async"
+        height={THUMB_SIZE}
+        loading="lazy"
+        src="data:,"
+        width={THUMB_SIZE}
+      />
+      <div class="line__info">
+        <a class="line__name" data-cart-dismiss data-line-link href="/"></a>
+        <span class="line__model" data-line-model dir="ltr"></span>
+        <span class="line__unit" data-line-unit></span>
+      </div>
+      <div class="line__actions">
+        <div class="stepper" data-line-stepper role="group">
+          <button
+            aria-label="زيادة الكمية"
+            class="stepper__button"
+            data-cart-action="increase"
+            type="button"
+          >
+            +
+          </button>
+          <output class="stepper__qty" data-line-qty></output>
+          <button
+            aria-label="إنقاص الكمية"
+            class="stepper__button"
+            data-cart-action="decrease"
+            type="button"
+          >
+            −
+          </button>
+        </div>
+        <span class="line__total" data-line-total></span>
+        <button class="line__remove" data-cart-action="remove" type="button">
+          <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+            <path
+              d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            ></path>
+          </svg>
+          <span>إزالة</span>
+        </button>
+      </div>
+    </li>
+  </template>
+</dialog>
+
+<div aria-atomic="true" class="cart-toast" data-cart-toast role="status">
+  <p class="cart-toast__text" data-cart-toast-text></p>
+  <button class="cart-toast__button" data-cart-open type="button">
+    عرض السلة
+  </button>
+</div>
+
+<script>
+  import {
+    addItem,
+    buildWhatsAppMessage,
+    CART_STORAGE_KEY,
+    cartCount,
+    cartTotals,
+    isJordanMobile,
+    MAX_QTY,
+    normalizePhone,
+    parseCart,
+    removeItem,
+    setQty,
+    whatsappUrl,
+  } from "../lib/cart";
+  import type {
+    CartConfig,
+    CartLine,
+    CatalogItem,
+    ShippingZone,
+  } from "../lib/cart";
+  import { formatPrice } from "../lib/money";
+
+  const TOAST_MS = 3200;
+  const CLEAR_CONFIRM_MS = 4000;
+  const FLY_MS = 700;
+  const FLY_SIZE = 56;
+  const WHITESPACE = /\s+/gu;
+
+  const CLEAR_LABEL = "تفريغ السلة";
+  const CLEAR_CONFIRM_LABEL = "اضغط مجددًا لتفريغ السلة";
+  const PHONE_MESSAGE = "اكتب رقم موبايل أردني صحيح، مثل 0791234567.";
+  const ZONE_MESSAGE = "اختر منطقة التوصيل.";
+
+  const queryElement = <T extends Element>(
+    root: ParentNode,
+    selector: string,
+    type: new () => T
+  ): T => {
+    const element = root.querySelector(selector);
+
+    if (!(element instanceof type)) {
+      throw new TypeError(`Cart drawer: missing ${selector}`);
+    }
+
+    return element;
+  };
+
+  const readJsonScript = (id: string): string =>
+    document.querySelector(`#${id}`)?.textContent ?? "";
+
+  // Written at build time from the validated content collections.
+  const catalog: CatalogItem[] = JSON.parse(readJsonScript("catalog-data"));
+  const config: CartConfig = JSON.parse(readJsonScript("cart-config"));
+  const catalogById = new Map(catalog.map((item) => [item.id, item]));
+
+  const dialog = queryElement(
+    document,
+    "[data-cart-dialog]",
+    HTMLDialogElement
+  );
+
+  const form = queryElement(dialog, "[data-cart-form]", HTMLFormElement);
+  const emptyState = queryElement(dialog, "[data-cart-empty]", HTMLElement);
+  const emptyLink = queryElement(emptyState, "a", HTMLAnchorElement);
+  const list = queryElement(dialog, "[data-cart-lines]", HTMLUListElement);
+  const status = queryElement(dialog, "[data-cart-status]", HTMLElement);
+
+  const lineTemplate = queryElement(
+    dialog,
+    "[data-cart-line-template]",
+    HTMLTemplateElement
+  );
+
+  const subtotalEl = queryElement(dialog, "[data-cart-subtotal]", HTMLElement);
+  const shippingEl = queryElement(dialog, "[data-cart-shipping]", HTMLElement);
+  const totalEl = queryElement(dialog, "[data-cart-total]", HTMLOutputElement);
+  const sentNote = queryElement(dialog, "[data-cart-sent]", HTMLElement);
+
+  const sentLink = queryElement(
+    dialog,
+    "[data-cart-sent-link]",
+    HTMLAnchorElement
+  );
+
+  const clearButton = queryElement(
+    form,
+    "[data-cart-clear]",
+    HTMLButtonElement
+  );
+
+  const nameInput = queryElement(form, "#cart-name", HTMLInputElement);
+  const phoneInput = queryElement(form, "#cart-phone", HTMLInputElement);
+  const addressInput = queryElement(form, "#cart-address", HTMLInputElement);
+  const notesInput = queryElement(form, "#cart-notes", HTMLTextAreaElement);
+  const firstZone = queryElement(form, 'input[name="zone"]', HTMLInputElement);
+  const toast = queryElement(document, "[data-cart-toast]", HTMLElement);
+  const toastText = queryElement(toast, "[data-cart-toast-text]", HTMLElement);
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const arabicNumber = new Intl.NumberFormat("ar-JO");
+
+  const requiredMessages = new Map([
+    [nameInput, "اكتب اسمك الكامل."],
+    [phoneInput, "اكتب رقم هاتفك."],
+    [addressInput, "اكتب مدينتك وعنوانك."],
+  ]);
+
+  const price = (item: CatalogItem, fils: number): string =>
+    formatPrice(fils, item.currency);
+
+  const money = (fils: number): string =>
+    formatPrice(fils, catalog[0]?.currency ?? "JOD");
+
+  const announce = (message: string): void => {
+    status.textContent = message;
+  };
+
+  const readStorage = (): string | null => {
+    try {
+      return window.localStorage.getItem(CART_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  };
+
+  const writeStorage = (lines: readonly CartLine[]): void => {
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(lines));
+    } catch {
+      // Storage blocked or full: the cart still works until the page closes.
+    }
+  };
+
+  let cart: CartLine[] = parseCart(readStorage(), catalog);
+
+  const selectedZone = (): ShippingZone | undefined => {
+    const checked = form.querySelector('input[name="zone"]:checked');
+
+    if (!(checked instanceof HTMLInputElement)) {
+      return undefined;
+    }
+
+    return config.zones.find((zone) => zone.id === checked.value);
+  };
+
+  const fieldError = (input: HTMLInputElement, required: string): string => {
+    if (input.value.trim() === "") {
+      return required;
+    }
+
+    if (input === phoneInput && !isJordanMobile(input.value)) {
+      return PHONE_MESSAGE;
+    }
+
+    return "";
+  };
+
+  // Arabic messages instead of the browser's own, and a field holding only
+  // spaces counts as empty.
+  const validateForm = (): void => {
+    for (const [input, required] of requiredMessages) {
+      input.setCustomValidity(fieldError(input, required));
+    }
+
+    firstZone.setCustomValidity(selectedZone() ? "" : ZONE_MESSAGE);
+  };
+
+  const renderCounts = (): void => {
+    const count = cartCount(cart);
+
+    const label =
+      count === 0
+        ? "السلة فارغة"
+        : `السلة (عدد القطع: ${arabicNumber.format(count)})`;
+
+    for (const badge of document.querySelectorAll<HTMLElement>(
+      "[data-cart-count]"
+    )) {
+      badge.textContent = arabicNumber.format(count);
+      badge.dataset.count = String(count);
+    }
+
+    for (const opener of document.querySelectorAll(
+      "[data-cart-open][aria-label]"
+    )) {
+      opener.setAttribute("aria-label", label);
+    }
+  };
+
+  const renderTotals = (): void => {
+    const zone = selectedZone();
+    const totals = cartTotals(cart, catalog, zone);
+    subtotalEl.textContent = money(totals.subtotal);
+    shippingEl.textContent = zone ? money(totals.shipping) : "اختر المنطقة";
+    totalEl.value = money(totals.total);
+  };
+
+  const fillLine = (line: CartLine, item: CatalogItem): Node => {
+    const fragment = lineTemplate.content.cloneNode(true);
+
+    if (!(fragment instanceof DocumentFragment)) {
+      throw new TypeError("Cart drawer: line template did not clone");
+    }
+
+    const row = queryElement(fragment, "li", HTMLLIElement);
+    row.dataset.id = item.id;
+    const image = queryElement(row, "[data-line-image]", HTMLImageElement);
+    image.src = item.image;
+    const link = queryElement(row, "[data-line-link]", HTMLAnchorElement);
+    link.href = item.url;
+    link.textContent = item.name;
+    queryElement(row, "[data-line-model]", HTMLElement).textContent =
+      item.model;
+    queryElement(row, "[data-line-unit]", HTMLElement).textContent =
+      `${price(item, item.price)} للقطعة`;
+    queryElement(row, "[data-line-qty]", HTMLOutputElement).value =
+      arabicNumber.format(line.qty);
+    queryElement(row, "[data-line-total]", HTMLElement).textContent = price(
+      item,
+      item.price * line.qty
+    );
+    queryElement(row, "[data-line-stepper]", HTMLElement).setAttribute(
+      "aria-label",
+      `كمية ${item.name}`
+    );
+
+    const increase = queryElement(
+      row,
+      '[data-cart-action="increase"]',
+      HTMLButtonElement
+    );
+
+    increase.disabled = line.qty >= MAX_QTY;
+    increase.setAttribute("aria-label", `زيادة كمية ${item.name}`);
+
+    const decrease = queryElement(
+      row,
+      '[data-cart-action="decrease"]',
+      HTMLButtonElement
+    );
+
+    decrease.disabled = line.qty <= 1;
+    decrease.setAttribute("aria-label", `إنقاص كمية ${item.name}`);
+    queryElement(
+      row,
+      '[data-cart-action="remove"]',
+      HTMLButtonElement
+    ).setAttribute("aria-label", `إزالة ${item.name} من السلة`);
+
+    return fragment;
+  };
+
+  // Re-rendering replaces the line buttons, so put focus back where it was.
+  // A removed line hands focus to the line that took its place, else the one
+  // before it, else (empty cart) the empty-state link.
+  const restoreFocus = (action: string, id: string, index: number): void => {
+    const row = list.querySelector(`li[data-id="${CSS.escape(id)}"]`);
+
+    if (!row) {
+      const rows = [...list.querySelectorAll("li")];
+      const neighbour = rows.at(Math.min(index, rows.length - 1));
+
+      const remove = neighbour?.querySelector<HTMLElement>(
+        '[data-cart-action="remove"]'
+      );
+
+      (remove ?? emptyLink).focus();
+
+      return;
+    }
+
+    const candidates = [action, "increase", "decrease", "remove"];
+
+    for (const candidate of candidates) {
+      const button = row.querySelector(`[data-cart-action="${candidate}"]`);
+
+      if (button instanceof HTMLButtonElement && !button.disabled) {
+        button.focus();
+
+        return;
+      }
+    }
+  };
+
+  const render = (): void => {
+    renderCounts();
+    const isEmpty = cart.length === 0;
+    emptyState.hidden = !isEmpty;
+    form.hidden = isEmpty;
+    const rows: Node[] = [];
+
+    for (const line of cart) {
+      const item = catalogById.get(line.id);
+
+      if (item) {
+        rows.push(fillLine(line, item));
+      }
+    }
+
+    list.replaceChildren(...rows);
+    renderTotals();
+  };
+
+  let clearTimer = 0;
+
+  const resetClear = (): void => {
+    window.clearTimeout(clearTimer);
+    delete clearButton.dataset.confirm;
+    clearButton.textContent = CLEAR_LABEL;
+  };
+
+  const commit = (next: CartLine[]): void => {
+    cart = next;
+    writeStorage(cart);
+    sentNote.hidden = true;
+    resetClear();
+    render();
+    window.dispatchEvent(
+      new CustomEvent("cart:change", { detail: { count: cartCount(cart) } })
+    );
+  };
+
+  let toastTimer = 0;
+
+  const showToast = (message: string): void => {
+    toastText.textContent = message;
+    toast.dataset.visible = "true";
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      delete toast.dataset.visible;
+    }, TOAST_MS);
+  };
+
+  const bumpBadges = (): void => {
+    if (reducedMotion.matches) {
+      return;
+    }
+
+    for (const badge of document.querySelectorAll("[data-cart-count]")) {
+      badge.animate(
+        [{ scale: "1" }, { scale: "1.45" }, { scale: "0.9" }, { scale: "1" }],
+        { duration: 520, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
+      );
+    }
+  };
+
+  const visibleCartButton = (): HTMLElement | undefined =>
+    [...document.querySelectorAll<HTMLElement>("[data-cart-open]")].find(
+      (element) =>
+        !toast.contains(element) && element.getClientRects().length > 0
+    );
+
+  // A thumbnail arcs from the clicked button into the header cart. The image
+  // is centred in the viewport by CSS and moved with offsets from the centre,
+  // so the maths is the same in RTL and LTR.
+  const flyToCart = async (from: Element, item: CatalogItem): Promise<void> => {
+    const target = visibleCartButton();
+
+    if (reducedMotion.matches || !target) {
+      return;
+    }
+
+    const start = from.getBoundingClientRect();
+    const end = target.getBoundingClientRect();
+    const midX = window.innerWidth / 2;
+    const midY = window.innerHeight / 2;
+    const startX = start.left + start.width / 2 - midX;
+    const startY = start.top + start.height / 2 - midY;
+    const endX = end.left + end.width / 2 - midX;
+    const endY = end.top + end.height / 2 - midY;
+    const arcY = Math.min(startY, endY) - 80;
+
+    const flyer = document.createElement("img");
+    flyer.className = "cart-fly";
+    flyer.alt = "";
+    flyer.src = item.image;
+    flyer.width = FLY_SIZE;
+    flyer.height = FLY_SIZE;
+    document.body.append(flyer);
+
+    const animation = flyer.animate(
+      [
+        {
+          opacity: 0,
+          transform: `translate(${startX}px, ${startY}px) scale(0.6)`,
+        },
+        {
+          offset: 0.15,
+          opacity: 1,
+          transform: `translate(${startX}px, ${startY}px) scale(1.1)`,
+        },
+        {
+          offset: 0.55,
+          transform: `translate(${(startX + endX) / 2}px, ${arcY}px) scale(0.9) rotate(-12deg)`,
+        },
+        {
+          opacity: 0.6,
+          transform: `translate(${endX}px, ${endY}px) scale(0.25) rotate(0deg)`,
+        },
+      ],
+      { duration: FLY_MS, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
+    );
+
+    try {
+      await animation.finished;
+    } finally {
+      flyer.remove();
+    }
+  };
+
+  const handleAdd = async (button: HTMLElement): Promise<void> => {
+    const item = catalogById.get(button.dataset.addToCart ?? "");
+
+    if (!item) {
+      return;
+    }
+
+    const current = cart.find((line) => line.id === item.id)?.qty ?? 0;
+
+    if (current >= MAX_QTY) {
+      showToast(
+        `وصلت للحد الأقصى (${arabicNumber.format(MAX_QTY)} قطع) من ${item.name}`
+      );
+
+      return;
+    }
+
+    commit(addItem(cart, item.id));
+    showToast(`أضفنا ${item.name} إلى سلتك`);
+
+    try {
+      await flyToCart(button, item);
+    } finally {
+      bumpBadges();
+    }
+  };
+
+  const openCart = (): void => {
+    render();
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+  };
+
+  const handleLineAction = (button: HTMLElement): void => {
+    const id = button.closest<HTMLElement>("li[data-id]")?.dataset.id;
+    const action = button.dataset.cartAction;
+    const index = cart.findIndex((entry) => entry.id === id);
+    const line = cart[index];
+
+    if (!line || action === undefined) {
+      return;
+    }
+
+    const name = catalogById.get(line.id)?.name ?? line.id;
+
+    if (action === "remove") {
+      commit(removeItem(cart, line.id));
+      announce(
+        cart.length > 0
+          ? `أزلنا ${name} من السلة. الإجمالي ${totalEl.value}.`
+          : `أزلنا ${name} من السلة. سلتك فارغة الآن.`
+      );
+    } else {
+      const qty =
+        action === "increase" ? line.qty + 1 : Math.max(1, line.qty - 1);
+
+      commit(setQty(cart, line.id, qty));
+      announce(
+        `كمية ${name}: ${arabicNumber.format(qty)}. الإجمالي ${totalEl.value}.`
+      );
+    }
+
+    restoreFocus(action, line.id, index);
+  };
+
+  // One tap arms the button, a second tap within a few seconds empties the
+  // cart, so a stray tap under the checkout button cannot lose the order.
+  const handleClear = (): void => {
+    if (clearButton.dataset.confirm === undefined) {
+      clearButton.dataset.confirm = "true";
+      clearButton.textContent = CLEAR_CONFIRM_LABEL;
+      clearTimer = window.setTimeout(resetClear, CLEAR_CONFIRM_MS);
+
+      return;
+    }
+
+    commit([]);
+    announce("أفرغنا السلة.");
+    emptyLink.focus();
+  };
+
+  document.addEventListener("click", (event) => {
+    const { target } = event;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const addButton = target.closest<HTMLElement>("[data-add-to-cart]");
+
+    if (addButton) {
+      void handleAdd(addButton);
+
+      return;
+    }
+
+    if (!target.closest("[data-cart-open]")) {
+      return;
+    }
+
+    const fromToast = toast.contains(target);
+    delete toast.dataset.visible;
+    openCart();
+
+    // The toast hides itself, so focus cannot go back to its button on close.
+    if (fromToast) {
+      dialog.addEventListener("close", () => visibleCartButton()?.focus(), {
+        once: true,
+      });
+    }
+  });
+
+  // Only a press that starts on the backdrop closes the cart, not a text
+  // selection drag from a field that happens to end there.
+  let pressedBackdrop = false;
+
+  dialog.addEventListener("pointerdown", (event) => {
+    pressedBackdrop = event.target === dialog;
+  });
+
+  dialog.addEventListener("click", (event) => {
+    const { target } = event;
+
+    // The panel fills the dialog, so a click on the dialog itself is the backdrop.
+    if (target === dialog) {
+      if (pressedBackdrop) {
+        dialog.close();
+      }
+
+      return;
+    }
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest("[data-cart-close], [data-cart-dismiss]")) {
+      dialog.close();
+
+      return;
+    }
+
+    if (target.closest("[data-cart-clear]")) {
+      handleClear();
+
+      return;
+    }
+
+    const lineButton = target.closest<HTMLElement>("[data-cart-action]");
+
+    if (lineButton) {
+      handleLineAction(lineButton);
+    }
+  });
+
+  dialog.addEventListener("close", resetClear);
+
+  form.addEventListener("input", validateForm);
+
+  form.addEventListener("change", (event) => {
+    validateForm();
+
+    if (
+      event.target instanceof HTMLInputElement &&
+      event.target.name === "zone"
+    ) {
+      renderTotals();
+    }
+  });
+
+  // Native validation runs first; submit only fires once every field is valid.
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const zone = selectedZone();
+
+    if (cart.length === 0 || !zone) {
+      return;
+    }
+
+    const message = buildWhatsAppMessage({
+      catalog,
+      customer: {
+        address: addressInput.value,
+        name: nameInput.value,
+        notes: notesInput.value,
+        phone: normalizePhone(phoneInput.value),
+      },
+      lines: cart,
+      zone,
+    });
+
+    const url = whatsappUrl(config.whatsapp, message);
+    window.open(url, "_blank", "noopener");
+    sentLink.href = url;
+    sentNote.hidden = false;
+    announce(sentNote.textContent.replaceAll(WHITESPACE, " ").trim());
+
+    sentNote.scrollIntoView({
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+      block: "nearest",
+    });
+  });
+
+  // Keep tabs in sync when the cart changes in another tab.
+  window.addEventListener("storage", (event) => {
+    if (event.key === CART_STORAGE_KEY) {
+      cart = parseCart(event.newValue, catalog);
+      render();
+      window.dispatchEvent(
+        new CustomEvent("cart:change", { detail: { count: cartCount(cart) } })
+      );
+    }
+  });
+
+  validateForm();
+
+  render();
+
+  window.dispatchEvent(
+    new CustomEvent("cart:change", { detail: { count: cartCount(cart) } })
+  );
+</script>
+
+<style>
+  .cart-drawer {
+    --drawer-ease: var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+    --drawer-duration: 480ms;
+    --slide-from: 100%;
+
+    inline-size: min(28rem, 100%);
+    max-inline-size: 100%;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    margin-block: 0;
+    margin-inline: auto 0;
+    padding: 0;
+    border: 0;
+    border-inline-start: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    background:
+      radial-gradient(
+        120% 40% at 50% 0%,
+        rgb(217 181 108 / 0.1),
+        transparent 70%
+      ),
+      var(--color-surface, #0f2624);
+    color: var(--color-text, #f1e9d8);
+    font-family: var(--font-body, serif);
+    box-shadow: 0 0 80px rgb(0 0 0 / 0.55);
+    translate: var(--slide-from) 0;
+    transition:
+      translate var(--drawer-duration) var(--drawer-ease),
+      display var(--drawer-duration) allow-discrete,
+      overlay var(--drawer-duration) allow-discrete;
+  }
+
+  /* inline-end is the left edge in RTL, so slide in from the left there. */
+  .cart-drawer:dir(rtl) {
+    --slide-from: -100%;
+  }
+
+  .cart-drawer[open] {
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .cart-drawer[open] {
+      translate: var(--slide-from) 0;
+    }
+  }
+
+  .cart-drawer::backdrop {
+    background-color: rgb(3 10 11 / 0);
+    backdrop-filter: blur(0);
+    transition:
+      background-color var(--drawer-duration) var(--drawer-ease),
+      backdrop-filter var(--drawer-duration) var(--drawer-ease),
+      display var(--drawer-duration) allow-discrete,
+      overlay var(--drawer-duration) allow-discrete;
+  }
+
+  .cart-drawer[open]::backdrop {
+    background-color: rgb(3 10 11 / 0.62);
+    backdrop-filter: blur(6px);
+  }
+
+  @starting-style {
+    .cart-drawer[open]::backdrop {
+      background-color: rgb(3 10 11 / 0);
+      backdrop-filter: blur(0);
+    }
+  }
+
+  :global(html:has(.cart-drawer[open])) {
+    overflow: hidden;
+  }
+
+  .cart-drawer__panel {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .cart-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    padding-block: var(--space-4, 1rem);
+    padding-inline: var(--space-5, 1.5rem);
+    border-block-end: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+  }
+
+  .cart-drawer__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    font-size: var(--text-xl, 1.5rem);
+  }
+
+  .cart-drawer__count {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 1.75rem;
+    block-size: 1.75rem;
+    padding-inline: 0.4rem;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--color-gold, #d9b56c);
+    color: var(--color-on-gold, #10201c);
+    font-size: var(--text-sm, 0.875rem);
+    line-height: 1;
+  }
+
+  .cart-drawer__icon-button {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: var(--radius-pill, 999px);
+    background: none;
+    transition:
+      border-color var(--duration, 260ms) var(--drawer-ease),
+      rotate var(--duration, 260ms) var(--drawer-ease);
+  }
+
+  .cart-drawer__icon-button:hover {
+    border-color: var(--color-gold, #d9b56c);
+    rotate: 90deg;
+  }
+
+  .cart-drawer__icon-button svg {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+  }
+
+  /* ---------- Empty state ---------- */
+
+  .cart-drawer__empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3, 0.75rem);
+    padding: var(--space-6, 2rem);
+    text-align: center;
+  }
+
+  .cart-drawer__empty[hidden] {
+    display: none;
+  }
+
+  .cart-drawer__empty svg {
+    inline-size: 5rem;
+    block-size: 5rem;
+    margin-block-end: var(--space-2, 0.5rem);
+    color: var(--color-gold, #d9b56c);
+  }
+
+  .cart-drawer__empty-title {
+    font-family: var(--font-display, serif);
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .cart-drawer__empty-text {
+    margin-block-end: var(--space-3, 0.75rem);
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  /* ---------- Form layout ---------- */
+
+  .cart-drawer__form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .cart-drawer__form[hidden] {
+    display: none;
+  }
+
+  .cart-drawer__body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Room under a focused invalid field for the browser's error bubble. */
+    scroll-padding-block-end: 5rem;
+    padding-block: var(--space-4, 1rem);
+    padding-inline: var(--space-5, 1.5rem);
+  }
+
+  .cart-drawer__lines {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    margin-block-end: var(--space-5, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .cart-drawer__fieldset {
+    display: grid;
+    gap: var(--space-3, 0.75rem);
+    margin-block-end: var(--space-5, 1.5rem);
+    padding: 0;
+    border: 0;
+  }
+
+  .cart-drawer__legend {
+    margin-block-end: var(--space-3, 0.75rem);
+    padding: 0;
+    font-family: var(--font-display, serif);
+    font-size: var(--text-lg, 1.25rem);
+    color: var(--color-gold, #d9b56c);
+  }
+
+  /* ---------- Line items ---------- */
+
+  .line {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    padding: var(--space-3, 0.75rem);
+    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: var(--radius, 14px);
+    background: var(--color-surface-2, #153330);
+    animation: line-in 360ms var(--drawer-ease) both;
+  }
+
+  @keyframes line-in {
+    from {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+  }
+
+  .line__thumb {
+    grid-row: span 2;
+    inline-size: 4.5rem;
+    block-size: 4.5rem;
+    border-radius: var(--radius-sm, 8px);
+    background: #fff;
+    object-fit: contain;
+  }
+
+  .line__info {
+    display: grid;
+    align-content: start;
+    min-inline-size: 0;
+    line-height: 1.5;
+  }
+
+  .line__name {
+    color: var(--color-text, #f1e9d8);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .line__name:hover {
+    color: var(--color-gold-strong, #ecd08f);
+    text-decoration: underline;
+  }
+
+  .line__model,
+  .line__unit {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .line__model {
+    justify-self: start;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .line__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  }
+
+  .line__total {
+    margin-inline-start: auto;
+    font-family: var(--font-display, serif);
+    font-weight: 600;
+    color: var(--color-gold-strong, #ecd08f);
+  }
+
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius-pill, 999px);
+  }
+
+  .stepper__button {
+    display: grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill, 999px);
+    background: none;
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .stepper__button:hover:not(:disabled) {
+    background: rgb(217 181 108 / 0.12);
+    color: var(--color-gold-strong, #ecd08f);
+  }
+
+  .stepper__button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .stepper__qty {
+    min-inline-size: 1.75rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .line__remove {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 0.25rem);
+    padding: var(--space-1, 0.25rem);
+    border: 0;
+    background: none;
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .line__remove:hover {
+    color: #f0a7a0;
+  }
+
+  .line__remove svg {
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+  }
+
+  /* ---------- Zones ---------- */
+
+  .cart-drawer__zones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: var(--space-3, 0.75rem);
+  }
+
+  .zone {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 var(--space-2, 0.5rem);
+    align-items: center;
+    padding: var(--space-3, 0.75rem);
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius, 14px);
+    background: var(--color-surface-2, #153330);
+    cursor: pointer;
+    transition:
+      border-color var(--duration, 260ms) var(--drawer-ease),
+      background-color var(--duration, 260ms) var(--drawer-ease),
+      box-shadow var(--duration, 260ms) var(--drawer-ease);
+  }
+
+  .zone:hover {
+    border-color: var(--color-gold, #d9b56c);
+  }
+
+  .zone:has(:checked) {
+    border-color: var(--color-gold, #d9b56c);
+    background: rgb(217 181 108 / 0.12);
+    box-shadow: 0 0 0 1px var(--color-gold, #d9b56c);
+  }
+
+  .zone:has(:focus-visible) {
+    outline: 2px solid var(--color-gold-strong, #ecd08f);
+    outline-offset: 3px;
+  }
+
+  .zone__input {
+    grid-row: span 3;
+    inline-size: 1.15rem;
+    block-size: 1.15rem;
+    margin: 0;
+    accent-color: var(--color-gold, #d9b56c);
+  }
+
+  .zone__input:focus-visible {
+    outline: none;
+  }
+
+  .zone__name {
+    font-weight: 600;
+  }
+
+  .zone__fee {
+    font-family: var(--font-display, serif);
+    color: var(--color-gold-strong, #ecd08f);
+  }
+
+  .zone__days {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  /* ---------- Fields ---------- */
+
+  .field {
+    display: grid;
+    gap: var(--space-1, 0.25rem);
+  }
+
+  .field__label {
+    font-weight: 600;
+  }
+
+  .field__optional,
+  .field__hint {
+    color: var(--color-muted, #a8b8b0);
+    font-weight: 400;
+  }
+
+  .field__input {
+    inline-size: 100%;
+    min-block-size: 2.875rem;
+    padding-block: var(--space-2, 0.5rem);
+    padding-inline: var(--space-3, 0.75rem);
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius-sm, 8px);
+    background: var(--color-bg-deep, #051112);
+    color: var(--color-text, #f1e9d8);
+    transition: border-color var(--duration, 260ms) var(--drawer-ease);
+  }
+
+  .field__input::placeholder {
+    color: rgb(168 184 176 / 0.7);
+  }
+
+  .field__input:focus-visible {
+    border-color: var(--color-gold, #d9b56c);
+    outline-offset: 1px;
+  }
+
+  .field__input:user-invalid {
+    border-color: #e58a80;
+  }
+
+  textarea.field__input {
+    resize: vertical;
+  }
+
+  .cart-drawer__sent {
+    padding: var(--space-3, 0.75rem);
+    border: 1px solid rgb(95 179 155 / 0.45);
+    border-radius: var(--radius, 14px);
+    background: rgb(95 179 155 / 0.12);
+  }
+
+  /* ---------- Footer ---------- */
+
+  .cart-drawer__footer {
+    display: grid;
+    gap: var(--space-2, 0.5rem);
+    padding-block: var(--space-4, 1rem);
+    padding-inline: var(--space-5, 1.5rem);
+    border-block-start: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    background: var(--color-bg-deep, #051112);
+  }
+
+  .totals {
+    display: grid;
+    gap: var(--space-1, 0.25rem);
+    margin-block-end: var(--space-2, 0.5rem);
+  }
+
+  .totals__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .totals__row dd {
+    margin: 0;
+    color: var(--color-text, #f1e9d8);
+  }
+
+  .cart-drawer__grand {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    max-inline-size: none;
+    font-family: var(--font-display, serif);
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .cart-drawer__grand output {
+    color: var(--color-gold-strong, #ecd08f);
+    font-weight: 700;
+  }
+
+  .cart-drawer__payment {
+    margin-block-end: var(--space-4, 1rem);
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .cart-drawer__checkout {
+    inline-size: 100%;
+    min-block-size: 3.5rem;
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .cart-drawer__clear {
+    justify-self: center;
+    padding: var(--space-1, 0.25rem) var(--space-3, 0.75rem);
+    border: 0;
+    background: none;
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+
+  .cart-drawer__clear:hover {
+    color: var(--color-text, #f1e9d8);
+  }
+
+  .cart-drawer__clear[data-confirm] {
+    color: #f0a7a0;
+  }
+
+  /* ---------- Toast ---------- */
+
+  .cart-toast {
+    position: fixed;
+    inset-block-end: var(--space-5, 1.5rem);
+    inset-inline: var(--space-4, 1rem);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+    inline-size: fit-content;
+    max-inline-size: calc(100% - 2 * var(--space-4, 1rem));
+    margin-inline: auto;
+    padding-block: var(--space-2, 0.5rem);
+    padding-inline: var(--space-4, 1rem) var(--space-2, 0.5rem);
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius-pill, 999px);
+    background: rgb(5 17 18 / 0.92);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.8);
+    opacity: 0;
+    translate: 0 1.5rem;
+    visibility: hidden;
+    transition:
+      opacity var(--duration, 260ms) var(--ease-out, ease-out),
+      translate var(--duration, 260ms) var(--ease-out, ease-out),
+      visibility 0s linear var(--duration, 260ms);
+  }
+
+  .cart-toast[data-visible] {
+    opacity: 1;
+    translate: 0 0;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .cart-toast__text {
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  .cart-toast__button {
+    flex: none;
+    padding-block: var(--space-1, 0.25rem);
+    padding-inline: var(--space-3, 0.75rem);
+    border: 0;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--color-gold, #d9b56c);
+    color: var(--color-on-gold, #10201c);
+    font-family: var(--font-display, serif);
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 600;
+  }
+
+  /* Created by the script, so it needs a global selector. */
+  :global(.cart-fly) {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+    margin: auto;
+    border: 2px solid var(--color-gold, #d9b56c);
+    border-radius: 50%;
+    background: #fff;
+    object-fit: contain;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cart-drawer,
+    .cart-drawer::backdrop,
+    .cart-toast {
+      transition: none;
+    }
+
+    .line {
+      animation: none;
+    }
+  }
+</style>
