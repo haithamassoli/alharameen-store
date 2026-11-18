@@ -186,15 +186,12 @@ const categories = [
   ...new Set(products.map((product) => product.data.category.id)),
 ];
 
-// One rule set per category: when its radio is checked, hide every other card
-// and switch the cards to that category's own (identical) keyframes. A new
-// animation-name restarts the entrance on every visible card, no JS needed.
+// One rule per category: when its radio is checked, hide every other card.
+// Filtering works without JS; the script below only animates the change.
 const filterCss = categories
   .map(
     (id) =>
-      `.catalog:has(#filter-${id}:checked) .catalog__item{animation-name:filter-${id}}` +
-      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}` +
-      `@keyframes filter-${id}{from{opacity:0;translate:0 0.75rem}}`
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
   )
   .join("");
 
@@ -388,7 +385,11 @@ const storeJsonLd = {
 
         <ul class="catalog__grid">
           {products.map((product) => (
-            <li class="catalog__item" data-category={product.data.category.id}>
+            <li
+              class="catalog__item"
+              data-category={product.data.category.id}
+              style={`--card: card-${product.id}`}
+            >
               <ProductCard
                 categoryName={categoryName(product.data.category.id)}
                 product={product}
@@ -559,6 +560,46 @@ const storeJsonLd = {
   import { initAnatomy } from "../lib/anatomy";
 
   initAnatomy();
+
+  // Animate the filter: cards that stay glide to their new slot, the rest
+  // fade out or in. The radio has already flipped when "change" fires, so put
+  // the old one back and let the transition flip it after the old snapshot.
+  const filters = document.querySelector(".filters");
+  let current = filters?.querySelector<HTMLInputElement>("input:checked");
+  let latest: ViewTransition | undefined;
+  const motionOk = matchMedia("(prefers-reduced-motion: no-preference)");
+
+  filters?.addEventListener("change", async ({ target }) => {
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const previous = current;
+    current = target;
+
+    if (!(previous && "startViewTransition" in document && motionOk.matches)) {
+      return;
+    }
+
+    previous.checked = true;
+    const root = document.documentElement;
+    root.classList.add("filtering");
+
+    const transition = document.startViewTransition(() => {
+      target.checked = true;
+    });
+
+    latest = transition;
+
+    try {
+      await transition.finished;
+    } finally {
+      // A quick second click skips this transition; keep the class for it.
+      if (latest === transition) {
+        root.classList.remove("filtering");
+      }
+    }
+  });
 </script>
 
 <style>
@@ -772,7 +813,7 @@ const storeJsonLd = {
     border-block-start: 1px solid var(--hairline);
   }
 
-  /* Filters: radios styled as quiet chips, no JS. */
+  /* Filters: radios styled as quiet chips; filtering itself needs no JS. */
 
   .filters {
     display: flex;
@@ -812,8 +853,8 @@ const storeJsonLd = {
   }
 
   .chip:has(input:checked) {
-    border-color: var(--ink);
-    background: var(--ink);
+    border-color: var(--pine);
+    background: var(--pine);
     color: var(--white);
   }
 
@@ -830,15 +871,50 @@ const storeJsonLd = {
     gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
   }
 
-  /* Cards rise in whenever the filter changes (see filterCss). */
-  .catalog__item {
-    animation: filter-all 400ms var(--ease) backwards;
+  /* Filter transition (see the script). The page swaps instantly; only the
+     cards move. The image and name keep their own names for the product page
+     transition, so fold them back into the card while filtering. */
+  :global(.filtering) .catalog__item {
+    view-transition-name: var(--card);
+    view-transition-class: card;
   }
 
-  @keyframes filter-all {
+  :global(.filtering) .catalog__item :global([style*="view-transition-name"]) {
+    view-transition-name: none !important;
+  }
+
+  :global(.filtering::view-transition-old(root)) {
+    display: none;
+  }
+
+  :global(.filtering::view-transition-new(root)) {
+    animation: none;
+  }
+
+  :global(::view-transition-group(*.card)) {
+    animation-duration: 450ms;
+    animation-timing-function: var(--ease);
+  }
+
+  :global(::view-transition-old(*.card):only-child) {
+    animation: card-out 200ms var(--ease) both;
+  }
+
+  :global(::view-transition-new(*.card):only-child) {
+    animation: card-in 350ms var(--ease) 100ms both;
+  }
+
+  @keyframes card-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+
+  @keyframes card-in {
     from {
       opacity: 0;
-      translate: 0 0.75rem;
+      scale: 0.96;
     }
   }
 
@@ -851,8 +927,19 @@ const storeJsonLd = {
     interpolate-size: allow-keywords;
   }
 
+  /* Centre the block, keep the questions and answers start-aligned. */
+  .faq .section-head {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .faq .section-note {
+    margin-inline: auto;
+  }
+
   .faq__list {
     max-inline-size: 48rem;
+    margin-inline: auto;
     border-block-start: 1px solid var(--ink);
   }
 
