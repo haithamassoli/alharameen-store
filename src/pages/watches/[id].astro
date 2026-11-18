@@ -1,4 +1,5 @@
 ---
+import ChevronRight from "@lucide/astro/icons/chevron-right";
 import type { GetStaticPaths } from "astro";
 import { getImage, Image, Picture } from "astro:assets";
 import { getCollection } from "astro:content";
@@ -139,15 +140,7 @@ const productJsonLd = {
 >
   <main class="product container" id="main">
     <a class="back-link" href="/#watches">
-      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-        <path
-          d="m9 6 6 6-6 6"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-        ></path>
-      </svg>
+      <ChevronRight />
       العودة إلى كل الساعات
     </a>
 

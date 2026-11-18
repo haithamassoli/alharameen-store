@@ -1,4 +1,6 @@
 ---
+import ShoppingBag from "@lucide/astro/icons/shopping-bag";
+
 import Logo from "../assets/logo.svg";
 
 const links = [
@@ -53,20 +55,7 @@ const links = [
       data-cart-open
       type="button"
     >
-      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-        <path
-          d="M5.5 8.5h13l-1 11.2a1.5 1.5 0 0 1-1.5 1.3H8a1.5 1.5 0 0 1-1.5-1.3z"
-          stroke="currentColor"
-          stroke-linejoin="round"
-          stroke-width="1.5"
-        ></path>
-        <path
-          d="M9 10.5V7a3 3 0 0 1 6 0v3.5"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-width="1.5"
-        ></path>
-      </svg>
+      <ShoppingBag stroke-width={1.5} />
       <span class="cart-button__count" data-cart-count data-count="0">
         0
       </span>

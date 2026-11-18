@@ -1,4 +1,6 @@
 ---
+import { siFacebook, siInstagram, siWhatsapp } from "simple-icons";
+
 import Logo from "../assets/logo.svg";
 import { getStore } from "../lib/store";
 
@@ -8,17 +10,17 @@ const socials = [
   {
     href: contact.facebook,
     label: "فيسبوك",
-    path: "M9.1 23.7v-8H6.6V12h2.5v-1.6c0-4 1.8-6 5.9-6 .8 0 2.1.2 2.6.3v3.3h-1.4c-1.7 0-2.4.7-2.4 2.3V12h3.7l-.6 3.7h-3.1V24A12 12 0 1 0 9.1 23.7Z",
+    path: siFacebook.path,
   },
   {
     href: contact.instagram,
     label: "إنستغرام",
-    path: "M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm5-3.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z",
+    path: siInstagram.path,
   },
   {
     href: `https://wa.me/${contact.whatsapp.replace("+", "")}`,
     label: "واتساب",
-    path: "M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Zm0 1.6a7.4 7.4 0 1 1-3.8 13.8l-.3-.2-2.7.7.7-2.6-.2-.3A7.4 7.4 0 0 1 12 4.6Zm-3 3.3c-.2 0-.5 0-.7.3-.3.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 1.9 3 4.7 4.1 2.3.9 2.8.7 3.3.7.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3l-1.9-.9c-.3-.1-.5-.2-.7.1l-.9 1.1c-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.8-.8-1.4-1.7-1.5-2-.2-.3 0-.4.1-.6l.4-.5.3-.5v-.5l-.9-2.1c-.2-.5-.4-.5-.6-.5H9Z",
+    path: siWhatsapp.path,
   },
 ];
 
@@ -40,7 +42,7 @@ const year = new Date().getFullYear();
         <li>
           <a href={href} rel="noopener noreferrer" target="_blank">
             <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d={path} fill-rule="evenodd" />
+              <path d={path} />
             </svg>
             <span class="visually-hidden">{label} (يفتح في نافذة جديدة)</span>
           </a>
