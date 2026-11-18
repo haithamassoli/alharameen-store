@@ -27,23 +27,26 @@
 }
 
 :root {
-  color-scheme: light;
+  /* The OS picks the scheme until the header toggle pins one (data-theme). */
+  color-scheme: light dark;
 
-  /* Colour */
-  --white: #ffffff;
-  --chalk: #f5f6f3;
-  --ink: #19251f;
-  --muted: #56625b;
-  --hairline: #e3e3de;
+  /* Colour: each token is light-dark(light, dark). */
+  --white: light-dark(#ffffff, #121815);
+  --chalk: light-dark(#f5f6f3, #1a221e);
+  --ink: light-dark(#19251f, #e6ebe8);
+  --muted: light-dark(#56625b, #a1aca6);
+  --hairline: light-dark(#e3e3de, #2a332e);
   /* Drawn lines: leaders, rules under notes. */
-  --line: #aeb5b0;
+  --line: light-dark(#aeb5b0, #56615a);
   /* Control edges (inputs, outlined buttons): 3:1 on white. */
-  --line-strong: #8c958f;
-  --pine: #285a47;
-  --pine-deep: #1f4738;
-  --danger: #a8322a;
-  --overlay: rgb(25 37 31 / 0.4);
-  --shadow: rgb(25 37 31 / 0.16);
+  --line-strong: light-dark(#8c958f, #6f7a73);
+  --pine: light-dark(#285a47, #7cc4a3);
+  --pine-deep: light-dark(#1f4738, #9ad3b8);
+  /* Text and icons on a pine fill. */
+  --on-pine: light-dark(#ffffff, #0f1a15);
+  --danger: light-dark(#a8322a, #f08a80);
+  --overlay: light-dark(rgb(25 37 31 / 0.4), rgb(0 0 0 / 0.6));
+  --shadow: light-dark(rgb(25 37 31 / 0.16), rgb(0 0 0 / 0.5));
 
   /* Type */
   --font: "Thmanyah Sans", system-ui, sans-serif;
@@ -76,6 +79,14 @@
   /* Motion */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --duration: 200ms;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* ---------- Reset ---------- */
@@ -218,7 +229,7 @@ a {
 
 ::selection {
   background-color: var(--pine);
-  color: var(--white);
+  color: var(--on-pine);
 }
 
 :focus-visible {
@@ -322,7 +333,7 @@ a {
 
 .btn-primary {
   background: var(--pine);
-  color: var(--white);
+  color: var(--on-pine);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -348,6 +359,18 @@ a {
 ::view-transition-new(root) {
   animation-duration: 280ms;
   animation-timing-function: var(--ease);
+}
+
+/* Theme toggle (see Header): the new theme grows out of the button in a
+   circle over the old one, so the page swaps as a single layer. */
+.theming * {
+  view-transition-name: none !important;
+}
+
+.theming::view-transition-old(root),
+.theming::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {

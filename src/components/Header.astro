@@ -28,6 +28,25 @@ const links = [
     </nav>
 
     <button
+      aria-label="الوضع الليلي"
+      aria-pressed="false"
+      class="icon-button theme-button"
+      data-theme-toggle
+      type="button"
+    >
+      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+        <circle
+          cx="12"
+          cy="12"
+          r="8.25"
+          stroke="currentColor"
+          stroke-width="1.5"
+        ></circle>
+        <path d="M12 3.75a8.25 8.25 0 0 0 0 16.5z" fill="currentColor"></path>
+      </svg>
+    </button>
+
+    <button
       aria-label="القائمة"
       class="icon-button menu-button"
       popovertarget="site-nav"
@@ -83,6 +102,91 @@ const links = [
       nav.matches(":popover-open")
     ) {
       nav.hidePopover();
+    }
+  });
+
+  // Theme toggle. The OS decides until the first click pins a theme
+  // (localStorage, applied before paint by the inline script in Layout).
+  const root = document.documentElement;
+
+  const toggle = document.querySelector<HTMLButtonElement>(
+    "[data-theme-toggle]"
+  );
+
+  const themeColor = document.querySelector<HTMLMetaElement>(
+    'meta[name="theme-color"]'
+  );
+
+  const systemDark = matchMedia("(prefers-color-scheme: dark)");
+  const motionOk = matchMedia("(prefers-reduced-motion: no-preference)");
+
+  const isDark = () =>
+    (root.dataset.theme ?? (systemDark.matches ? "dark" : "light")) === "dark";
+
+  const sync = () => {
+    toggle?.setAttribute("aria-pressed", String(isDark()));
+
+    if (themeColor) {
+      themeColor.content = getComputedStyle(document.body).backgroundColor;
+    }
+  };
+
+  const setTheme = (theme: "dark" | "light") => {
+    root.dataset.theme = theme;
+
+    try {
+      localStorage.setItem("theme", theme);
+    } catch {
+      // Private mode: the theme still applies, it just isn't remembered.
+    }
+
+    sync();
+  };
+
+  sync();
+
+  systemDark.addEventListener("change", sync);
+
+  toggle?.addEventListener("click", async () => {
+    const next = isDark() ? "light" : "dark";
+
+    if (!("startViewTransition" in document && motionOk.matches)) {
+      setTheme(next);
+
+      return;
+    }
+
+    // Grow the new theme out of the button until it covers the far corner.
+    const { left, top, width, height } = toggle.getBoundingClientRect();
+    const x = left + width / 2;
+    const y = top + height / 2;
+
+    const radius = Math.hypot(
+      Math.max(x, innerWidth - x),
+      Math.max(y, innerHeight - y)
+    );
+
+    root.classList.add("theming");
+    const transition = document.startViewTransition(() => setTheme(next));
+
+    try {
+      await transition.ready;
+      root.animate(
+        {
+          clipPath: [
+            `circle(0 at ${x}px ${y}px)`,
+            `circle(${radius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 550,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+      await transition.finished;
+    } finally {
+      root.classList.remove("theming");
     }
   });
 </script>
@@ -187,7 +291,7 @@ const links = [
     padding-inline: 0.25rem;
     border-radius: var(--radius-pill);
     background: var(--pine);
-    color: var(--white);
+    color: var(--on-pine);
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1;
@@ -203,6 +307,15 @@ const links = [
     display: none;
   }
 
+  /* Dark: the half-filled disc turns over. */
+  .theme-button svg {
+    transition: rotate 400ms var(--ease);
+  }
+
+  .theme-button[aria-pressed="true"] svg {
+    rotate: 180deg;
+  }
+
   /* Phones: one row of wordmark, menu and cart; the links drop down from
      under the header. */
   @media (max-width: 40rem) {
@@ -210,9 +323,12 @@ const links = [
       gap: var(--space-3);
     }
 
+    .theme-button {
+      margin-inline-start: auto;
+    }
+
     .menu-button {
       display: grid;
-      margin-inline-start: auto;
     }
 
     /* Open: both lines meet in the middle and turn into an X. */

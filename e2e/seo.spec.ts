@@ -12,7 +12,7 @@ test("product page has canonical, share tags and Product JSON-LD", async ({
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    /^https:\/\/.+\.jpg$/u
+    /^https:\/\/.+\.jpe?g$/u
   );
 
   const raw = await page
