@@ -118,7 +118,6 @@ describe("cartTotals", () => {
 
   it("adds the Amman delivery fee", () => {
     expect(cartTotals(lines, catalog, amman)).toEqual({
-      count: 3,
       shipping: 3000,
       subtotal: 59_000,
       total: 62_000,
@@ -132,7 +131,6 @@ describe("cartTotals", () => {
   it("charges no delivery before a zone is chosen or for an empty cart", () => {
     expect(cartTotals(lines, catalog).total).toBe(59_000);
     expect(cartTotals([], catalog, amman)).toEqual({
-      count: 0,
       shipping: 0,
       subtotal: 0,
       total: 0,
@@ -206,6 +204,7 @@ describe("whatsappUrl", () => {
 describe("phone numbers", () => {
   it("normalizes Arabic digits and separators", () => {
     expect(normalizePhone("٠٧٩ ١٢٣-٤٥٦٧")).toBe("0791234567");
+    expect(normalizePhone("۰۷۹۱۲۳۴۵۶۷")).toBe("0791234567");
     expect(normalizePhone("(+962) 79 123 4567")).toBe("+962791234567");
   });
 

@@ -1,4 +1,10 @@
 // Prices are stored as integers in the currency's minor unit (e.g. fils for JOD).
+
+// Respects currencies with 0 or 3 minor digits (JPY, KWD), not just 2.
+const minorDigits = (currency: string): number =>
+  new Intl.NumberFormat("en", { currency, style: "currency" }).resolvedOptions()
+    .maximumFractionDigits ?? 2;
+
 export const formatPrice = (
   minorUnits: number,
   currency = "JOD",
@@ -10,26 +16,17 @@ export const formatPrice = (
     );
   }
 
-  const formatter = new Intl.NumberFormat(locale, {
-    currency,
-    style: "currency",
-  });
-
-  // Respects currencies with 0 or 3 minor digits (JPY, KWD), not just 2.
-  const digits = formatter.resolvedOptions().maximumFractionDigits ?? 2;
-  const minorPerMajor = 10 ** digits;
+  const minorPerMajor = 10 ** minorDigits(currency);
 
   // Whole amounts drop the trailing zeros: "٣١ د.أ." reads better than
   // "٣١٫٠٠٠ د.أ.", which looks like thirty-one thousand.
-  if (minorUnits % minorPerMajor === 0) {
-    return new Intl.NumberFormat(locale, {
-      currency,
-      minimumFractionDigits: 0,
-      style: "currency",
-    }).format(minorUnits / minorPerMajor);
-  }
+  const isWhole = minorUnits % minorPerMajor === 0;
 
-  return formatter.format(minorUnits / minorPerMajor);
+  return new Intl.NumberFormat(locale, {
+    currency,
+    style: "currency",
+    ...(isWhole && { minimumFractionDigits: 0 }),
+  }).format(minorUnits / minorPerMajor);
 };
 
 // Machine-readable amount for structured data ("26.000"), built from the
@@ -44,11 +41,7 @@ export const toDecimalString = (
     );
   }
 
-  const digits =
-    new Intl.NumberFormat("en", {
-      currency,
-      style: "currency",
-    }).resolvedOptions().maximumFractionDigits ?? 2;
+  const digits = minorDigits(currency);
 
   if (digits === 0) {
     return String(minorUnits);

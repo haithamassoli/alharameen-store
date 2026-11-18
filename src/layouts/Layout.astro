@@ -2,11 +2,10 @@
 import "@fontsource-variable/reem-kufi";
 import "@fontsource-variable/noto-naskh-arabic";
 import "../styles/global.css";
-import { getEntry } from "astro:content";
-
 import CartDrawer from "../components/CartDrawer.astro";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
+import { getStore } from "../lib/store";
 
 interface Props {
   /** Page-specific title; the store name is appended. Omit on the home page. */
@@ -21,17 +20,13 @@ interface Props {
   noindex?: boolean;
 }
 
-const store = await getEntry("store", "main");
-
-if (!store) {
-  throw new Error('Missing "main" entry in the store collection');
-}
+const store = await getStore();
 
 const {
   title,
-  description = store.data.tagline,
+  description = store.tagline,
   image = {
-    alt: `${store.data.name}: لا يفوتك أذان، أينما كنت`,
+    alt: `${store.name}: لا يفوتك أذان، أينما كنت`,
     height: 630,
     src: "/og-image.jpg",
     width: 1200,
@@ -41,8 +36,8 @@ const {
 } = Astro.props;
 
 const pageTitle = title
-  ? `${title} | ${store.data.name}`
-  : `${store.data.name} | ساعات الأذان الأصلية في الأردن`;
+  ? `${title} | ${store.name}`
+  : `${store.name} | ساعات الأذان الأصلية في الأردن`;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const imageUrl = new URL(image.src, Astro.site);
@@ -78,7 +73,7 @@ const jsonLdText = jsonLd && JSON.stringify(jsonLd).replaceAll("<", "\\u003c");
     <meta content={description} name="description" />
     {noindex && <meta content="noindex" name="robots" />}
     {!noindex && <link href={canonical} rel="canonical" />}
-    <meta content={store.data.name} property="og:site_name" />
+    <meta content={store.name} property="og:site_name" />
     <meta content="ar_JO" property="og:locale" />
     <meta content="website" property="og:type" />
     <meta content={pageTitle} property="og:title" />

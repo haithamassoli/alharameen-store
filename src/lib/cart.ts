@@ -41,7 +41,6 @@ interface Customer {
 }
 
 export interface CartTotals {
-  count: number;
   shipping: number;
   subtotal: number;
   total: number;
@@ -50,6 +49,9 @@ export interface CartTotals {
 const DEFAULT_CURRENCY = "JOD";
 const NON_DIGITS = /\D/gu;
 const EASTERN_DIGITS = /[٠-٩۰-۹]/gu;
+
+// Arabic-Indic then Persian digits: index % 10 is the digit's value.
+const EASTERN_DIGIT_CHARS = "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹";
 const PHONE_SEPARATORS = /[\s\-().]/gu;
 
 // Jordanian mobiles: 07[789] and seven digits, with or without +962 / 00962.
@@ -174,7 +176,6 @@ export const cartTotals = (
   const shipping = lines.length > 0 && zone ? zone.fee : 0;
 
   return {
-    count: cartCount(lines),
     shipping,
     subtotal,
     total: subtotal + shipping,
@@ -245,11 +246,7 @@ export const buildWhatsAppMessage = ({
 export const normalizePhone = (phone: string): string =>
   phone
     .replaceAll(EASTERN_DIGITS, (digit) =>
-      String(
-        "٠١٢٣٤٥٦٧٨٩".includes(digit)
-          ? "٠١٢٣٤٥٦٧٨٩".indexOf(digit)
-          : "۰۱۲۳۴۵۶۷۸۹".indexOf(digit)
-      )
+      String(EASTERN_DIGIT_CHARS.indexOf(digit) % 10)
     )
     .replaceAll(PHONE_SEPARATORS, "");
 

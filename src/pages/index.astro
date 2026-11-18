@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntry } from "astro:content";
+import { getCollection } from "astro:content";
 
 import HeroWatch from "../components/HeroWatch.astro";
 import ProductCard from "../components/ProductCard.astro";
@@ -7,12 +7,9 @@ import Layout from "../layouts/Layout.astro";
 import { whatsappUrl } from "../lib/cart";
 import { deliveryTime } from "../lib/delivery";
 import { formatPrice } from "../lib/money";
+import { getShippingZones, getStore } from "../lib/store";
 
-const store = await getEntry("store", "main");
-
-if (!store) {
-  throw new Error('Missing "main" entry in the store collection');
-}
+const store = await getStore();
 
 const categories = await getCollection("categories");
 const categoryById = new Map(categories.map((entry) => [entry.id, entry.data]));
@@ -28,14 +25,12 @@ const products = allProducts.toSorted(
     a.data.price - b.data.price
 );
 
-const zoneEntries = await getCollection("shippingZones");
-
-const zones = zoneEntries.toSorted((a, b) => a.data.fee - b.data.fee);
+const zones = await getShippingZones();
 
 const [cheapestZone] = zones;
 
 const digits = new Intl.NumberFormat("ar-JO");
-const { contact, returnDays, warrantyYears } = store.data;
+const { contact, returnDays, warrantyYears } = store;
 
 const WARRANTY_WORDS = new Map([
   [1, "سنة كاملة"],
@@ -100,16 +95,16 @@ const storeJsonLd = {
         addressCountry: "JO",
         addressLocality: contact.address,
       },
-      description: store.data.tagline,
+      description: store.tagline,
       logo: new URL("/pwa-512x512.png", Astro.site).href,
-      name: store.data.name,
+      name: store.name,
       telephone: contact.phone,
       url: siteUrl,
     },
     {
       "@type": "WebSite",
       inLanguage: "ar",
-      name: store.data.name,
+      name: store.name,
       publisher: { "@id": `${siteUrl}#store` },
       url: siteUrl,
     },
@@ -327,22 +322,22 @@ const storeJsonLd = {
 <style>
   .eyebrow {
     color: var(--color-accent);
-    font-family: var(--font-display, serif);
-    font-size: var(--text-sm, 0.875rem);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
     letter-spacing: 0.02em;
   }
 
   /* ---------- Hero ---------- */
 
   .hero {
-    padding-block: var(--space-7, 3rem) var(--space-8, 4.5rem);
+    padding-block: var(--space-7) var(--space-8);
     overflow: clip;
   }
 
   .hero__inner {
     display: grid;
     align-items: center;
-    gap: var(--space-6, 2rem);
+    gap: var(--space-6);
   }
 
   @media (min-width: 56rem) {
@@ -354,7 +349,7 @@ const storeJsonLd = {
   .hero__copy {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4, 1rem);
+    gap: var(--space-4);
   }
 
   .hero__title {
@@ -371,30 +366,30 @@ const storeJsonLd = {
 
   .hero__lead {
     color: var(--color-muted);
-    font-size: var(--text-lg, 1.25rem);
+    font-size: var(--text-lg);
   }
 
   .hero__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3, 0.75rem);
-    margin-block-start: var(--space-2, 0.5rem);
+    gap: var(--space-3);
+    margin-block-start: var(--space-2);
   }
 
   .hero__trust {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2, 0.5rem) var(--space-5, 1.5rem);
+    gap: var(--space-2) var(--space-5);
     padding: 0;
     color: var(--color-muted);
-    font-size: var(--text-sm, 0.875rem);
+    font-size: var(--text-sm);
     list-style: none;
   }
 
   .hero__trust li {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
   }
 
   .hero__trust li::before {
@@ -420,7 +415,7 @@ const storeJsonLd = {
 
   @media (prefers-reduced-motion: no-preference) {
     .hero__rise {
-      animation: rise 900ms var(--ease-out, ease-out) both;
+      animation: rise 900ms var(--ease-out) both;
     }
 
     .hero__rise:nth-child(2) {
@@ -443,7 +438,7 @@ const storeJsonLd = {
   /* ---------- Sections ---------- */
 
   .section {
-    padding-block: var(--space-8, 4.5rem);
+    padding-block: var(--space-8);
   }
 
   .section--tinted {
@@ -455,15 +450,15 @@ const storeJsonLd = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
-    margin-block-end: var(--space-7, 3rem);
+    gap: var(--space-2);
+    margin-block-end: var(--space-7);
     text-align: center;
   }
 
   .section__head::after {
     inline-size: 4.5rem;
     block-size: 2px;
-    margin-block-start: var(--space-2, 0.5rem);
+    margin-block-start: var(--space-2);
     background: var(--gold-leaf);
     content: "";
   }
@@ -475,7 +470,7 @@ const storeJsonLd = {
   .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    gap: var(--space-5, 1.5rem);
+    gap: var(--space-5);
   }
 
   /* ---------- Features ---------- */
@@ -483,7 +478,7 @@ const storeJsonLd = {
   .features {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
-    gap: var(--space-5, 1.5rem);
+    gap: var(--space-5);
     padding: 0;
     list-style: none;
   }
@@ -491,10 +486,10 @@ const storeJsonLd = {
   .feature {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-    padding: var(--space-5, 1.5rem);
+    gap: var(--space-2);
+    padding: var(--space-5);
     border: 1px solid var(--color-line);
-    border-radius: var(--radius, 14px);
+    border-radius: var(--radius);
     background: var(--color-surface);
   }
 
@@ -503,9 +498,9 @@ const storeJsonLd = {
     place-items: center;
     inline-size: 3rem;
     block-size: 3rem;
-    margin-block-end: var(--space-2, 0.5rem);
+    margin-block-end: var(--space-2);
     border: 1px solid var(--color-line-strong);
-    border-radius: var(--radius-sm, 8px);
+    border-radius: var(--radius-sm);
     color: var(--color-gold);
     rotate: 45deg;
   }
@@ -517,12 +512,12 @@ const storeJsonLd = {
   }
 
   .feature__title {
-    font-size: var(--text-lg, 1.25rem);
+    font-size: var(--text-lg);
   }
 
   .feature__text {
     color: var(--color-muted);
-    font-size: var(--text-sm, 0.875rem);
+    font-size: var(--text-sm);
   }
 
   /* ---------- How to order ---------- */
@@ -530,31 +525,29 @@ const storeJsonLd = {
   .steps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-    gap: var(--space-5, 1.5rem);
+    gap: var(--space-5);
     padding: 0;
     list-style: none;
-    counter-reset: none;
   }
 
   .step {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-    padding-block: var(--space-5, 1.5rem);
-    padding-inline: var(--space-5, 1.5rem);
+    gap: var(--space-2);
+    padding: var(--space-5);
     border-block-start: 2px solid var(--color-line-strong);
   }
 
   .step__number {
     color: var(--color-gold);
-    font-family: var(--font-display, serif);
-    font-size: var(--text-3xl, 3rem);
+    font-family: var(--font-display);
+    font-size: var(--text-3xl);
     line-height: 1;
   }
 
   .step__title {
-    font-size: var(--text-lg, 1.25rem);
+    font-size: var(--text-lg);
   }
 
   .step__text {
@@ -563,22 +556,22 @@ const storeJsonLd = {
 
   .delivery {
     display: grid;
-    gap: var(--space-4, 1rem);
-    margin-block-start: var(--space-6, 2rem);
-    padding: var(--space-5, 1.5rem);
+    gap: var(--space-4);
+    margin-block-start: var(--space-6);
+    padding: var(--space-5);
     border: 1px solid var(--color-line);
-    border-radius: var(--radius, 14px);
+    border-radius: var(--radius);
     background: var(--color-surface);
   }
 
   .delivery__title {
-    font-size: var(--text-lg, 1.25rem);
+    font-size: var(--text-lg);
   }
 
   .delivery__zones {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-    gap: var(--space-3, 0.75rem);
+    gap: var(--space-3);
     padding: 0;
     list-style: none;
   }
@@ -586,26 +579,26 @@ const storeJsonLd = {
   .delivery__zone {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 0 var(--space-3, 0.75rem);
-    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-    border-radius: var(--radius-sm, 8px);
+    gap: 0 var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
     background: var(--color-surface-2);
   }
 
   .delivery__name {
-    font-family: var(--font-display, serif);
+    font-family: var(--font-display);
   }
 
   .delivery__fee {
     color: var(--color-gold-strong);
-    font-family: var(--font-display, serif);
+    font-family: var(--font-display);
     font-weight: 600;
   }
 
   .delivery__days,
   .delivery__note {
     color: var(--color-muted);
-    font-size: var(--text-sm, 0.875rem);
+    font-size: var(--text-sm);
   }
 
   /* ---------- Order CTA ---------- */
@@ -615,12 +608,12 @@ const storeJsonLd = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-4, 1rem);
-    padding-block: var(--space-7, 3rem);
-    padding-inline: var(--space-5, 1.5rem);
+    gap: var(--space-4);
+    padding-block: var(--space-7);
+    padding-inline: var(--space-5);
     overflow: hidden;
     border: 1px solid var(--color-line-strong);
-    border-radius: calc(var(--radius, 14px) * 2);
+    border-radius: calc(var(--radius) * 2);
     background:
       radial-gradient(
         60% 120% at 50% 0%,
