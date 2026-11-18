@@ -34,3 +34,14 @@ test("home page has no accessibility violations", async ({ page }) => {
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
+
+test("phone menu opens and closes on a link", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "The menu button only shows on phones.");
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "التنقل الرئيسي" });
+  await expect(nav).toBeHidden();
+  await page.getByRole("button", { name: "القائمة" }).click();
+  await expect(nav).toBeVisible();
+  await nav.getByRole("link", { name: "المزايا" }).click();
+  await expect(nav).toBeHidden();
+});

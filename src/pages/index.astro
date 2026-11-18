@@ -95,9 +95,9 @@ const steps = [
 const HERO_SIZE = 992;
 const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
 
-// The white sport watch: its screen shows a Hijri date and its bezel the
+// The black sport watch: its screen shows the date and its bezel the
 // compass letters, so every annotation has a real detail to point at.
-const ANATOMY_WATCH = "ha-6506ww";
+const ANATOMY_WATCH = "ha-6506bw";
 
 const hero =
   products.find((product) => product.id === ANATOMY_WATCH) ??
@@ -116,16 +116,16 @@ if (!heroImage) {
 
 // ---- The drawing ----
 // Coordinates are in the photo's own 1000 × 1000 box, measured on
-// ha-6506ww-1.jpg. The drawing is 1600 wide, so the photo sits between
+// ha-6506bw-1.jpg. The drawing is 1600 wide, so the photo sits between
 // x = 0 and x = 1000 with 300 units of margin on either side.
-const DIAL = { x: 494, y: 441 };
+const DIAL = { x: 492, y: 460 };
 const NOTE_EDGE = { left: 230, right: 770 } as const;
 const ELBOW = 50;
 const QIBLA_BEARING = 157;
-const COMPASS_RADIUS = 252;
-const NEEDLE_INNER = 214;
-const NEEDLE_OUTER = 282;
-const LABEL_RADIUS = 312;
+const COMPASS_RADIUS = 265;
+const NEEDLE_INNER = 225;
+const NEEDLE_OUTER = 296;
+const LABEL_RADIUS = 328;
 const CARDINAL_TICK = 9;
 const DEGREES_PER_RADIAN = 180 / Math.PI;
 const PERCENT_PER_UNIT = 0.1;
@@ -142,13 +142,13 @@ interface Callout {
 
 const CALLOUTS = new Map<string, Callout>([
   // The prayer-time row at the foot of the screen.
-  ["azan", { anchor: [446, 528], side: "left", y: 470 }],
+  ["azan", { anchor: [442, 551], side: "left", y: 470 }],
   // The SE letter on the compass bezel.
-  ["qibla", { anchor: [606, 566], side: "right", y: 640 }],
-  // The Hijri date at the top of the screen.
-  ["calendar", { anchor: [588, 372], side: "right", y: 372 }],
+  ["qibla", { anchor: [610, 591], side: "right", y: 640 }],
+  // The date at the top of the screen.
+  ["calendar", { anchor: [591, 387], side: "right", y: 387 }],
   // The case shoulder above the bezel.
-  ["shield", { anchor: [352, 242], side: "left", y: 242 }],
+  ["shield", { anchor: [343, 251], side: "left", y: 251 }],
   ["truck", { side: "left", y: 720 }],
 ]);
 
@@ -760,8 +760,11 @@ const storeJsonLd = {
 
   .compass__needle {
     transform-box: view-box;
-    transform-origin: 494px 441px;
+    /* DIAL, in the drawing's units. */
+    transform-origin: 492px 460px;
     transform: rotate(157deg);
+    /* A white edge keeps the needle readable over the black case. */
+    filter: drop-shadow(0 0 1.5px var(--white));
   }
 
   .compass__label {
@@ -769,6 +772,11 @@ const storeJsonLd = {
     font-family: var(--font);
     font-size: 26px;
     font-weight: 500;
+    /* White halo: the label can land on the black strap. */
+    paint-order: stroke;
+    stroke: var(--white);
+    stroke-width: 6px;
+    stroke-linejoin: round;
   }
 
   .notes__list {

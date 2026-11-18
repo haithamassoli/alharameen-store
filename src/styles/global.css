@@ -78,13 +78,6 @@
   --duration: 200ms;
 }
 
-/* Phones: the navigation takes a second header row. */
-@media (max-width: 40rem) {
-  :root {
-    --header-height: 6.25rem;
-  }
-}
-
 /* ---------- Reset ---------- */
 
 *,
@@ -102,6 +95,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* No grey/blue flash over links on tap; :focus-visible still marks focus. */
+  -webkit-tap-highlight-color: transparent;
   hanging-punctuation: first last;
   scrollbar-color: var(--pine) transparent;
   cursor:
