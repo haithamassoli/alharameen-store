@@ -1,0 +1,2016 @@
+---
+// Style exploration 5, «النجمة والقبلة»: one eight-fold khatam rosette is the
+// hero and doubles as a Qibla dial. Scrolling inks the rosette, lays it flat
+// like a compass and swings a needle to the bearing from Amman to Makkah.
+import "@fontsource-variable/noto-kufi-arabic";
+import "@fontsource-variable/readex-pro";
+import { Picture } from "astro:assets";
+
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const [firstProduct] = products;
+
+const featured =
+  products.find((product) => product.data.featured) ?? firstProduct;
+
+if (!featured) {
+  throw new Error("The home page needs at least one product.");
+}
+
+const [featuredCover] = featured.data.images;
+
+if (!featuredCover) {
+  throw new Error(`${featured.id} has no photo.`);
+}
+
+// ---- Rosette geometry, in a 1000 × 1000 box centred on (500, 500). ----
+// Angles are compass bearings: 0° is north (up), clockwise positive.
+const CENTER = 500;
+const FOLD = 8;
+const STEP = 360 / FOLD;
+const HALF_STEP = STEP / 2;
+const DEGREES_PER_RADIAN = 180 / Math.PI;
+const PRECISION = 100;
+
+const round = (value: number): number =>
+  Math.round(value * PRECISION) / PRECISION;
+
+const toRadians = (degrees: number): number => degrees / DEGREES_PER_RADIAN;
+
+const point = (radius: number, bearing: number): [number, number] => [
+  round(CENTER + radius * Math.sin(toRadians(bearing))),
+  round(CENTER - radius * Math.cos(toRadians(bearing))),
+];
+
+const xy = (radius: number, bearing: number): string =>
+  point(radius, bearing).join(" ");
+
+const indices = (count: number): number[] =>
+  Array.from({ length: count }, (_, index) => index);
+
+const closed = (points: string[]): string => `M${points.join("L")}Z`;
+
+// Khatam: two overlapping squares. Tips on the 8 compass points, the concave
+// corners between them where the square edges cross.
+const STAR_RADIUS = 250;
+
+const STAR_INNER =
+  (STAR_RADIUS * Math.cos(toRadians(STEP))) / Math.cos(toRadians(HALF_STEP));
+
+const khatam = closed(
+  indices(FOLD * 2).map((index) =>
+    xy(index % 2 === 0 ? STAR_RADIUS : STAR_INNER, index * HALF_STEP)
+  )
+);
+
+// White octagon mat behind the photo window, flat edge to the north.
+const MAT_APOTHEM = 176;
+const WINDOW_APOTHEM = 164;
+
+const octagon = (apothem: number): string =>
+  closed(
+    indices(FOLD).map((index) =>
+      xy(apothem / Math.cos(toRadians(HALF_STEP)), HALF_STEP + index * STEP)
+    )
+  );
+
+const mat = octagon(MAT_APOTHEM);
+const windowEdge = octagon(WINDOW_APOTHEM);
+const WINDOW_SIZE = `${(WINDOW_APOTHEM * 2) / 10}%`;
+
+// Outer vertices of the rosette, where the feature labels sit.
+const OUTER_RADIUS = 410;
+
+// Petals wrap each notch of the star and end on a 16-point zigzag.
+const PETAL_SHOULDER = 318;
+const PETAL_SPREAD = 11;
+const PETAL_APEX = 360;
+
+// {8/3} star polygon on the outer vertices: the long interlace lines.
+const interlace = closed(
+  indices(FOLD).map((index) => xy(OUTER_RADIUS, ((index * 3) % FOLD) * STEP))
+);
+
+const petals = indices(FOLD)
+  .map((index) => {
+    const axis = HALF_STEP + index * STEP;
+
+    return `M${[
+      xy(STAR_RADIUS, axis - HALF_STEP),
+      xy(PETAL_SHOULDER, axis - PETAL_SPREAD),
+      xy(PETAL_APEX, axis),
+      xy(PETAL_SHOULDER, axis + PETAL_SPREAD),
+      xy(STAR_RADIUS, axis + HALF_STEP),
+    ].join("L")}`;
+  })
+  .join("");
+
+const rays = indices(FOLD)
+  .map(
+    (index) =>
+      `M${xy(STAR_RADIUS, index * STEP)}L${xy(OUTER_RADIUS, index * STEP)}`
+  )
+  .join("");
+
+const zigzag = closed(
+  indices(FOLD * 2).map((index) =>
+    xy(index % 2 === 0 ? OUTER_RADIUS : PETAL_APEX, index * HALF_STEP)
+  )
+);
+
+// Compass ring: ticks every 5°, longer every 15° and 45°, numerals every 45°.
+const RING_RADIUS = 428;
+const TICK_START = 436;
+const TICK_MINOR = 450;
+const TICK_MEDIUM = 458;
+const TICK_MAJOR = 468;
+const NUMERAL_RADIUS = 484;
+const TICK_EVERY = 5;
+const MEDIUM_EVERY = 15;
+const FULL_TURN = 360;
+
+const tickPath = (filter: (bearing: number) => boolean, end: number): string =>
+  indices(FULL_TURN / TICK_EVERY)
+    .map((index) => index * TICK_EVERY)
+    .filter(filter)
+    .map((bearing) => `M${xy(TICK_START, bearing)}L${xy(end, bearing)}`)
+    .join("");
+
+const minorTicks = tickPath(
+  (bearing) => bearing % MEDIUM_EVERY !== 0,
+  TICK_MINOR
+);
+
+const mediumTicks = tickPath(
+  (bearing) => bearing % MEDIUM_EVERY === 0 && bearing % STEP !== 0,
+  TICK_MEDIUM
+);
+
+const majorTicks = tickPath((bearing) => bearing % STEP === 0, TICK_MAJOR);
+
+const numerals = indices(FOLD).map((index) => {
+  const bearing = index * STEP;
+  const [x, y] = point(NUMERAL_RADIUS, bearing);
+
+  return { label: index === 0 ? "ش" : digits.format(bearing), x, y };
+});
+
+// Faint compass-and-straightedge construction left visible under the ink.
+const CONSTRUCTION_RADII = [STAR_INNER, STAR_RADIUS, PETAL_APEX, OUTER_RADIUS];
+
+const construction = indices(FOLD * 2)
+  .map(
+    (index) =>
+      `M${xy(STAR_INNER, index * HALF_STEP)}L${xy(RING_RADIUS, index * HALF_STEP)}`
+  )
+  .join("");
+
+const VERTEX_CIRCLE = 62;
+
+const vertexCircles = indices(FOLD).map((index) =>
+  point(OUTER_RADIUS, index * STEP)
+);
+
+// Qibla from Amman, true north. An example for the copy, not a calculation.
+const QIBLA_BEARING = 157;
+const qiblaLabel = `${digits.format(QIBLA_BEARING)}°`;
+const QIBLA_TICK_FROM = 372;
+const QIBLA_TICK_TO = 476;
+const KAABA_RADIUS = 444;
+const [kaabaX, kaabaY] = point(KAABA_RADIUS, QIBLA_BEARING);
+
+// Needle drawn pointing north; CSS turns it to the bearing.
+const NEEDLE_TIP = 420;
+const NEEDLE_WAIST = 300;
+const NEEDLE_WIDTH = 13;
+const NEEDLE_BASE = 196;
+const needle = `M${CENTER} ${CENTER - NEEDLE_TIP}L${CENTER + NEEDLE_WIDTH} ${CENTER - NEEDLE_WAIST}L${CENTER} ${CENTER - NEEDLE_BASE}L${CENTER - NEEDLE_WIDTH} ${CENTER - NEEDLE_WAIST}Z`;
+const needleSpine = `M${CENTER} ${CENTER - NEEDLE_TIP}V${CENTER - NEEDLE_BASE}`;
+
+// Feature keywords on the five outer vertices of the half facing the copy;
+// the other half runs off the page.
+const LABEL_BEARINGS = [0, 45, 90, 135, 180] as const;
+
+// Just inside the outer vertices, clear of the degree numerals.
+const LABEL_RADIUS = 380;
+const PERCENT = 100;
+
+const labels = features.map((feature, index) => {
+  const bearing = LABEL_BEARINGS[index] ?? 0;
+  const [x, y] = point(LABEL_RADIUS, bearing);
+
+  return {
+    // Logical offsets: inline-start is the right edge in RTL.
+    start: `${round(PERCENT - x / 10)}%`,
+    text: feature.title,
+    top: `${round(y / 10)}%`,
+  };
+});
+
+// Small eight-point star used as a glyph, in a 24 × 24 box.
+const GLYPH_CENTER = 12;
+const GLYPH_OUTER = 11;
+
+const GLYPH_INNER =
+  (GLYPH_OUTER * Math.cos(toRadians(STEP))) / Math.cos(toRadians(HALF_STEP));
+
+const glyph = closed(
+  indices(FOLD * 2).map((index) => {
+    const radius = index % 2 === 0 ? GLYPH_OUTER : GLYPH_INNER;
+    const angle = toRadians(index * HALF_STEP);
+
+    return `${round(GLYPH_CENTER + radius * Math.sin(angle))} ${round(GLYPH_CENTER - radius * Math.cos(angle))}`;
+  })
+);
+
+// Regular octagon inscribed in a 100 × 100 square, for the product windows.
+const CUT = round(PERCENT / (2 + Math.SQRT2));
+const FAR = round(PERCENT - CUT);
+const cardOctagon = `${CUT},0 ${FAR},0 100,${CUT} 100,${FAR} ${FAR},100 ${CUT},100 0,${FAR} 0,${CUT}`;
+
+const PHONE_GROUPS =
+  /^\+(?<country>\d{3})(?<operator>\d{2})(?<first>\d{3})(?<last>\d{4})$/u;
+
+const { contact } = store;
+
+const phoneDisplay = contact.phone.replace(
+  PHONE_GROUPS,
+  "+$<country> $<operator> $<first> $<last>"
+);
+
+const year = new Date().getFullYear();
+const NEW_WINDOW = "(يفتح في نافذة جديدة)";
+const CARD_COLUMNS = 4;
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>{store.name}: النجمة والقبلة</title>
+    <meta content={store.tagline} name="description" />
+    <meta content="noindex" name="robots" />
+    <meta content="light" name="color-scheme" />
+    <meta content="#ffffff" name="theme-color" />
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      انتقل إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <a class="brand" href="/5">
+        <svg aria-hidden="true" class="brand__mark" viewBox="0 0 24 24">
+          <path d={glyph}></path>
+        </svg>
+        {store.name}
+      </a>
+      <nav aria-label="أقسام الصفحة" class="masthead__nav">
+        <a href="#watches">الساعات</a>
+        <a href="#features">المزايا</a>
+        <a href="#order">الطلب والتوصيل</a>
+      </nav>
+      <a
+        class="masthead__chat"
+        href={chatUrl}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        واتساب
+        <span class="visually-hidden">{NEW_WINDOW}</span>
+      </a>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="stage">
+        <div class="stage__copy">
+          <p class="stage__brand">ساعات الحرمين الأصلية في الأردن</p>
+          <h1 class="stage__title" id="hero-title">
+            مواقيت الأذان واتجاه القبلة في ساعة واحدة
+          </h1>
+          <p class="stage__lead">
+            ساعات أذان أصلية من الحرمين تنبّهك لكل صلاة وتدلّك على القبلة، تطلبها
+            عبر واتساب وتدفع عند الاستلام.
+          </p>
+          <div class="stage__price">
+            <a class="stage__price-name" href={`/watches/${featured.id}/`}>
+              {featured.data.name}
+            </a>
+            <p class="stage__price-value">
+              {formatPrice(featured.data.price, featured.data.currency)}
+              {featured.data.compareAtPrice !== undefined && (
+                <s>
+                  <span class="visually-hidden">بدلًا من</span>
+                  {formatPrice(
+                    featured.data.compareAtPrice,
+                    featured.data.currency
+                  )}
+                </s>
+              )}
+            </p>
+          </div>
+          <div class="stage__actions">
+            <a class="button button--solid" href="#watches">
+              تصفّح الساعات
+            </a>
+            <a
+              class="button button--line"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              اطلب عبر واتساب
+              <span class="visually-hidden">{NEW_WINDOW}</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="stage__track">
+          <div class="stage__frame">
+            <div class="dial-wrap">
+              <div class="dial-tilt" data-dial-tilt>
+                <div class="dial" style={`--bearing: ${QIBLA_BEARING}deg`}>
+                  <svg
+                    aria-hidden="true"
+                    class="layer layer--base"
+                    style="--z: 0"
+                    viewBox="0 0 1000 1000"
+                  >
+                    <g class="construction">
+                      {CONSTRUCTION_RADII.map((radius) => (
+                        <circle cx={CENTER} cy={CENTER} r={round(radius)} />
+                      ))}
+                      {vertexCircles.map(([cx, cy]) => (
+                        <circle cx={cx} cy={cy} r={VERTEX_CIRCLE} />
+                      ))}
+                      <path d={construction}></path>
+                    </g>
+                    <g class="ghost">
+                      <circle cx={CENTER} cy={CENTER} r={OUTER_RADIUS} />
+                      <path d={interlace}></path>
+                      <path d={rays}></path>
+                      <path d={petals}></path>
+                      <path d={zigzag}></path>
+                    </g>
+                    <circle
+                      class="ring"
+                      cx={CENTER}
+                      cy={CENTER}
+                      r={RING_RADIUS}
+                    />
+                    <path class="tick tick--minor" d={minorTicks}></path>
+                    <path class="tick tick--medium" d={mediumTicks}></path>
+                    <path class="tick tick--major" d={majorTicks}></path>
+                    {numerals.map(({ label, x, y }, index) => (
+                      <text
+                        class:list={[
+                          "numeral",
+                          { "numeral--north": index === 0 },
+                        ]}
+                        x={x}
+                        y={y}
+                      >
+                        {label}
+                      </text>
+                    ))}
+                    <g class="qibla-mark">
+                      <path
+                        d={`M${xy(QIBLA_TICK_FROM, QIBLA_BEARING)}L${xy(QIBLA_TICK_TO, QIBLA_BEARING)}`}
+                      ></path>
+                      <rect
+                        height="18"
+                        transform={`translate(${kaabaX} ${kaabaY}) rotate(${QIBLA_BEARING})`}
+                        width="18"
+                        x="-9"
+                        y="-9"
+                      ></rect>
+                    </g>
+                  </svg>
+
+                  <svg
+                    aria-hidden="true"
+                    class="layer layer--ink"
+                    style="--z: 40"
+                    viewBox="0 0 1000 1000"
+                  >
+                    <circle
+                      class="ink ink--ring"
+                      cx={CENTER}
+                      cy={CENTER}
+                      pathLength="1"
+                      r={OUTER_RADIUS}
+                    />
+                    <path
+                      class="ink ink--interlace"
+                      d={interlace}
+                      pathLength="1"
+                    ></path>
+                    <path class="ink ink--rays" d={rays} pathLength="1"></path>
+                    <path
+                      class="ink ink--petals"
+                      d={petals}
+                      pathLength="1"
+                    ></path>
+                    <path
+                      class="ink ink--zigzag"
+                      d={zigzag}
+                      pathLength="1"
+                    ></path>
+                  </svg>
+
+                  <svg
+                    aria-hidden="true"
+                    class="layer layer--star"
+                    style="--z: 80"
+                    viewBox="0 0 1000 1000"
+                  >
+                    <path class="star" d={khatam}></path>
+                    <path class="mat" d={mat}></path>
+                    <path class="mat-edge" d={windowEdge}></path>
+                  </svg>
+
+                  <div class="layer layer--window" style="--z: 80">
+                    <div class="window" style={`--size: ${WINDOW_SIZE}`}>
+                      <Picture
+                        alt={featuredCover.alt}
+                        class="window__image"
+                        fetchpriority="high"
+                        formats={["avif", "webp"]}
+                        height={640}
+                        loading="eager"
+                        sizes="(min-width: 60rem) 17rem, 36vw"
+                        src={featuredCover.src}
+                        width={640}
+                        widths={[320, 480, 640]}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    aria-hidden="true"
+                    class="layer layer--labels"
+                    style="--z: 100"
+                  >
+                    {labels.map((label) => (
+                      <span
+                        class="vertex-label"
+                        style={`inset-block-start: ${label.top}; inset-inline-start: ${label.start}`}
+                      >
+                        {label.text}
+                      </span>
+                    ))}
+                  </div>
+
+                  <svg
+                    aria-hidden="true"
+                    class="layer layer--needle"
+                    style="--z: 86"
+                    viewBox="0 0 1000 1000"
+                  >
+                    <path class="needle" d={needle}></path>
+                    <path class="needle-spine" d={needleSpine}></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="qibla-note">
+              <p class="qibla-note__title">اتجاه القبلة</p>
+              <p class="qibla-note__bearing">
+                مثال من عمّان:{" "}
+                <span class="qibla-note__degrees">{qiblaLabel}</span>
+              </p>
+              <p class="qibla-note__text">
+                تحدد الساعة اتجاه القبلة من موقعك بضغطة زر، في عمّان أو في أي
+                مدينة تسافر إليها.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="watches-title" class="section" id="watches">
+        <div class="section__head">
+          <h2 id="watches-title">الساعات</h2>
+          <p>
+            كل القطع أصلية من الحرمين. افتح أي ساعة لترى مواصفاتها وطريقة
+            استخدامها.
+          </p>
+        </div>
+        <ul class="catalog" role="list">
+          {products.map((product, index) => {
+            const [cover] = product.data.images;
+            return (
+              <li class="card" style={`--i: ${index % CARD_COLUMNS}`}>
+                <div class="card__window">
+                  <div class="card__clip">
+                    <Picture
+                      alt={cover?.alt ?? product.data.name}
+                      class="card__image"
+                      formats={["avif", "webp"]}
+                      height={480}
+                      loading="lazy"
+                      sizes="(min-width: 60rem) 16rem, (min-width: 40rem) 30vw, 7.5rem"
+                      src={cover?.src ?? featuredCover.src}
+                      width={480}
+                      widths={[240, 360, 480]}
+                    />
+                  </div>
+                  <svg
+                    aria-hidden="true"
+                    class="card__outline"
+                    preserveAspectRatio="none"
+                    viewBox="0 0 100 100"
+                  >
+                    <polygon pathLength="1" points={cardOctagon}></polygon>
+                  </svg>
+                </div>
+                <div class="card__body">
+                  <p class="card__category">{categoryName(product)}</p>
+                  <h3 class="card__name">
+                    <a href={`/watches/${product.id}/`}>{product.data.name}</a>
+                  </h3>
+                  <p class="card__price">
+                    {formatPrice(product.data.price, product.data.currency)}
+                    {product.data.compareAtPrice !== undefined && (
+                      <s>
+                        <span class="visually-hidden">بدلًا من</span>
+                        {formatPrice(
+                          product.data.compareAtPrice,
+                          product.data.currency
+                        )}
+                      </s>
+                    )}
+                  </p>
+                  <span aria-hidden="true" class="card__more">
+                    التفاصيل
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section
+        aria-labelledby="features-title"
+        class="section features"
+        id="features"
+      >
+        <div class="section__head features__head">
+          <h2 id="features-title">ما تفعله الساعة</h2>
+          <p>خمس مزايا في كل ساعة من الحرمين، من الأذان إلى التوصيل.</p>
+        </div>
+        <ul class="features__list" role="list">
+          {features.map((feature) => (
+            <li class="feature">
+              <svg
+                aria-hidden="true"
+                class="feature__glyph"
+                viewBox="0 0 24 24"
+              >
+                <path d={glyph}></path>
+              </svg>
+              <h3 class="feature__title">{feature.title}</h3>
+              <p class="feature__text">{feature.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="order-title" class="order" id="order">
+        <div class="section">
+          <div class="section__head">
+            <h2 id="order-title">اطلب في ثلاث خطوات</h2>
+          </div>
+          <div class="steps">
+            <svg
+              aria-hidden="true"
+              class="steps__line"
+              preserveAspectRatio="none"
+              viewBox="0 0 1000 10"
+            >
+              <path d="M1000 5H0" pathLength="1"></path>
+            </svg>
+            <ol class="steps__list">
+              {steps.map((step, index) => (
+                <li class="step">
+                  <span aria-hidden="true" class="step__node">
+                    {digits.format(index + 1)}
+                  </span>
+                  <h3 class="step__title">{step.title}</h3>
+                  <p class="step__text">{step.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+
+        <div class="strip">
+          <div class="strip__inner">
+            <div class="strip__cash">
+              <p class="strip__cash-title">الدفع نقدًا عند الاستلام</p>
+              <p>لا تحويل ولا بطاقة. تدفع للمندوب حين تصلك الساعة.</p>
+            </div>
+            <table class="zones">
+              <caption>التوصيل داخل الأردن</caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td>{formatPrice(zone.data.fee, zone.data.currency)}</td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="section contact">
+        <h2 id="contact-title">اسألنا قبل أن تطلب</h2>
+        <p class="contact__text">
+          راسلنا على واتساب لتسأل عن أي ساعة أو لترسل طلبك مباشرة، أو اتصل بنا.
+        </p>
+        <div class="contact__actions">
+          <a
+            class="button button--solid"
+            href={chatUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            راسلنا على واتساب
+            <span class="visually-hidden">{NEW_WINDOW}</span>
+          </a>
+          <p class="contact__phone">
+            أو اتصل على
+            <a dir="ltr" href={`tel:${contact.phone}`}>
+              {phoneDisplay}
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        {store.name}، {contact.address}
+      </p>
+      <p>© {digits.format(year).replace("٬", "")}</p>
+    </footer>
+
+    <script>
+      // Gentle pointer tilt of the dial on desktop. The scroll animation owns
+      // the dial itself; this only nudges its parent a few degrees.
+      const MAX_TILT_DEG = 5;
+      const HALF = 0.5;
+      const target = document.querySelector<HTMLElement>("[data-dial-tilt]");
+
+      const finePointer = window.matchMedia(
+        "(hover: hover) and (pointer: fine)"
+      );
+
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+
+      let pending = 0;
+
+      const reset = (): void => {
+        target?.style.removeProperty("--tilt-x");
+        target?.style.removeProperty("--tilt-y");
+      };
+
+      const onMove = (event: PointerEvent): void => {
+        if (!target || !finePointer.matches || reducedMotion.matches) {
+          return;
+        }
+
+        cancelAnimationFrame(pending);
+        pending = requestAnimationFrame(() => {
+          const x = event.clientX / window.innerWidth - HALF;
+          const y = event.clientY / window.innerHeight - HALF;
+          target.style.setProperty(
+            "--tilt-x",
+            `${(-y * MAX_TILT_DEG).toFixed(2)}deg`
+          );
+          target.style.setProperty(
+            "--tilt-y",
+            `${(x * MAX_TILT_DEG).toFixed(2)}deg`
+          );
+        });
+      };
+
+      window.addEventListener("pointermove", onMove, { passive: true });
+
+      document.documentElement.addEventListener("pointerleave", reset);
+
+      reducedMotion.addEventListener("change", reset);
+    </script>
+
+    <style is:global>
+      :root {
+        color-scheme: light;
+        --white: #ffffff;
+        --porcelain: #fcfdf9;
+        --ink: #141414;
+        --ink-soft: #3d3f3e;
+        --blue: #1e3a4c;
+        --mint: #e8f1ec;
+        --brass: #795c1c;
+        --sand: #efe8dc;
+        --line: #d9ddd8;
+        --kufi: "Noto Kufi Arabic Variable", "Noto Kufi Arabic", sans-serif;
+        --body: "Readex Pro Variable", "Readex Pro", sans-serif;
+        --header: 4.5rem;
+        --gutter: clamp(1rem, 4vw, 3.5rem);
+        --measure: 72rem;
+        --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--white);
+        scroll-behavior: smooth;
+        scroll-padding-block-start: 1rem;
+      }
+
+      body {
+        margin: 0;
+        background: var(--white);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 1.0625rem;
+        font-weight: 360;
+        line-height: 1.8;
+        overflow-x: clip;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: var(--kufi);
+        line-height: 1.5;
+        text-wrap: balance;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      img {
+        display: block;
+        max-inline-size: 100%;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .skip {
+        position: absolute;
+        inset-block-start: 0.5rem;
+        inset-inline-start: 0.5rem;
+        z-index: 10;
+        padding: 0.5rem 1rem;
+        background: var(--blue);
+        color: var(--white);
+        translate: 0 -200%;
+      }
+
+      .skip:focus-visible {
+        translate: 0 0;
+      }
+
+      /* ---- Masthead ---- */
+      .masthead {
+        position: relative;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        block-size: var(--header);
+        padding-inline: var(--gutter);
+        border-block-end: 1px solid var(--line);
+        background: var(--white);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-family: var(--kufi);
+        font-size: 1.125rem;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      .brand__mark {
+        inline-size: 1.5rem;
+        block-size: 1.5rem;
+        fill: var(--blue);
+      }
+
+      .masthead__nav {
+        display: flex;
+        gap: 1.75rem;
+        margin-inline-start: auto;
+        font-size: 0.9375rem;
+      }
+
+      .masthead__nav a,
+      .masthead__chat {
+        text-decoration: none;
+        text-underline-offset: 0.4em;
+      }
+
+      .masthead__nav a:hover,
+      .masthead__chat:hover {
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+      }
+
+      .masthead__chat {
+        padding: 0.35rem 1.1rem;
+        border: 1px solid var(--ink);
+        font-size: 0.9375rem;
+        font-weight: 500;
+      }
+
+      /* ---- Buttons ---- */
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: 3rem;
+        padding-inline: 1.6rem;
+        border: 1px solid var(--blue);
+        font-family: var(--kufi);
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition:
+          background-color 200ms var(--ease),
+          color 200ms var(--ease);
+      }
+
+      .button--solid {
+        background: var(--blue);
+        color: var(--white);
+      }
+
+      .button--solid:hover {
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+
+      .button--line {
+        border-color: var(--ink);
+        background: var(--white);
+        color: var(--ink);
+      }
+
+      .button--line:hover {
+        background: var(--mint);
+      }
+
+      /* ---- Stage (hero + Qibla dial). Base = flat, drawn, no sticky. ---- */
+      .stage {
+        --dial: min(90svh, 58vw);
+        --crop: 0.2;
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+        align-items: center;
+        min-block-size: calc(100svh - var(--header));
+        overflow: clip;
+        background: radial-gradient(
+          circle at 30% 50%,
+          var(--porcelain) 0 40%,
+          var(--white) 70%
+        );
+      }
+
+      .stage__copy {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-inline-size: 34rem;
+        padding-block: 3rem;
+        padding-inline-start: var(--gutter);
+      }
+
+      .stage__brand {
+        color: var(--blue);
+        font-family: var(--kufi);
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .stage__title {
+        font-size: clamp(2.1rem, 1.2rem + 2.6vw, 3.6rem);
+        font-weight: 750;
+        line-height: 1.45;
+      }
+
+      .stage__lead {
+        max-inline-size: 30rem;
+        color: var(--ink-soft);
+        font-size: 1.125rem;
+      }
+
+      .stage__price {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.25rem 1.5rem;
+        max-inline-size: 30rem;
+        padding-block: 0.9rem;
+        border-block: 1px solid var(--line);
+      }
+
+      .stage__price-name {
+        font-family: var(--kufi);
+        font-size: 1rem;
+        font-weight: 550;
+        text-decoration: none;
+      }
+
+      .stage__price-name:hover {
+        text-decoration: underline;
+      }
+
+      /* Kufi digits: Readex's Arabic-Indic numerals are too stylised. */
+      .stage__price-value,
+      .card__price,
+      .zones td,
+      .qibla-note__degrees {
+        font-family: var(--kufi);
+      }
+
+      .stage__price-value {
+        color: var(--blue);
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+
+      .stage__price-value s,
+      .card__price s {
+        margin-inline-start: 0.5rem;
+        color: var(--ink-soft);
+        font-size: 0.75em;
+      }
+
+      .stage__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .stage__frame {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding-block: 2rem;
+      }
+
+      .dial-wrap {
+        position: relative;
+        inline-size: var(--dial);
+        aspect-ratio: 1;
+        margin-inline-end: calc(var(--dial) * var(--crop) * -1);
+        perspective: calc(var(--dial) * 2.2);
+      }
+
+      .dial-tilt,
+      .dial,
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+
+      .dial-tilt {
+        transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+        transform-style: preserve-3d;
+        transition: transform 900ms var(--ease);
+      }
+
+      .dial {
+        transform-style: preserve-3d;
+      }
+
+      /* Each layer floats --z px above the dial and is shrunk by the same
+         perspective ratio, so the flat dial lines up exactly; tilted, the
+         layers separate. */
+      .layer {
+        inline-size: 100%;
+        block-size: 100%;
+        overflow: visible;
+        transform: translateZ(calc(var(--z) * var(--dial) / 1000))
+          scale(calc(1 - var(--z) / 2200));
+      }
+
+      .construction {
+        fill: none;
+        stroke: var(--brass);
+        stroke-opacity: 0.3;
+        stroke-width: 0.8;
+      }
+
+      .ghost {
+        fill: none;
+        stroke: var(--ink);
+        stroke-opacity: 0.22;
+        stroke-width: 1;
+      }
+
+      .ring {
+        fill: var(--white);
+        fill-opacity: 0.7;
+        stroke: var(--ink);
+        stroke-width: 1.2;
+      }
+
+      .tick {
+        fill: none;
+        stroke: var(--brass);
+      }
+
+      .tick--minor {
+        stroke-width: 1;
+      }
+
+      .tick--medium {
+        stroke-width: 1.4;
+      }
+
+      .tick--major {
+        stroke: var(--ink);
+        stroke-width: 2;
+      }
+
+      .numeral {
+        fill: var(--brass);
+        font-family: var(--kufi);
+        font-size: 19px;
+        font-weight: 500;
+        dominant-baseline: central;
+        text-anchor: middle;
+      }
+
+      .numeral--north {
+        fill: var(--blue);
+        font-family: var(--kufi);
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .qibla-mark path {
+        stroke: var(--blue);
+        stroke-width: 3;
+      }
+
+      .qibla-mark rect {
+        fill: var(--ink);
+        stroke: var(--white);
+        stroke-width: 2;
+      }
+
+      .ink {
+        fill: none;
+        stroke: var(--ink);
+        stroke-linejoin: round;
+        stroke-width: 1.4;
+      }
+
+      .ink--petals {
+        stroke: var(--blue);
+        stroke-width: 1.8;
+      }
+
+      .star {
+        fill: var(--blue);
+      }
+
+      .mat {
+        fill: var(--white);
+      }
+
+      .mat-edge {
+        fill: var(--mint);
+        stroke: var(--ink);
+        stroke-width: 1.2;
+      }
+
+      .layer--window {
+        display: grid;
+        place-items: center;
+      }
+
+      .window {
+        inline-size: var(--size);
+        aspect-ratio: 1;
+        clip-path: polygon(
+          29.29% 0,
+          70.71% 0,
+          100% 29.29%,
+          100% 70.71%,
+          70.71% 100%,
+          29.29% 100%,
+          0 70.71%,
+          0 29.29%
+        );
+        background: var(--mint);
+      }
+
+      .window__image {
+        inline-size: 100%;
+        block-size: 100%;
+        object-fit: contain;
+        mix-blend-mode: multiply;
+        scale: 0.94;
+      }
+
+      .vertex-label {
+        position: absolute;
+        padding: 0.15rem 0.75rem;
+        border: 1px solid var(--ink);
+        background: var(--white);
+        font-family: var(--kufi);
+        font-size: clamp(0.75rem, 0.6rem + 0.35vw, 0.9rem);
+        font-weight: 550;
+        line-height: 1.7;
+        white-space: nowrap;
+        /* Centre on the vertex; inline-start is the right edge in RTL. */
+        translate: 50% -50%;
+      }
+
+      .needle {
+        fill: var(--blue);
+        stroke: var(--ink);
+        stroke-width: 1.5;
+      }
+
+      .needle-spine {
+        stroke: var(--white);
+        stroke-width: 1.2;
+      }
+
+      .layer--needle {
+        rotate: var(--bearing);
+      }
+
+      .qibla-note {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        align-self: center;
+        max-inline-size: 24rem;
+        margin-block-start: 1.5rem;
+        text-align: center;
+      }
+
+      .qibla-note__title {
+        color: var(--blue);
+        font-family: var(--kufi);
+        font-size: clamp(1.75rem, 1rem + 2.4vw, 3rem);
+        font-weight: 750;
+        line-height: 1.4;
+      }
+
+      .qibla-note__bearing {
+        font-size: 1.125rem;
+        font-weight: 500;
+      }
+
+      .qibla-note__degrees {
+        color: var(--brass);
+      }
+
+      .qibla-note__text {
+        color: var(--ink-soft);
+        font-size: 0.9375rem;
+      }
+
+      /* ---- Sections ---- */
+      .section {
+        max-inline-size: var(--measure);
+        margin-inline: auto;
+        padding-block: clamp(4rem, 9vw, 7.5rem);
+        padding-inline: var(--gutter);
+        box-sizing: content-box;
+      }
+
+      .section__head {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-inline-size: 38rem;
+        margin-block-end: clamp(2.5rem, 5vw, 4rem);
+      }
+
+      .section__head h2,
+      .contact h2 {
+        font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.6rem);
+        font-weight: 700;
+      }
+
+      .section__head p {
+        color: var(--ink-soft);
+      }
+
+      /* ---- Catalog ---- */
+      .catalog {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4rem 2rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .card__window {
+        position: relative;
+        aspect-ratio: 1;
+      }
+
+      .card__clip {
+        position: absolute;
+        inset: 5%;
+        clip-path: polygon(
+          29.29% 0,
+          70.71% 0,
+          100% 29.29%,
+          100% 70.71%,
+          70.71% 100%,
+          29.29% 100%,
+          0 70.71%,
+          0 29.29%
+        );
+        background: var(--mint);
+      }
+
+      .card__image {
+        inline-size: 100%;
+        block-size: 100%;
+        object-fit: contain;
+        mix-blend-mode: multiply;
+        scale: 0.9;
+        transition: scale 500ms var(--ease);
+      }
+
+      .card:hover .card__image {
+        scale: 0.96;
+      }
+
+      .card__outline {
+        position: absolute;
+        inset: 0;
+        inline-size: 100%;
+        block-size: 100%;
+        overflow: visible;
+      }
+
+      .card__outline polygon {
+        fill: none;
+        stroke: var(--ink);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+        transition: stroke 200ms var(--ease);
+      }
+
+      .card:hover .card__outline polygon {
+        stroke: var(--blue);
+        stroke-width: 2;
+      }
+
+      .card__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .card__category {
+        color: var(--brass);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .card__name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.65;
+      }
+
+      .card__name a {
+        text-decoration: none;
+      }
+
+      .card__name a::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+      }
+
+      .card__name a:focus-visible {
+        outline: none;
+      }
+
+      .card:has(a:focus-visible) {
+        outline: 2px solid var(--blue);
+        outline-offset: 6px;
+      }
+
+      .card__price {
+        color: var(--blue);
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+
+      .card__more {
+        inline-size: fit-content;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.45em;
+      }
+
+      .card:hover .card__more {
+        color: var(--blue);
+      }
+
+      /* ---- Features ---- */
+      .features {
+        display: grid;
+        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+        gap: 3rem;
+        align-items: start;
+      }
+
+      .features__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border-block-end: 1px solid var(--line);
+      }
+
+      .feature {
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 13rem) minmax(0, 1fr);
+        gap: 0.5rem 1.5rem;
+        align-items: baseline;
+        padding-block: 1.6rem;
+        border-block-start: 1px solid var(--line);
+      }
+
+      .feature__glyph {
+        inline-size: 1.25rem;
+        block-size: 1.25rem;
+        align-self: center;
+        fill: none;
+        stroke: var(--brass);
+        stroke-width: 1.3;
+      }
+
+      .feature__title {
+        font-size: 1.125rem;
+        font-weight: 650;
+      }
+
+      .feature__text {
+        color: var(--ink-soft);
+      }
+
+      /* ---- Order ---- */
+      .steps {
+        position: relative;
+      }
+
+      .steps__line {
+        position: absolute;
+        inset-block-start: 1.75rem;
+        inset-inline: 16.66%;
+        inline-size: 66.67%;
+        block-size: 10px;
+        margin-block-start: -5px;
+        overflow: visible;
+      }
+
+      .steps__line path {
+        fill: none;
+        stroke: var(--ink);
+        stroke-dasharray: 0.012 0.008;
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .steps__list {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        text-align: center;
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .step__node {
+        display: grid;
+        place-items: center;
+        inline-size: 3.5rem;
+        block-size: 3.5rem;
+        margin-block-end: 0.75rem;
+        clip-path: polygon(
+          29.29% 0,
+          70.71% 0,
+          100% 29.29%,
+          100% 70.71%,
+          70.71% 100%,
+          29.29% 100%,
+          0 70.71%,
+          0 29.29%
+        );
+        background: var(--blue);
+        color: var(--white);
+        font-family: var(--kufi);
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+
+      .step__title {
+        font-size: 1.1875rem;
+        font-weight: 650;
+      }
+
+      .step__text {
+        max-inline-size: 18rem;
+        color: var(--ink-soft);
+      }
+
+      .strip {
+        background: var(--sand);
+      }
+
+      .strip__inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+        gap: 2.5rem 4rem;
+        align-items: center;
+        max-inline-size: var(--measure);
+        margin-inline: auto;
+        padding-block: clamp(2.5rem, 6vw, 4rem);
+        padding-inline: var(--gutter);
+        box-sizing: content-box;
+      }
+
+      .strip__cash {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .strip__cash-title {
+        font-family: var(--kufi);
+        font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem);
+        font-weight: 700;
+        line-height: 1.5;
+      }
+
+      .zones {
+        inline-size: 100%;
+        border-collapse: collapse;
+        font-size: 1rem;
+      }
+
+      .zones caption {
+        padding-block-end: 0.5rem;
+        font-family: var(--kufi);
+        font-weight: 600;
+        text-align: start;
+      }
+
+      .zones th,
+      .zones td {
+        padding-block: 0.8rem;
+        padding-inline: 0 1rem;
+        border-block-end: 1px solid rgb(20 20 20 / 0.2);
+        text-align: start;
+      }
+
+      .zones thead th {
+        color: var(--ink-soft);
+        font-size: 0.875rem;
+        font-weight: 400;
+      }
+
+      .zones tbody th {
+        font-family: var(--kufi);
+        font-weight: 600;
+      }
+
+      .zones td:first-of-type {
+        color: var(--blue);
+        font-weight: 500;
+      }
+
+      /* ---- Contact ---- */
+      .contact {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.25rem;
+      }
+
+      .contact__text {
+        max-inline-size: 34rem;
+        color: var(--ink-soft);
+      }
+
+      .contact__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1rem 2rem;
+      }
+
+      .contact__phone a {
+        display: inline-block;
+        margin-inline-start: 0.35rem;
+        font-size: 1.25rem;
+        font-weight: 500;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.3em;
+        unicode-bidi: isolate;
+      }
+
+      .footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem 2rem;
+        padding-block: 1.75rem;
+        padding-inline: var(--gutter);
+        border-block-start: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-size: 0.875rem;
+      }
+
+      /* ---- Small screens ---- */
+      @media (width < 60rem) {
+        .masthead {
+          gap: 1rem;
+          block-size: 4rem;
+        }
+
+        .masthead__nav {
+          display: none;
+        }
+
+        .masthead__chat {
+          margin-inline-start: auto;
+        }
+
+        .stage {
+          --dial: 112vw;
+          --crop: 0.14;
+          grid-template-columns: minmax(0, 1fr);
+          min-block-size: 0;
+        }
+
+        .stage__copy {
+          gap: 1.1rem;
+          padding-block: 2rem 1rem;
+          padding-inline: var(--gutter);
+        }
+
+        .stage__lead {
+          font-size: 1rem;
+        }
+
+        .stage__frame {
+          padding-block: 1rem 3rem;
+        }
+
+        .qibla-note {
+          padding-inline: var(--gutter);
+        }
+
+        .catalog {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 3rem 1.5rem;
+        }
+
+        .features {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+        }
+
+        .strip__inner {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      @media (width < 40rem) {
+        .catalog {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+          border-block-end: 1px solid var(--line);
+        }
+
+        /* Rectangles on phones: photo beside the text, one row per watch. */
+        .card {
+          display: grid;
+          grid-template-columns: 7.5rem minmax(0, 1fr);
+          gap: 1.25rem;
+          align-items: center;
+          padding-block: 1.25rem;
+          border-block-start: 1px solid var(--line);
+        }
+
+        .card__clip {
+          inset: 0;
+          clip-path: none;
+        }
+
+        .card__outline {
+          display: none;
+        }
+
+        .card:has(a:focus-visible) {
+          outline-offset: 2px;
+        }
+
+        .feature {
+          grid-template-columns: 1.5rem minmax(0, 1fr);
+        }
+
+        .feature__text {
+          grid-column: 2;
+        }
+
+        .steps__line {
+          display: none;
+        }
+
+        .steps__list {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0;
+          text-align: start;
+        }
+
+        .step {
+          position: relative;
+          display: grid;
+          grid-template-columns: 3.5rem minmax(0, 1fr);
+          gap: 0.25rem 1.25rem;
+          align-items: start;
+          padding-block-end: 2rem;
+        }
+
+        .step__node {
+          grid-row: span 2;
+          margin: 0;
+        }
+
+        .step:not(:last-child)::before {
+          position: absolute;
+          inset-block: 3.5rem 0;
+          inset-inline-start: 1.75rem;
+          border-inline-start: 1px dashed var(--ink);
+          content: "";
+        }
+
+        .step__title {
+          padding-block-start: 0.5rem;
+        }
+      }
+
+      /* ---- Scroll-driven motion (only when wanted and supported) ---- */
+      @keyframes s5-draw {
+        from {
+          stroke-dashoffset: 1;
+        }
+
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes s5-lay-flat {
+        from {
+          transform: none;
+        }
+
+        to {
+          transform: rotateX(var(--lay-angle)) scale(var(--lay-scale));
+        }
+      }
+
+      @keyframes s5-shift {
+        to {
+          translate: var(--shift-x) var(--shift-y);
+        }
+      }
+
+      @keyframes s5-fade-out {
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes s5-fade-in {
+        from {
+          opacity: 0;
+        }
+
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes s5-swing {
+        from {
+          opacity: 0;
+          rotate: 0deg;
+        }
+
+        20% {
+          opacity: 1;
+          rotate: 0deg;
+        }
+
+        to {
+          opacity: 1;
+          rotate: var(--bearing);
+        }
+      }
+
+      @keyframes s5-note {
+        from {
+          opacity: 0;
+          translate: 0 2rem;
+        }
+
+        to {
+          opacity: 1;
+          translate: 0 0;
+        }
+      }
+
+      @keyframes s5-grow-y {
+        from {
+          scale: 1 0;
+        }
+
+        to {
+          scale: 1 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @supports (animation-timeline: view()) {
+          .stage {
+            --lay-angle: 56deg;
+            --lay-scale: 1.04;
+            display: block;
+            min-block-size: 0;
+          }
+
+          .stage__copy {
+            position: absolute;
+            inset-block-start: 0;
+            inset-inline-start: 0;
+            justify-content: center;
+            inline-size: 46%;
+            block-size: calc(100svh - var(--header));
+            padding-block: 0;
+          }
+
+          .stage__track {
+            block-size: 270svh;
+            view-timeline: --dial block;
+          }
+
+          .stage__frame {
+            position: sticky;
+            inset-block-start: 0;
+            display: block;
+            block-size: 100svh;
+            padding: 0;
+          }
+
+          .dial-wrap {
+            --shift-x: calc(var(--dial) * var(--crop) + 6vw);
+            --shift-y: 0px;
+            position: absolute;
+            inset-block-start: calc(50% - var(--header) / 2 - var(--dial) / 2);
+            inset-inline-end: 0;
+            animation-name: s5-shift;
+            animation-fill-mode: both;
+            animation-timing-function: var(--ease);
+            animation-timeline: --dial;
+            animation-range: contain 36% contain 64%;
+          }
+
+          .dial {
+            animation-name: s5-lay-flat;
+            animation-fill-mode: both;
+            animation-timing-function: var(--ease);
+            animation-timeline: --dial;
+            animation-range: contain 36% contain 64%;
+          }
+
+          .ink {
+            stroke-dasharray: 1;
+            animation-name: s5-draw;
+            animation-fill-mode: both;
+            animation-timing-function: linear;
+            animation-timeline: --dial;
+          }
+
+          .ink--ring {
+            animation-range: contain 0% contain 12%;
+          }
+
+          .ink--interlace {
+            animation-range: contain 4% contain 20%;
+          }
+
+          .ink--rays {
+            animation-range: contain 10% contain 22%;
+          }
+
+          .ink--petals {
+            animation-range: contain 14% contain 28%;
+          }
+
+          .ink--zigzag {
+            animation-range: contain 20% contain 33%;
+          }
+
+          .layer--labels {
+            animation-name: s5-fade-out;
+            animation-fill-mode: both;
+            animation-timeline: --dial;
+            animation-range: contain 34% contain 46%;
+          }
+
+          .layer--needle {
+            animation-name: s5-swing;
+            animation-fill-mode: both;
+            animation-timing-function: var(--ease);
+            animation-timeline: --dial;
+            animation-range: contain 56% contain 88%;
+          }
+
+          .qibla-mark {
+            animation-name: s5-fade-in;
+            animation-fill-mode: both;
+            animation-timeline: --dial;
+            animation-range: contain 78% contain 88%;
+          }
+
+          .qibla-note {
+            position: absolute;
+            inset-block-start: calc(50% - 6rem);
+            inset-inline-start: var(--gutter);
+            inline-size: min(24rem, 32%);
+            margin: 0;
+            text-align: start;
+            animation-name: s5-note;
+            animation-fill-mode: both;
+            animation-timing-function: var(--ease);
+            animation-timeline: --dial;
+            animation-range: contain 74% contain 90%;
+          }
+
+          .card__outline polygon {
+            stroke-dasharray: 1;
+            animation-name: s5-draw;
+            animation-fill-mode: both;
+            animation-timing-function: var(--ease);
+            animation-timeline: view();
+            animation-range: entry calc(20% + var(--i) * 10%) cover
+              calc(45% + var(--i) * 6%);
+          }
+
+          .steps__line path {
+            stroke-dasharray: 1;
+            stroke-width: 1.5;
+            animation-name: s5-draw;
+            animation-fill-mode: both;
+            animation-timing-function: linear;
+            animation-timeline: view();
+            animation-range: entry 60% cover 50%;
+          }
+
+          .step:not(:last-child)::before {
+            transform-origin: top;
+            animation-name: s5-grow-y;
+            animation-fill-mode: both;
+            animation-timing-function: linear;
+            animation-timeline: view();
+            animation-range: entry 80% cover 55%;
+          }
+
+          @media (width < 60rem) {
+            .stage__copy {
+              position: relative;
+              inline-size: auto;
+              block-size: auto;
+              padding-block: 2rem 1rem;
+            }
+
+            .stage__track {
+              block-size: 240svh;
+            }
+
+            .dial-wrap {
+              --shift-x: calc(
+                var(--dial) * var(--crop) - (var(--dial) - 100vw) / 2
+              );
+              --shift-y: 16svh;
+              inset-block-start: 0.5rem;
+            }
+
+            .qibla-note {
+              inset-block: auto 2rem;
+              inset-inline: var(--gutter);
+              inline-size: auto;
+              text-align: center;
+            }
+          }
+        }
+      }
+    </style>
+  </body>
+</html>

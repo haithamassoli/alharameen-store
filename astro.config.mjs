@@ -48,6 +48,11 @@ export default defineConfig({
         globIgnores: [
           "_astro/hero-watch.*.js",
           "_astro/*-{math,symbols,vietnamese,latin-ext}-*.woff2",
+          // ponytail: /1…/7 style previews; drop these lines with the pages
+          // that lose the vote.
+          "_astro/{ibm-plex-sans-arabic,tajawal,el-messiri,kufam,noto-kufi-arabic,readex-pro,aref-ruqaa-ink}-*.woff2",
+          "_astro/[1-7].*",
+          "_astro/{style-*,RoomEnvironment}.*.js",
         ],
       },
     }),

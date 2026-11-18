@@ -1,0 +1,1852 @@
+---
+// Style exploration /2 «من الفجر إلى العشاء»: the page is one day. Scrolling
+// moves the sky from Fajr to Isha, the sun along its arc and the needle of
+// the prayer ruler. Everything is readable without the scroll effects.
+import "@fontsource-variable/reem-kufi";
+import "@fontsource/tajawal/400.css";
+import "@fontsource/tajawal/500.css";
+import "@fontsource/tajawal/700.css";
+import { Picture } from "astro:assets";
+
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const PHONE_GROUPS =
+  /^(?<country>\+\d{3})(?<operator>\d{2})(?<head>\d{3})(?<tail>\d{4})$/u;
+
+const { phone } = store.contact;
+
+const phoneDisplay = phone.replace(
+  PHONE_GROUPS,
+  "$<country> $<operator> $<head> $<tail>"
+);
+
+const [featured, ...rest] = products;
+
+// A different featured watch from the first catalog tile, so the photo
+// doesn't repeat one scroll later.
+const heroProduct =
+  products.find((product) => product.data.featured && product !== featured) ??
+  featured;
+
+const [heroCover] = heroProduct.data.images;
+const [featuredCover] = featured.data.images;
+
+const prayers = [
+  { href: "#fajr", id: "fajr", name: "الفجر", section: "البداية" },
+  { href: "#dhuhr", id: "dhuhr", name: "الظهر", section: "الساعات" },
+  { href: "#asr", id: "asr", name: "العصر", section: "المزايا" },
+  { href: "#maghrib", id: "maghrib", name: "المغرب", section: "الطلب" },
+  { href: "#isha", id: "isha", name: "العشاء", section: "تواصل" },
+] as const;
+
+const AZAN_ICON =
+  "M12 2.5v2.5M9 9a3 3 0 0 1 6 0M8 9h8M9 9v12M15 9v12M5.5 21h13M10.5 14h3";
+
+const featureIcons = new Map([
+  ["azan", AZAN_ICON],
+  [
+    "calendar",
+    "M4 6.5h16v13.5H4zM4 10.5h16M8 4v4M16 4v4M13.6 13a2.6 2.6 0 1 0 0 4.4 2 2 0 0 1 0-4.4z",
+  ],
+  [
+    "qibla",
+    "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM12 6.5l2.2 5.5-2.2 5.5-2.2-5.5z",
+  ],
+  [
+    "shield",
+    "M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6zM9 12l2.2 2.2L15.5 10",
+  ],
+  [
+    "truck",
+    "M2.5 6.5h11.5v10H2.5zM14 10h4l3 3.2v3.3h-7M7 19.5a1.8 1.8 0 1 0 0-.01M17.5 19.5a1.8 1.8 0 1 0 0-.01",
+  ],
+]);
+
+const IMAGE_SIZE = 640;
+const HERO_SIZE = 720;
+const year = digits.format(new Date().getFullYear()).replaceAll("٬", "");
+const newTab = "(يفتح في نافذة جديدة)";
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="description" content={store.tagline} />
+    <meta name="theme-color" content="#F6DCDD" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{store.name} | من الفجر إلى العشاء</title>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <div class="sky" aria-hidden="true"></div>
+
+    <header class="masthead">
+      <div class="masthead__bar">
+        <a class="brand" href="#fajr">
+          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="13"></circle>
+            <path d="M16 16V8M16 16l5 3"></path>
+          </svg>
+          {store.name}
+        </a>
+        <a class="masthead__phone" href={`tel:${phone}`} dir="ltr">
+          <span class="visually-hidden">اتصل بنا: </span>
+          {phoneDisplay}
+        </a>
+      </div>
+      <nav class="ruler" aria-label="أقسام الصفحة">
+        <div class="ruler__sky" aria-hidden="true">
+          <svg
+            class="ruler__arc"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            focusable="false"
+          >
+            <path
+              d="M100 100 Q83.33 0 66.67 0 Q33.33 0 0 100"
+              vector-effect="non-scaling-stroke"
+            ></path>
+          </svg>
+          <span class="ruler__sun"></span>
+          <svg class="ruler__moon" viewBox="0 0 40 40" focusable="false">
+            <path d="M26 6a15 15 0 1 0 8 26A12 12 0 0 1 26 6z"></path>
+          </svg>
+        </div>
+        <span class="ruler__track" aria-hidden="true">
+          <span class="ruler__fill"></span>
+          <span class="ruler__needle"></span>
+        </span>
+        <ol class="ruler__list">
+          {prayers.map((prayer) => (
+            <li class={`ruler__stop ruler__stop--${prayer.id}`}>
+              <a href={prayer.href}>
+                <span class="ruler__name">{prayer.name}</span>
+                <span class="ruler__section">{prayer.section}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section
+        class="hero day day--fajr"
+        id="fajr"
+        aria-labelledby="hero-title"
+      >
+        <div class="hero__copy">
+          <p class="when">
+            <span class="when__tick"></span>الفجر
+          </p>
+          <h1 class="hero__title" id="hero-title">
+            من الفجر إلى العشاء، ساعتك تؤذّن في وقتها
+          </h1>
+          <p class="hero__lead">{store.tagline}</p>
+          <div class="hero__actions">
+            <a class="button button--solid" href="#dhuhr">
+              تصفّح الساعات
+            </a>
+            <a
+              class="button button--line"
+              href={chatUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              اطلب عبر واتساب
+              <span class="visually-hidden">{newTab}</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="hero__stage">
+          <div class="hero__float">
+            <Picture
+              alt={heroCover.alt}
+              class="hero__watch"
+              fetchpriority="high"
+              formats={["avif", "webp"]}
+              height={HERO_SIZE}
+              loading="eager"
+              sizes="(min-width: 60rem) 26rem, 70vw"
+              src={heroCover.src}
+              width={HERO_SIZE}
+              widths={[360, 540, HERO_SIZE]}
+            />
+          </div>
+          <span class="hero__shadow" aria-hidden="true"></span>
+        </div>
+
+        <ol class="horizon" aria-hidden="true">
+          {prayers.map((prayer, index) => (
+            <li class={`horizon__stop horizon__stop--${prayer.id}`}>
+              <span class="horizon__name">{prayer.name}</span>
+              {index === 0 && <span class="horizon__needle" />}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section class="day day--dhuhr" id="dhuhr" aria-labelledby="dhuhr-title">
+        <div class="day__head">
+          <p class="when">
+            <span class="when__tick"></span>الظهر
+          </p>
+          <h2 class="day__title" id="dhuhr-title">
+            الساعات المتوفرة
+          </h2>
+          <p class="day__lead">
+            ساعات يد وساعات مكتب وأجهزة أذكار، كلها أصلية من الحرمين.
+          </p>
+        </div>
+
+        <ul class="catalog" role="list">
+          <li class="tile tile--wide">
+            <div class="tile__photo">
+              <Picture
+                alt={featuredCover.alt}
+                class="tile__image"
+                formats={["avif", "webp"]}
+                height={IMAGE_SIZE}
+                loading="lazy"
+                sizes="(min-width: 60rem) 30rem, 90vw"
+                src={featuredCover.src}
+                width={IMAGE_SIZE}
+                widths={[320, 480, IMAGE_SIZE]}
+              />
+            </div>
+            <div class="tile__body">
+              <p class="tile__category">{categoryName(featured)}</p>
+              <h3 class="tile__name">
+                <a class="tile__link" href={`/watches/${featured.id}/`}>
+                  {featured.data.name}
+                </a>
+              </h3>
+              <p class="tile__desc">{featured.data.description}</p>
+              <p class="price">
+                <span class="visually-hidden">السعر: </span>
+                {formatPrice(featured.data.price, featured.data.currency)}
+                {featured.data.compareAtPrice !== undefined && (
+                  <s class="price__was">
+                    <span class="visually-hidden">بدلًا من </span>
+                    {formatPrice(
+                      featured.data.compareAtPrice,
+                      featured.data.currency
+                    )}
+                  </s>
+                )}
+              </p>
+              <span class="tile__more" aria-hidden="true">
+                التفاصيل
+              </span>
+            </div>
+          </li>
+          {rest.map((product) => {
+            const [cover] = product.data.images;
+            return (
+              <li class="tile">
+                <div class="tile__photo">
+                  <Picture
+                    alt={cover.alt}
+                    class="tile__image"
+                    formats={["avif", "webp"]}
+                    height={IMAGE_SIZE}
+                    loading="lazy"
+                    sizes="(min-width: 60rem) 16rem, 45vw"
+                    src={cover.src}
+                    width={IMAGE_SIZE}
+                    widths={[240, 360, 480]}
+                  />
+                </div>
+                <div class="tile__body">
+                  <p class="tile__category">{categoryName(product)}</p>
+                  <h3 class="tile__name">
+                    <a class="tile__link" href={`/watches/${product.id}/`}>
+                      {product.data.name}
+                    </a>
+                  </h3>
+                  <p class="price">
+                    <span class="visually-hidden">السعر: </span>
+                    {formatPrice(product.data.price, product.data.currency)}
+                    {product.data.compareAtPrice !== undefined && (
+                      <s class="price__was">
+                        <span class="visually-hidden">بدلًا من </span>
+                        {formatPrice(
+                          product.data.compareAtPrice,
+                          product.data.currency
+                        )}
+                      </s>
+                    )}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section class="day day--asr" id="asr" aria-labelledby="asr-title">
+        <div class="day__head">
+          <p class="when">
+            <span class="when__tick"></span>العصر
+          </p>
+          <h2 class="day__title" id="asr-title">
+            ماذا تحصل مع كل ساعة
+          </h2>
+        </div>
+        <ul class="features" role="list">
+          {features.map((feature) => (
+            <li class="feature">
+              <svg class="feature__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d={featureIcons.get(feature.icon) ?? AZAN_ICON} />
+              </svg>
+              <h3 class="feature__title">{feature.title}</h3>
+              <p class="feature__text">{feature.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section
+        class="day day--maghrib"
+        id="maghrib"
+        aria-labelledby="maghrib-title"
+      >
+        <div class="day__head">
+          <p class="when">
+            <span class="when__tick"></span>المغرب
+          </p>
+          <h2 class="day__title" id="maghrib-title">
+            اطلب في ثلاث خطوات
+          </h2>
+        </div>
+        <div class="order">
+          <ol class="steps" role="list">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span class="step__number" aria-hidden="true">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <h3 class="delivery__title">التوصيل والدفع</h3>
+            <table class="zones">
+              <caption class="visually-hidden">
+                رسوم ومدة التوصيل حسب المنطقة
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td>{formatPrice(zone.data.fee, zone.data.currency)}</td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 7h18v10H3zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM6 10v4M18 10v4"></path>
+              </svg>
+              الدفع نقدًا عند الاستلام
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="day day--isha" id="isha" aria-labelledby="isha-title">
+        <div class="night" aria-hidden="true">
+          <svg class="night__moon" viewBox="0 0 40 40">
+            <path d="M26 6a15 15 0 1 0 8 26A12 12 0 0 1 26 6z"></path>
+          </svg>
+          {[1, 2, 3, 4, 5, 6].map((star) => (
+            <svg class={`night__star night__star--${star}`} viewBox="0 0 10 10">
+              <path d="M5 0l1.2 3.8L10 5 6.2 6.2 5 10 3.8 6.2 0 5l3.8-1.2z" />
+            </svg>
+          ))}
+        </div>
+        <div class="cta">
+          <p class="when">
+            <span class="when__tick"></span>العشاء
+          </p>
+          <h2 class="day__title cta__title" id="isha-title">
+            تحدّث معنا على واتساب
+          </h2>
+          <p class="cta__text">
+            أرسل لنا اسم الساعة التي اخترتها ومنطقتك، ونؤكد معك السعر وموعد
+            التوصيل.
+          </p>
+          <a
+            class="button button--solid button--large"
+            href={chatUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            راسلنا على واتساب
+            <span class="visually-hidden">{newTab}</span>
+          </a>
+          <p class="cta__phone">
+            أو اتصل على
+            <a href={`tel:${phone}`} dir="ltr">
+              {phoneDisplay}
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p class="footer__name">{store.name}</p>
+      <p>{store.contact.address}</p>
+      <p>© {year}</p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  @property --sky-a {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #e7e4f3;
+  }
+  @property --sky-b {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #f6dcdd;
+  }
+  @property --tick {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #94476c;
+  }
+  @property --sun {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #f3b09c;
+  }
+  @property --day {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+  }
+  @property --moon {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+  }
+  :root {
+    color-scheme: light;
+
+    --cloud: #fff;
+    --morning: #edf5fa;
+    --apricot: #f8e4d1;
+    --rose: #f6dcdd;
+    --lavender: #e7e4f3;
+    --ink: #203544;
+    --ink-soft: #3f5563;
+    --petrol: #215d70;
+    --petrol-deep: #184a5a;
+
+    --c-fajr: #94476c;
+    --c-dhuhr: #1d6690;
+    --c-asr: #8c5a14;
+    --c-maghrib: #a4452f;
+    --c-isha: #564a97;
+
+    --display: "Reem Kufi Variable", "Tajawal", sans-serif;
+    --body: "Tajawal", system-ui, sans-serif;
+
+    --header-h: 8.5rem;
+    --gutter: clamp(1rem, 4vw, 3rem);
+    --wrap: 76rem;
+    --radius-l: 1.75rem;
+    --radius-s: 0.75rem;
+
+    --sky-a: #e7e4f3;
+    --sky-b: #f6dcdd;
+    --tick: var(--c-fajr);
+
+    scroll-behavior: smooth;
+    scroll-padding-block-start: calc(var(--header-h) + 1rem);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--cloud);
+  }
+
+  body {
+    margin: 0;
+    min-block-size: 100vh;
+    background: linear-gradient(var(--sky-a), var(--sky-b) 70vh, var(--cloud));
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--petrol);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .skip {
+    position: absolute;
+    inset-inline-start: 1rem;
+    inset-block-start: -4rem;
+    z-index: 30;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-s);
+    background: var(--ink);
+    color: var(--cloud);
+    text-decoration: none;
+  }
+
+  .skip:focus-visible {
+    inset-block-start: 1rem;
+  }
+
+  /* ---------- Sky: fixed backdrop that follows the time of day ---------- */
+
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    display: none;
+    background: linear-gradient(var(--sky-a), var(--sky-b));
+    pointer-events: none;
+  }
+
+  /* ---------- Header + prayer ruler ---------- */
+
+  .masthead {
+    position: relative;
+    z-index: 20;
+    background: color-mix(in oklab, var(--cloud) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-block-end: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
+  }
+
+  .masthead__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-inline-size: var(--wrap);
+    margin-inline: auto;
+    padding: 0.7rem var(--gutter) 0.2rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand__mark {
+    inline-size: 1.7rem;
+    fill: none;
+    stroke: var(--tick);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+  }
+
+  .masthead__phone {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding-block: 0.4rem;
+  }
+
+  .masthead__phone:hover {
+    color: var(--petrol);
+    text-decoration: underline;
+  }
+
+  .ruler {
+    --arc-h: 2.9rem;
+    --sun-size: 1.5rem;
+    position: relative;
+    max-inline-size: var(--wrap);
+    margin-inline: auto;
+    padding: var(--arc-h) var(--gutter) 0.35rem;
+  }
+
+  /* The sky band above the ruler: the ruler line is the horizon. */
+  .ruler__sky {
+    position: absolute;
+    inset-inline: var(--gutter);
+    inset-block-start: 0;
+    block-size: var(--arc-h);
+    container-type: size;
+    pointer-events: none;
+  }
+
+  .ruler__arc {
+    position: absolute;
+    inset-inline-start: 10%;
+    inset-block: calc(var(--sun-size) / 2 + 0.15rem) 0;
+    inline-size: 60%;
+    block-size: calc(100% - var(--sun-size) / 2 - 0.15rem);
+    overflow: visible;
+    fill: none;
+    stroke: color-mix(in oklab, var(--ink) 30%, transparent);
+    stroke-width: 1.25;
+    stroke-dasharray: 1.5 5;
+  }
+
+  /* The sun stands over the needle: it rises from Fajr, peaks at Dhuhr and
+     sets at Maghrib. Height is two parabolas meeting at the Dhuhr apex. */
+  .ruler__sun {
+    --rise: min(var(--day), 1);
+    --fall: min(max(var(--day) - 1, 0) / 2, 1);
+    --height: calc(
+      1 - (1 - var(--rise)) * (1 - var(--rise)) - var(--fall) * var(--fall)
+    );
+    position: absolute;
+    inset-inline-start: calc(10% + min(var(--day), 3) * 20%);
+    inset-block-end: calc(var(--sun-size) / -2);
+    z-index: 2;
+    inline-size: var(--sun-size);
+    block-size: var(--sun-size);
+    border-radius: 50%;
+    background: radial-gradient(circle, #fffdf4 0 28%, var(--sun) 70%);
+    box-shadow:
+      0 0 0 0.3rem color-mix(in oklab, var(--sun) 30%, transparent),
+      0 0 1.6rem 0.5rem color-mix(in oklab, var(--sun) 55%, transparent);
+    opacity: calc(1 - var(--moon));
+    translate: 50%
+      calc(-1 * var(--height) * (100cqb - var(--sun-size) / 2 - 0.15rem));
+  }
+
+  .ruler__moon {
+    position: absolute;
+    inset-inline-start: 90%;
+    inset-block-start: 8%;
+    inline-size: 1.5rem;
+    fill: #c9a443;
+    filter: drop-shadow(0 0 0.6rem rgb(201 164 67 / 0.6));
+    opacity: var(--moon);
+    translate: 50% calc((1 - var(--moon)) * 1rem);
+  }
+
+  .ruler__list {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .ruler__stop a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-block: 0.6rem 0.2rem;
+    line-height: 1.25;
+    text-decoration: none;
+    border-radius: var(--radius-s);
+  }
+
+  .ruler__name {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .ruler__section {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .ruler__stop a:hover .ruler__name {
+    color: var(--petrol);
+  }
+
+  .ruler__track {
+    position: absolute;
+    inset-inline: var(--gutter);
+    inset-block-start: calc(var(--arc-h) - 0.3rem);
+    block-size: 0.6rem;
+  }
+
+  /* Hairline with five station ticks at the column centres. */
+  .ruler__track::before {
+    position: absolute;
+    inset-inline: 10%;
+    inset-block-start: 50%;
+    block-size: 1px;
+    background: color-mix(in oklab, var(--ink) 25%, transparent);
+    content: "";
+  }
+
+  .ruler__track::after {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle, var(--c-fajr) 0 3px, transparent 3.5px) 90% 50% /
+        0.6rem 0.6rem no-repeat,
+      radial-gradient(circle, var(--c-dhuhr) 0 3px, transparent 3.5px) 70% 50% /
+        0.6rem 0.6rem no-repeat,
+      radial-gradient(circle, var(--c-asr) 0 3px, transparent 3.5px) 50% 50% /
+        0.6rem 0.6rem no-repeat,
+      radial-gradient(circle, var(--c-maghrib) 0 3px, transparent 3.5px) 30%
+        50% / 0.6rem 0.6rem no-repeat,
+      radial-gradient(circle, var(--c-isha) 0 3px, transparent 3.5px) 10% 50% /
+        0.6rem 0.6rem no-repeat;
+    content: "";
+  }
+
+  .ruler__fill {
+    position: absolute;
+    inset-inline-start: 10%;
+    inset-block-start: calc(50% - 1px);
+    inline-size: calc(var(--day) * 20%);
+    block-size: 3px;
+    border-radius: 3px;
+    background: var(--tick);
+    display: none;
+  }
+
+  .ruler__needle {
+    position: absolute;
+    inset-inline-start: calc(10% + var(--day) * 20%);
+    inset-block-start: 50%;
+    z-index: 1;
+    inline-size: 0.85rem;
+    block-size: 0.85rem;
+    border: 2px solid var(--cloud);
+    border-radius: 50%;
+    background: var(--tick);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--tick) 40%, transparent);
+    translate: 50% -50%;
+    display: none;
+  }
+
+  /* ---------- Shared section frame ---------- */
+
+  .day {
+    position: relative;
+    max-inline-size: var(--wrap);
+    margin-inline: auto;
+    padding: clamp(3.5rem, 7vw, 6rem) var(--gutter);
+  }
+
+  .day__head {
+    display: grid;
+    gap: 0.5rem;
+    max-inline-size: 40rem;
+    margin-block-end: clamp(2rem, 4vw, 3.25rem);
+  }
+
+  .day__title {
+    font-family: var(--display);
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    font-weight: 600;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .day__lead {
+    max-inline-size: 36rem;
+    color: var(--ink-soft);
+    font-size: 1.15rem;
+  }
+
+  .when {
+    --c: var(--c-fajr);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--c);
+  }
+
+  .when__tick {
+    inline-size: 2.75rem;
+    block-size: 0.3rem;
+    border-radius: 0.3rem;
+    background: var(--c);
+    transform-origin: inline-start;
+  }
+
+  .day--dhuhr .when {
+    --c: var(--c-dhuhr);
+  }
+  .day--asr .when {
+    --c: var(--c-asr);
+  }
+  .day--maghrib .when {
+    --c: var(--c-maghrib);
+  }
+  .day--isha .when {
+    --c: var(--c-isha);
+  }
+
+  /* ---------- Buttons ---------- */
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 3.1rem;
+    padding: 0.55rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition:
+      background-color 0.2s,
+      color 0.2s,
+      translate 0.2s;
+  }
+
+  .button--solid {
+    background: var(--petrol);
+    color: var(--cloud);
+  }
+
+  .button--solid:hover {
+    background: var(--petrol-deep);
+  }
+
+  .button--line {
+    border: 1.5px solid var(--petrol);
+    color: var(--petrol);
+    background: color-mix(in oklab, var(--cloud) 55%, transparent);
+  }
+
+  .button--line:hover {
+    background: var(--cloud);
+  }
+
+  .button--large {
+    min-block-size: 3.6rem;
+    padding-inline: 2.2rem;
+    font-size: 1.15rem;
+  }
+
+  /* ---------- Fajr: hero ---------- */
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    grid-template-areas:
+      "copy stage"
+      "horizon horizon";
+    align-items: end;
+    column-gap: clamp(1.5rem, 4vw, 4rem);
+    min-block-size: calc(100svh - var(--header-h));
+    padding-block: clamp(2.5rem, 6vh, 4.5rem) clamp(2rem, 5vh, 3.5rem);
+  }
+
+  .hero__copy {
+    grid-area: copy;
+    display: grid;
+    justify-items: start;
+    gap: 1.1rem;
+    align-self: center;
+  }
+
+  .hero__title {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 6.2vw, 5.4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  .hero__lead {
+    max-inline-size: 32rem;
+    color: var(--ink-soft);
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-block-start: 0.6rem;
+  }
+
+  .hero__stage {
+    grid-area: stage;
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-self: end;
+  }
+
+  /* Dawn glow behind the watch; multiply lets the white photo take the sky. */
+  .hero__stage::before {
+    position: absolute;
+    inset: 8% 6% 18%;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--sun) 55%, transparent),
+      color-mix(in oklab, var(--sun) 18%, transparent) 60%,
+      transparent
+    );
+    content: "";
+  }
+
+  .hero__float {
+    position: relative;
+    inline-size: min(100%, 24rem);
+    padding-block-end: 1.5rem;
+    mix-blend-mode: multiply;
+  }
+
+  .hero__watch img,
+  img.hero__watch {
+    inline-size: 100%;
+    block-size: auto;
+    mix-blend-mode: multiply;
+  }
+
+  .hero__shadow {
+    inline-size: 55%;
+    block-size: 1.1rem;
+    margin-block-start: -1.4rem;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--ink) 22%, transparent),
+      transparent
+    );
+  }
+
+  .horizon {
+    grid-area: horizon;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 1.25rem 0 0;
+    padding: 1.4rem 0 0;
+    list-style: none;
+    border-block-start: 1px solid
+      color-mix(in oklab, var(--ink) 35%, transparent);
+  }
+
+  .horizon__stop {
+    --c: var(--c-fajr);
+    position: relative;
+    display: grid;
+    justify-items: center;
+    color: var(--c);
+  }
+
+  .horizon__stop::before {
+    position: absolute;
+    inset-block-start: -1.4rem;
+    inline-size: 2px;
+    block-size: 0.9rem;
+    background: var(--c);
+    content: "";
+  }
+
+  .horizon__stop--dhuhr {
+    --c: var(--c-dhuhr);
+  }
+  .horizon__stop--asr {
+    --c: var(--c-asr);
+  }
+  .horizon__stop--maghrib {
+    --c: var(--c-maghrib);
+  }
+  .horizon__stop--isha {
+    --c: var(--c-isha);
+  }
+
+  .horizon__name {
+    font-family: var(--display);
+    font-size: clamp(1.15rem, 2.4vw, 2rem);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .horizon__stop:not(.horizon__stop--fajr) .horizon__name {
+    font-weight: 400;
+  }
+
+  .horizon__needle {
+    position: absolute;
+    inset-block-start: -2.15rem;
+    inline-size: 1.3rem;
+    block-size: 1.3rem;
+    border: 3px solid var(--cloud);
+    border-radius: 50%;
+    background: var(--c-fajr);
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--c-fajr) 18%, transparent);
+  }
+
+  /* ---------- Dhuhr: catalog ---------- */
+
+  .catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+    gap: clamp(0.9rem, 2vw, 1.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tile {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border-radius: var(--radius-l);
+    background: color-mix(in oklab, var(--cloud) 82%, var(--sky-a));
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--cloud) 90%, transparent) inset,
+      0 18px 40px -28px color-mix(in oklab, var(--ink) 45%, transparent);
+    transition:
+      translate 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .tile:hover {
+    translate: 0 -4px;
+    box-shadow:
+      0 1px 0 var(--cloud) inset,
+      0 26px 46px -28px color-mix(in oklab, var(--ink) 55%, transparent);
+  }
+
+  .tile:focus-within {
+    outline: 3px solid var(--petrol);
+    outline-offset: 3px;
+  }
+
+  .tile__photo {
+    margin: 0.6rem;
+    border-radius: calc(var(--radius-l) - 0.5rem);
+    background:
+      radial-gradient(70% 60% at 50% 40%, var(--cloud), transparent 70%),
+      color-mix(in oklab, var(--cloud) 50%, var(--sky-b));
+    overflow: hidden;
+  }
+
+  .tile__image,
+  .tile__photo img {
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    padding: 6%;
+  }
+
+  .tile__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.4rem 1.25rem 1.3rem;
+  }
+
+  .tile__category {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .tile__name {
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .tile__link {
+    text-decoration: none;
+  }
+
+  .tile__link::after {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    content: "";
+  }
+
+  .tile__link:focus-visible {
+    outline: none;
+  }
+
+  .tile__link:hover {
+    color: var(--petrol);
+  }
+
+  .price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-block-start: auto;
+    padding-block-start: 0.5rem;
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--petrol);
+  }
+
+  .price__was {
+    font-family: var(--body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
+  .tile--wide {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    background: color-mix(in oklab, var(--cloud) 88%, var(--sky-a));
+  }
+
+  .tile--wide .tile__photo {
+    margin: 0.9rem;
+  }
+
+  .tile--wide .tile__body {
+    gap: 0.75rem;
+    padding: 1.5rem clamp(1.25rem, 3vw, 3rem) 1.75rem;
+  }
+
+  .tile--wide .tile__name {
+    font-family: var(--display);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .tile--wide .tile__desc {
+    max-inline-size: 34rem;
+    color: var(--ink-soft);
+  }
+
+  .tile--wide .price {
+    margin-block-start: 0.5rem;
+    font-size: 1.7rem;
+  }
+
+  .tile__more {
+    align-self: start;
+    padding: 0.45rem 1.3rem;
+    border-radius: 999px;
+    background: var(--petrol);
+    color: var(--cloud);
+    font-weight: 700;
+  }
+
+  /* ---------- Asr: features ---------- */
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-block-start: 1px solid
+      color-mix(in oklab, var(--c-asr) 45%, transparent);
+  }
+
+  .feature {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: 2rem 1.1rem 1rem;
+  }
+
+  .feature + .feature {
+    border-inline-start: 1px solid
+      color-mix(in oklab, var(--c-asr) 20%, transparent);
+  }
+
+  .feature::before {
+    position: absolute;
+    inset-block-start: -0.35rem;
+    inset-inline-start: 1.1rem;
+    inline-size: 0.7rem;
+    block-size: 0.7rem;
+    border-radius: 50%;
+    background: var(--c-asr);
+    content: "";
+  }
+
+  .feature__icon {
+    inline-size: 2.4rem;
+    block-size: 2.4rem;
+    margin-block-end: 0.4rem;
+    fill: none;
+    stroke: var(--c-asr);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .feature__title {
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .feature__text {
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+
+  /* ---------- Maghrib: order + delivery ---------- */
+
+  .order {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: start;
+  }
+
+  .steps {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    column-gap: 1.2rem;
+    padding-block-end: 2rem;
+  }
+
+  .step:not(:last-child)::before {
+    position: absolute;
+    inset-block: 3.5rem 0.5rem;
+    inset-inline-start: 1.75rem;
+    inline-size: 1px;
+    background: color-mix(in oklab, var(--c-maghrib) 40%, transparent);
+    content: "";
+  }
+
+  .step__number {
+    grid-row: span 2;
+    display: grid;
+    place-items: center;
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+    border: 1.5px solid var(--c-maghrib);
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--cloud) 70%, transparent);
+    color: var(--c-maghrib);
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .step__title {
+    padding-block-start: 0.55rem;
+    font-family: var(--display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .step__text {
+    color: var(--ink-soft);
+  }
+
+  .delivery {
+    padding: clamp(1.4rem, 3vw, 2.2rem);
+    border-radius: var(--radius-l);
+    background: color-mix(in oklab, var(--cloud) 84%, var(--sky-b));
+    box-shadow: 0 18px 40px -30px
+      color-mix(in oklab, var(--ink) 50%, transparent);
+  }
+
+  .delivery__title {
+    margin-block-end: 1rem;
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+  }
+
+  .zones th,
+  .zones td {
+    padding: 0.75rem 0.25rem;
+    text-align: start;
+    border-block-end: 1px solid color-mix(in oklab, var(--ink) 12%, transparent);
+  }
+
+  .zones thead th {
+    padding-block-start: 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  .zones tbody th {
+    font-weight: 700;
+  }
+
+  .zones td:nth-child(2) {
+    font-weight: 700;
+    color: var(--petrol);
+    white-space: nowrap;
+  }
+
+  .delivery__cash {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block-start: 1.25rem;
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius-s);
+    background: color-mix(in oklab, var(--c-maghrib) 9%, var(--cloud));
+    font-weight: 700;
+  }
+
+  .delivery__cash svg {
+    flex: none;
+    inline-size: 1.6rem;
+    fill: none;
+    stroke: var(--c-maghrib);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+
+  /* ---------- Isha: WhatsApp CTA ---------- */
+
+  .day--isha {
+    padding-block-end: clamp(5rem, 10vw, 8rem);
+  }
+
+  .cta {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    max-inline-size: 40rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .cta .when {
+    justify-content: center;
+  }
+
+  .cta__text {
+    color: var(--ink-soft);
+    font-size: 1.15rem;
+  }
+
+  .cta__phone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    color: var(--ink-soft);
+  }
+
+  .cta__phone a {
+    font-weight: 700;
+    color: var(--petrol);
+    white-space: nowrap;
+  }
+
+  .night {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .night__moon {
+    position: absolute;
+    inset-block-start: 12%;
+    inset-inline-end: 12%;
+    inline-size: clamp(3rem, 7vw, 5.5rem);
+    fill: #d7b85e;
+    filter: drop-shadow(0 0 1.5rem rgb(215 184 94 / 0.5));
+  }
+
+  .night__star {
+    position: absolute;
+    inline-size: 0.8rem;
+    fill: var(--c-isha);
+    opacity: 0.55;
+  }
+
+  .night__star--1 {
+    inset-block-start: 18%;
+    inset-inline-start: 14%;
+  }
+  .night__star--2 {
+    inset-block-start: 40%;
+    inset-inline-start: 6%;
+    inline-size: 0.55rem;
+  }
+  .night__star--3 {
+    inset-block-start: 70%;
+    inset-inline-start: 18%;
+  }
+  .night__star--4 {
+    inset-block-start: 34%;
+    inset-inline-end: 24%;
+    inline-size: 0.55rem;
+  }
+  .night__star--5 {
+    inset-block-start: 66%;
+    inset-inline-end: 9%;
+  }
+  .night__star--6 {
+    inset-block-start: 10%;
+    inset-inline-start: 38%;
+    inline-size: 0.5rem;
+  }
+
+  /* ---------- Footer ---------- */
+
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 1.5rem;
+    padding: 1.6rem var(--gutter) 2rem;
+    border-block-start: 1px solid
+      color-mix(in oklab, var(--ink) 12%, transparent);
+    background: color-mix(in oklab, var(--cloud) 70%, var(--lavender));
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+
+  .footer__name {
+    font-family: var(--display);
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* ---------- Static day: each section carries its own sky ---------- */
+
+  .day--dhuhr,
+  .day--asr,
+  .day--maghrib,
+  .day--isha {
+    max-inline-size: none;
+    padding-inline: max(
+      var(--gutter),
+      (100% - var(--wrap)) / 2 + var(--gutter)
+    );
+  }
+
+  .day--dhuhr {
+    background: linear-gradient(
+      var(--morning),
+      var(--cloud) 40%,
+      var(--morning)
+    );
+  }
+  .day--asr {
+    background: linear-gradient(var(--cloud), #fbefe2 30%, var(--apricot));
+  }
+  .day--maghrib {
+    background: linear-gradient(var(--apricot), var(--rose));
+  }
+  .day--isha {
+    background: linear-gradient(var(--rose), var(--lavender) 35%, #efedf8);
+  }
+
+  /* ---------- Motion ---------- */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .masthead {
+      position: sticky;
+      inset-block-start: 0;
+    }
+
+    .ruler__fill,
+    .ruler__needle {
+      display: block;
+    }
+
+    .hero__float {
+      animation: float 7s ease-in-out infinite alternate;
+    }
+
+    .night__star {
+      animation: twinkle 3.2s ease-in-out infinite alternate;
+    }
+    .night__star--2,
+    .night__star--5 {
+      animation-delay: -1.4s;
+    }
+    .night__star--3,
+    .night__star--6 {
+      animation-delay: -2.3s;
+    }
+
+    @keyframes float {
+      to {
+        translate: 0 -0.9rem;
+      }
+    }
+
+    @keyframes twinkle {
+      from {
+        opacity: 0.2;
+      }
+      to {
+        opacity: 0.75;
+      }
+    }
+
+    /* The page-level day: one fixed sky driven by the scroll position. */
+    @supports (animation-timeline: view()) and (timeline-scope: --a) {
+      :root {
+        timeline-scope: --dhuhr, --asr, --maghrib, --isha;
+        animation-name: to-dhuhr, to-asr, to-maghrib, to-isha;
+        animation-duration: 1ms;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
+        animation-timeline: --dhuhr, --asr, --maghrib, --isha;
+        animation-range: entry 15% entry 100%;
+      }
+
+      body {
+        background: transparent;
+      }
+
+      .sky {
+        display: block;
+      }
+
+      .day--dhuhr {
+        view-timeline: --dhuhr block;
+      }
+      .day--asr {
+        view-timeline: --asr block;
+      }
+      .day--maghrib {
+        view-timeline: --maghrib block;
+      }
+      .day--isha {
+        view-timeline: --isha block;
+      }
+
+      .day--dhuhr,
+      .day--asr,
+      .day--maghrib,
+      .day--isha {
+        background: none;
+      }
+
+      .footer {
+        background: color-mix(in oklab, var(--cloud) 55%, transparent);
+      }
+
+      .when__tick {
+        animation-name: tick-on;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-duration: 1ms;
+        animation-timeline: view();
+        animation-range: entry 40% contain 15%;
+      }
+
+      @keyframes tick-on {
+        from {
+          scale: 0.15 1;
+          opacity: 0.35;
+        }
+        to {
+          scale: 1 1;
+          opacity: 1;
+        }
+      }
+
+      @keyframes to-dhuhr {
+        from {
+          --sky-a: #e7e4f3;
+          --sky-b: #f6dcdd;
+          --tick: #94476c;
+          --sun: #f3b09c;
+          --day: 0;
+        }
+        to {
+          --sky-a: #d9eaf5;
+          --sky-b: #fbfdff;
+          --tick: #1d6690;
+          --sun: #ffd76a;
+          --day: 1;
+        }
+      }
+
+      @keyframes to-asr {
+        from {
+          --sky-a: #d9eaf5;
+          --sky-b: #fbfdff;
+          --tick: #1d6690;
+          --sun: #ffd76a;
+          --day: 1;
+        }
+        to {
+          --sky-a: #fdf1e3;
+          --sky-b: #f8e4d1;
+          --tick: #8c5a14;
+          --sun: #f7b057;
+          --day: 2;
+        }
+      }
+
+      @keyframes to-maghrib {
+        from {
+          --sky-a: #fdf1e3;
+          --sky-b: #f8e4d1;
+          --tick: #8c5a14;
+          --sun: #f7b057;
+          --day: 2;
+        }
+        to {
+          --sky-a: #f9e2d6;
+          --sky-b: #f5cfc8;
+          --tick: #a4452f;
+          --sun: #ef7f5e;
+          --day: 3;
+        }
+      }
+
+      @keyframes to-isha {
+        from {
+          --sky-a: #f9e2d6;
+          --sky-b: #f5cfc8;
+          --tick: #a4452f;
+          --sun: #ef7f5e;
+          --day: 3;
+          --moon: 0;
+        }
+        to {
+          --sky-a: #dcd8ee;
+          --sky-b: #eeebf7;
+          --tick: #564a97;
+          --sun: #ef7f5e;
+          --day: 4;
+          --moon: 1;
+        }
+      }
+    }
+  }
+
+  /* Wide screens: the featured tile takes two of three columns. */
+  @media (min-width: 60.01rem) {
+    .catalog {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tile--wide {
+      grid-column: span 2;
+    }
+  }
+
+  /* ---------- Narrow screens ---------- */
+
+  @media (max-width: 60rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "copy"
+        "stage"
+        "horizon";
+      min-block-size: 0;
+      row-gap: 1.5rem;
+    }
+
+    .hero__float {
+      inline-size: min(72%, 19rem);
+    }
+
+    .features {
+      grid-template-columns: minmax(0, 1fr);
+      border-block-start: 0;
+      border-inline-start: 1px solid
+        color-mix(in oklab, var(--c-asr) 45%, transparent);
+    }
+
+    .feature {
+      padding: 0.25rem 1.5rem 1.75rem;
+    }
+
+    .feature + .feature {
+      border-inline-start: 0;
+    }
+
+    .feature::before {
+      inset-block-start: 0.9rem;
+      inset-inline-start: -0.4rem;
+    }
+
+    .order {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tile--wide {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tile--wide .tile__photo {
+      margin: 0.6rem;
+    }
+
+    .night__moon {
+      inset-block-start: 2%;
+      inset-inline-end: 6%;
+    }
+
+    .night__star--4,
+    .night__star--5 {
+      display: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    :root {
+      --header-h: 7.4rem;
+    }
+
+    .ruler {
+      --arc-h: 2.5rem;
+      --sun-size: 1.25rem;
+    }
+
+    body {
+      font-size: 1rem;
+    }
+
+    .brand {
+      font-size: 1.1rem;
+    }
+
+    .masthead__phone {
+      font-size: 0.85rem;
+    }
+
+    .ruler__section {
+      display: none;
+    }
+
+    .ruler__name {
+      font-size: 0.95rem;
+    }
+
+    .catalog {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* An odd tile left alone on the last row lies down across both columns. */
+    .tile:not(.tile--wide):last-child:nth-child(even) {
+      grid-column: 1 / -1;
+      grid-template-columns: 42% 1fr;
+      grid-template-rows: auto;
+      align-items: center;
+    }
+
+    .tile__body {
+      padding: 0.25rem 0.85rem 1rem;
+    }
+
+    .tile__name {
+      font-size: 0.98rem;
+    }
+
+    .price {
+      font-size: 1.1rem;
+    }
+
+    .horizon__name {
+      font-size: 1rem;
+    }
+  }
+</style>

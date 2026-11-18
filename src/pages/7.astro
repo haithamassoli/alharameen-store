@@ -1,0 +1,1504 @@
+---
+// Style exploration 7, «الكشف»: the shop's invoice set at poster size.
+// Letterhead, ruled rows, carbon-copy blue, a rubber stamp and a tear-off
+// WhatsApp strip. On wide screens the product ledger turns sideways and
+// vertical scroll slides it past a frozen label column (pure CSS, scroll
+// timelines). Everywhere else it is a plain stacked table.
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import "@fontsource/ibm-plex-sans-arabic/700.css";
+import "@fontsource/amiri/700.css";
+import "@fontsource/aref-ruqaa-ink/700.css";
+import { Picture } from "astro:assets";
+
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const HERO_SIZE = 960;
+const ROW_SIZE = 480;
+const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+
+const { contact } = store;
+const phoneGroups = JORDAN_PHONE.exec(contact.phone)?.groups;
+
+const phoneDisplay = phoneGroups
+  ? `+962 ${phoneGroups.area} ${phoneGroups.mid} ${phoneGroups.end}`
+  : contact.phone;
+
+// Dates are stamped at build time, like the header of a printed invoice.
+const today = new Date();
+const isoDate = today.toISOString().slice(0, "yyyy-mm-dd".length);
+
+const hijri = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+}).format(today);
+
+const gregorian = new Intl.DateTimeFormat("ar-JO-u-ca-gregory-nu-arab", {
+  day: "numeric",
+  month: "long",
+  weekday: "long",
+  year: "numeric",
+}).format(today);
+
+// Invoice number from the Hijri date: year-monthday, e.g. ١٤٤٨-٠٦٠٨.
+const hijriParts = new Map(
+  new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .formatToParts(today)
+    .map((part) => [part.type, part.value])
+);
+
+const invoiceNumber = `${hijriParts.get("year") ?? ""}-${hijriParts.get("month") ?? ""}${hijriParts.get("day") ?? ""}`;
+
+// Every ruled line on the sheet: products, features, steps, delivery zones.
+const lineCount =
+  products.length + features.length + steps.length + zones.length;
+
+const pad = new Intl.NumberFormat("ar-JO", { minimumIntegerDigits: 2 });
+const nothingDue = formatPrice(0, store.currency);
+
+const year = new Intl.DateTimeFormat("ar-JO-u-nu-arab", {
+  year: "numeric",
+}).format(today);
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>الكشف | {store.name}</title>
+    <meta content={store.tagline} name="description" />
+    <meta content="noindex" name="robots" />
+    <meta content="light" name="color-scheme" />
+    <meta content="#FBFBF8" name="theme-color" />
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip" href="#goods">
+      تخطَّ إلى البضاعة
+    </a>
+
+    <!-- Rubber-stamp ink: ragged edges plus a soft bleed under the rubber. -->
+    <svg aria-hidden="true" class="defs" focusable="false">
+      <filter id="stamp-ink" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence
+          baseFrequency="0.9"
+          numOctaves="2"
+          result="grain"
+          seed="7"
+          type="fractalNoise"
+        ></feTurbulence>
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="grain"
+          result="ragged"
+          scale="2.5"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        ></feDisplacementMap>
+        <feGaussianBlur
+          in="ragged"
+          result="bleed"
+          stdDeviation="0.7"
+        ></feGaussianBlur>
+        <feComponentTransfer in="grain" result="speckle">
+          <feFuncA tableValues="1 1 1 0.45" type="discrete"></feFuncA>
+        </feComponentTransfer>
+        <feComposite in="bleed" in2="speckle" operator="in"></feComposite>
+      </filter>
+    </svg>
+
+    <header class="bar">
+      <a class="bar__name" href="/7">
+        {store.name}
+      </a>
+      <p aria-hidden="true" class="bar__tally">
+        <span class="bar__tally-label">السطر</span>
+        <span class="bar__tally-now" data-tally>
+          {pad.format(1)}
+        </span>
+        <span class="bar__tally-of">/ {pad.format(lineCount)}</span>
+      </p>
+      <a
+        class="bar__wa"
+        href={chatUrl}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        واتساب<span class="vh"> (يفتح في نافذة جديدة)</span>
+      </a>
+    </header>
+
+    <main class="sheet">
+      <section aria-labelledby="title" class="letterhead">
+        <div class="letterhead__main">
+          <h1 class="letterhead__title" id="title">
+            {store.name}
+          </h1>
+          <p aria-hidden="true" class="letterhead__sign">
+            الحرمين
+          </p>
+          <p class="letterhead__lede">{store.tagline}</p>
+        </div>
+
+        <dl class="letterhead__meta">
+          <div>
+            <dt>رقم الكشف</dt>
+            <dd class="num">{invoiceNumber}</dd>
+          </div>
+          <div>
+            <dt>التاريخ الهجري</dt>
+            <dd>
+              <time datetime={isoDate}>{hijri}</time>
+            </dd>
+          </div>
+          <div>
+            <dt>التاريخ الميلادي</dt>
+            <dd>
+              <time datetime={isoDate}>{gregorian}</time>
+            </dd>
+          </div>
+          <div>
+            <dt>المدينة</dt>
+            <dd>عمّان</dd>
+          </div>
+          <div>
+            <dt>عدد الأصناف</dt>
+            <dd class="num">{digits.format(products.length)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section
+        aria-labelledby="goods-heading"
+        class="goods"
+        id="goods"
+        style={`--count: ${products.length}`}
+      >
+        <div class="goods__pin">
+          <h2 class="head" id="goods-heading">
+            البضاعة
+            <span class="head__note">
+              {digits.format(products.length)} أصناف، الأسعار بالدينار الأردني
+            </span>
+          </h2>
+
+          <table class="ledger">
+            <caption class="vh">
+              ساعات الحرمين المتوفرة: الصورة والاسم والنوع والسعر ورابط الطلب
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">الصورة</th>
+                <th scope="col">الاسم</th>
+                <th scope="col">النوع</th>
+                <th scope="col">السعر</th>
+                <th scope="col">اطلب</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product, index) => {
+                const { data, id } = product;
+                const [cover] = data.images;
+                const isFirst = index === 0;
+                const size = isFirst ? HERO_SIZE : ROW_SIZE;
+
+                return (
+                  <tr class="ledger__row" style={`--i: ${index + 1}`}>
+                    <td class="ledger__photo" data-line>
+                      <Picture
+                        alt={cover.alt}
+                        class="ledger__img"
+                        fetchpriority={isFirst ? "high" : "auto"}
+                        formats={["avif", "webp"]}
+                        height={size}
+                        loading={isFirst ? "eager" : "lazy"}
+                        sizes={
+                          isFirst
+                            ? "(min-width: 64rem) 30rem, 90vw"
+                            : "(min-width: 64rem) 19rem, 8rem"
+                        }
+                        src={cover.src}
+                        width={size}
+                        widths={
+                          isFirst ? [320, 640, HERO_SIZE] : [160, 320, ROW_SIZE]
+                        }
+                      />
+                    </td>
+                    <th class="ledger__name" scope="row">
+                      {data.name}
+                      <span class="ledger__model" dir="ltr">
+                        {data.model}
+                      </span>
+                    </th>
+                    <td class="ledger__type">{categoryName(product)}</td>
+                    <td class="ledger__price">
+                      <span class="ledger__amount">
+                        {formatPrice(data.price, data.currency)}
+                      </span>
+                      {data.compareAtPrice !== undefined && (
+                        <s class="ledger__was">
+                          <span class="vh">بدلًا من </span>
+                          {formatPrice(data.compareAtPrice, data.currency)}
+                        </s>
+                      )}
+                    </td>
+                    <td class="ledger__order">
+                      <a class="ledger__link" href={`/watches/${id}/`}>
+                        اطلب<span class="vh"> {data.name}</span>
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="features-heading"
+        class="block"
+        style={`counter-set: line ${products.length}`}
+      >
+        <h2 class="head" id="features-heading">
+          ما تحصل عليه مع كل ساعة
+          <span class="head__note">{digits.format(features.length)} بنود</span>
+        </h2>
+        <dl class="rows">
+          {features.map((feature) => (
+            <div class="rows__row ruled" data-line>
+              <dt class="rows__title">{feature.title}</dt>
+              <dd class="rows__text">{feature.text}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section aria-labelledby="steps-heading" class="block">
+        <h2 class="head" id="steps-heading">
+          طريقة الطلب
+          <span class="head__note">{digits.format(steps.length)} خطوات</span>
+        </h2>
+        <ol class="rows steps">
+          {steps.map((step, index) => (
+            <li class="rows__row ruled" data-line>
+              <span aria-hidden="true" class="steps__num">
+                {digits.format(index + 1)}
+              </span>
+              <h3 class="rows__title">{step.title}</h3>
+              <p class="rows__text">{step.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="delivery-heading" class="delivery block">
+        <h2 class="head" id="delivery-heading">
+          التوصيل والدفع
+          <span class="head__note">لجميع محافظات الأردن</span>
+        </h2>
+
+        <table class="zones">
+          <caption class="vh">رسوم التوصيل ومدته حسب المنطقة</caption>
+          <thead>
+            <tr>
+              <th scope="col">المنطقة</th>
+              <th scope="col">رسوم التوصيل</th>
+              <th scope="col">مدة التوصيل</th>
+            </tr>
+          </thead>
+          <tbody>
+            {zones.map((zone) => (
+              <tr>
+                <th class="zones__name" data-line scope="row">
+                  {zone.data.name}
+                </th>
+                <td class="zones__fee">
+                  {formatPrice(zone.data.fee, zone.data.currency)}
+                </td>
+                <td>{deliveryTime(zone.data.minDays, zone.data.maxDays)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <p class="totals__line">
+            <span>المطلوب دفعه الآن</span>
+            <strong class="totals__amount">{nothingDue}</strong>
+          </p>
+          <p class="totals__pay">الدفع نقدًا عند الاستلام</p>
+
+          <div aria-hidden="true" class="stamp">
+            <div class="stamp__ink">
+              <span class="stamp__word">الحرمين</span>
+              <span class="stamp__text">مدفوع عند الاستلام</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="strip-heading" class="strip">
+        <p aria-hidden="true" class="strip__cut">
+          <span class="strip__scissors">✂</span>
+        </p>
+        <div class="strip__paper">
+          <div class="strip__text">
+            <h2 class="strip__title" id="strip-heading">
+              قسيمة الطلب
+            </h2>
+            <p>
+              أرسل لنا اسم الساعة ومنطقتك عبر واتساب، ونؤكد معك الطلب وموعد
+              التوصيل.
+            </p>
+          </div>
+          <a
+            class="strip__wa"
+            href={chatUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            اطلب عبر واتساب<span class="vh"> (يفتح في نافذة جديدة)</span>
+          </a>
+          <p class="strip__phone">
+            أو اتصل بنا
+            <a dir="ltr" href={`tel:${contact.phone}`}>
+              {phoneDisplay}
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>{`© ${year} ${store.name}`}</p>
+      <p>{contact.address}</p>
+      <p>
+        <a href="/guides/">شروحات استخدام الساعات</a>
+      </p>
+    </footer>
+
+    <script>
+      // The running line number in the top rule: whichever ruled line sits
+      // nearest the reading point. Decorative (aria-hidden); the page reads
+      // fine without it.
+      const READ_X = 0.7;
+      const READ_Y = 0.45;
+
+      const tally = document.querySelector<HTMLElement>("[data-tally]");
+      const lines = [...document.querySelectorAll<HTMLElement>("[data-line]")];
+      const pad = new Intl.NumberFormat("ar-JO", { minimumIntegerDigits: 2 });
+      let frame = 0;
+
+      const update = (): void => {
+        frame = 0;
+
+        if (!tally) {
+          return;
+        }
+
+        const readX = window.innerWidth * READ_X;
+        const readY = window.innerHeight * READ_Y;
+        let nearest = 0;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        for (const [index, line] of lines.entries()) {
+          const rect = line.getBoundingClientRect();
+
+          const distance = Math.hypot(
+            (rect.left + rect.right) / 2 - readX,
+            (rect.top + rect.bottom) / 2 - readY
+          );
+
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = index;
+          }
+        }
+
+        tally.textContent = pad.format(nearest + 1);
+      };
+
+      const schedule = (): void => {
+        if (frame === 0) {
+          frame = requestAnimationFrame(update);
+        }
+      };
+
+      window.addEventListener("scroll", schedule, { passive: true });
+
+      window.addEventListener("resize", schedule, { passive: true });
+
+      schedule();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --paper: #fbfbf8;
+    --white: #fff;
+    --ink: #121212;
+    --ink-soft: #454545;
+    --carbon: #1e4d8c;
+    --carbon-faint: rgb(30 77 140 / 0.35);
+    --ledger: #dce6f2;
+    --margin-red: #c0392b;
+    --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --font-title: "Amiri", "IBM Plex Sans Arabic", serif;
+    --font-hand: "Aref Ruqaa Ink", "Amiri", serif;
+    --bar: 3.25rem;
+    --gutter: clamp(2.75rem, 7vw, 6rem);
+    --pad-end: clamp(1rem, 4vw, 4rem);
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.07 0 0 0 0 0.07 0 0 0 0 0.07 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-padding-block-start: calc(var(--bar) + 1rem);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--grain) var(--paper);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1.0625rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.7;
+  }
+
+  /* The accounting-paper margin: a double red rule down the whole sheet. */
+  body::before {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: calc(var(--gutter) - 0.85rem);
+    z-index: 5;
+    inline-size: 4px;
+    border-inline: 1px solid var(--margin-red);
+    content: "";
+    opacity: 0.75;
+    pointer-events: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  dl,
+  dd,
+  ol,
+  figure {
+    margin: 0;
+  }
+
+  ol {
+    padding: 0;
+    list-style: none;
+  }
+
+  img {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  a {
+    color: var(--carbon);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+  }
+
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--carbon);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .vh {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .defs {
+    position: absolute;
+    inline-size: 0;
+    block-size: 0;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 20;
+    padding: 0.5rem 1rem;
+    background: var(--white);
+    translate: 0 -200%;
+  }
+
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<style>
+  /* ---------- Top rule: name, running line number, WhatsApp ---------- */
+  .bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    block-size: var(--bar);
+    padding-inline: var(--gutter) var(--pad-end);
+    border-block-end: 3px double var(--carbon);
+    background: var(--grain) var(--paper);
+    background-attachment: fixed;
+    font-size: 0.9375rem;
+  }
+
+  .bar__name {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .bar__tally {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-inline-start: auto;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .bar__tally-now {
+    min-inline-size: 2ch;
+    color: var(--ink);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .bar__wa {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ---------- Sheet ---------- */
+  .sheet {
+    overflow-x: clip;
+    counter-reset: line;
+  }
+
+  .sheet > section {
+    padding-inline: var(--gutter) var(--pad-end);
+  }
+
+  /* Line numbers live in the margin, left of the red rule's far side. */
+  [data-line] {
+    position: relative;
+    counter-increment: line;
+  }
+
+  [data-line]::before {
+    position: absolute;
+    inset-block-start: 1.15rem;
+    inset-inline-start: calc(-1 * var(--gutter));
+    inline-size: calc(var(--gutter) - 1.25rem);
+    color: var(--ink-soft);
+    content: counter(line, arabic-indic);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  /* ---------- Letterhead (hero) ---------- */
+  .letterhead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    padding-block: clamp(1.5rem, 4vw, 2.75rem) clamp(1.5rem, 3vw, 2.25rem);
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(2.25rem - 1px),
+      var(--ledger) calc(2.25rem - 1px) 2.25rem
+    );
+  }
+
+  .letterhead__main {
+    position: relative;
+  }
+
+  .letterhead__title {
+    font-family: var(--font-title);
+    font-size: clamp(2.6rem, 6.2vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+
+  .letterhead__sign {
+    display: inline-block;
+    margin-block-start: 0.15rem;
+    color: var(--carbon);
+    font-family: var(--font-hand);
+    font-size: clamp(1.9rem, 3.4vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    rotate: -4deg;
+  }
+
+  .letterhead__lede {
+    max-inline-size: 36rem;
+    margin-block-start: 0.5rem;
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 1.8;
+  }
+
+  .letterhead__meta {
+    display: grid;
+    align-content: start;
+    border-block-start: 2px solid var(--ink);
+    font-size: 0.9375rem;
+  }
+
+  .letterhead__meta div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.4rem;
+    border-block-end: 1px solid var(--carbon-faint);
+  }
+
+  .letterhead__meta dt {
+    color: var(--ink-soft);
+  }
+
+  .letterhead__meta dd {
+    font-weight: 600;
+    text-align: end;
+  }
+
+  @media (min-width: 52rem) {
+    .letterhead {
+      grid-template-columns: minmax(0, 1fr) minmax(17rem, 21rem);
+      align-items: end;
+      gap: 3rem;
+    }
+  }
+
+  /* ---------- Section heads: a heading on a carbon double rule ---------- */
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+    padding-block: 0.5rem;
+    border-block: 3px double var(--carbon);
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .head__note {
+    color: var(--ink-soft);
+    font-size: 0.9375rem;
+    font-weight: 400;
+  }
+
+  /* ---------- Product ledger: stacked rows (phones, fallback) ---------- */
+  .goods {
+    padding-block-end: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .ledger {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+
+  .ledger thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ledger,
+  .ledger tbody {
+    display: block;
+  }
+
+  .ledger__row {
+    position: relative;
+    display: grid;
+    grid-template-areas:
+      "photo name name"
+      "photo type type"
+      "photo price order";
+    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    column-gap: 1rem;
+    padding-block: 1rem;
+  }
+
+  .ledger__row::after {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    block-size: 1px;
+    background: var(--carbon-faint);
+    content: "";
+  }
+
+  .ledger__row > * {
+    padding: 0;
+    text-align: start;
+  }
+
+  .ledger__photo {
+    grid-area: photo;
+    align-self: center;
+  }
+
+  .ledger__img {
+    inline-size: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+  }
+
+  .ledger__name {
+    grid-area: name;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .ledger__model {
+    display: block;
+    color: var(--ink-soft);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-align: end;
+  }
+
+  .ledger__type {
+    grid-area: type;
+    color: var(--ink-soft);
+    font-size: 0.9375rem;
+  }
+
+  .ledger__price {
+    grid-area: price;
+    align-self: end;
+  }
+
+  .ledger__amount {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .ledger__was {
+    margin-inline-start: 0.5rem;
+    color: var(--ink-soft);
+    font-size: 0.875rem;
+  }
+
+  .ledger__order {
+    grid-area: order;
+    align-self: end;
+  }
+
+  /* An accounting double underline on every order link. */
+  .ledger__link {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.75rem;
+    padding-inline: 0.25rem;
+    font-weight: 700;
+    text-decoration-line: underline;
+    text-decoration-style: double;
+    text-decoration-thickness: 3px;
+  }
+
+  /* The first row is the hero: its photo takes the full width. */
+  .ledger__row:first-child {
+    grid-template-areas:
+      "photo photo"
+      "name name"
+      "type type"
+      "price order";
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-block-start: 0.5rem;
+  }
+
+  .ledger__row:first-child .ledger__photo {
+    max-inline-size: 26rem;
+    justify-self: center;
+    inline-size: 100%;
+  }
+
+  .ledger__row:first-child .ledger__name {
+    font-size: 1.375rem;
+  }
+
+  .ledger__row:first-child .ledger__amount {
+    font-size: 1.625rem;
+  }
+
+  /* ---------- A classic table between phones and wide screens ---------- */
+  @media (min-width: 48rem) {
+    .ledger {
+      display: table;
+    }
+
+    .ledger tbody {
+      display: table-row-group;
+    }
+
+    .ledger thead {
+      position: static;
+      display: table-header-group;
+      inline-size: auto;
+      block-size: auto;
+      clip-path: none;
+    }
+
+    .ledger thead th {
+      padding-block: 0.75rem;
+      padding-inline: 0 1rem;
+      border-block-end: 2px solid var(--carbon);
+      color: var(--ink-soft);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-align: start;
+    }
+
+    .ledger__row {
+      display: table-row;
+    }
+
+    .ledger__row::after {
+      content: none;
+    }
+
+    .ledger__row > * {
+      padding-block: 1rem;
+      padding-inline: 0 1.25rem;
+      border-block-end: 1px solid var(--carbon-faint);
+      vertical-align: middle;
+    }
+
+    .ledger__photo,
+    .ledger__row:first-child .ledger__photo {
+      inline-size: 17rem;
+      max-inline-size: none;
+    }
+
+    .ledger__model,
+    .ledger__price,
+    .ledger__type {
+      white-space: nowrap;
+    }
+
+    .ledger__photo .ledger__img {
+      inline-size: 8rem;
+    }
+
+    .ledger__row:first-child .ledger__photo .ledger__img {
+      inline-size: 16rem;
+    }
+
+    .ledger__order {
+      text-align: end;
+    }
+  }
+
+  /* ---------- Wide screens: the ledger turns sideways ----------
+     Rows become columns (same semantic table, CSS grid with display:
+     contents rows). The label column stays put while every product cell
+     slides along one view timeline. RTL: later products sit to the left,
+     so the cells travel right (positive x) to bring them in. */
+  @supports (animation-timeline: view()) {
+    @media (min-width: 64rem) and (min-height: 40rem) and (prefers-reduced-motion: no-preference) {
+      .goods {
+        --label: 8.5rem;
+        --first: 30rem;
+        --col: 19rem;
+        --grid-w: calc(
+          var(--label) + var(--first) + (var(--count) - 1) * var(--col)
+        );
+
+        block-size: calc(
+          100svh - var(--bar) +
+            max(0px, var(--grid-w) - 100vw + var(--gutter) + var(--pad-end))
+        );
+        padding-block-end: 0;
+        view-timeline: --ledger block;
+      }
+
+      .goods__pin {
+        --travel: max(0px, var(--grid-w) - 100cqi);
+
+        position: sticky;
+        inset-block-start: var(--bar);
+        display: flex;
+        flex-direction: column;
+        block-size: calc(100svh - var(--bar));
+        padding-block-end: 1.5rem;
+        overflow: clip;
+        container-type: inline-size;
+      }
+
+      .ledger {
+        display: grid;
+        flex: 1;
+        grid-template-columns: var(--label) var(--first);
+        grid-template-rows: minmax(0, 1fr) repeat(4, auto);
+        grid-auto-columns: var(--col);
+        min-block-size: 0;
+      }
+
+      .ledger thead,
+      .ledger tbody,
+      .ledger tr,
+      .ledger__row {
+        display: contents;
+      }
+
+      .ledger tr > :nth-child(1) {
+        grid-row: 1;
+      }
+
+      .ledger tr > :nth-child(2) {
+        grid-row: 2;
+      }
+
+      .ledger tr > :nth-child(3) {
+        grid-row: 3;
+      }
+
+      .ledger tr > :nth-child(4) {
+        grid-row: 4;
+      }
+
+      .ledger tr > :nth-child(5) {
+        grid-row: 5;
+      }
+
+      /* The frozen label column, on the same paper as the page. */
+      .ledger thead th {
+        position: relative;
+        z-index: 2;
+        grid-column: 1;
+        padding-block: 1rem;
+        padding-inline: 0 1rem;
+        border-block-end: 1px solid var(--carbon-faint);
+        border-inline-end: 3px double var(--carbon);
+        background: var(--grain) var(--paper);
+        background-attachment: fixed;
+        vertical-align: top;
+      }
+
+      .ledger__row > * {
+        grid-column: calc(var(--i) + 1);
+        min-block-size: 0;
+        padding-block: 1rem;
+        padding-inline: 1.5rem;
+        border-block-end: 1px solid var(--carbon-faint);
+        border-inline-end: 1px solid var(--ledger);
+        animation-name: ledger-slide;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
+        animation-range: contain 0% contain 100%;
+        animation-timeline: --ledger;
+      }
+
+      /* Cells get the paper colour so the white studio photos can
+         multiply into it (the slide makes each cell its own group). */
+      .ledger__row > *,
+      .ledger__row:first-child .ledger__photo {
+        align-self: stretch;
+        justify-self: stretch;
+        inline-size: auto;
+        max-inline-size: none;
+        background: var(--paper);
+      }
+
+      .ledger__photo .ledger__img,
+      .ledger__row:first-child .ledger__photo .ledger__img {
+        position: absolute;
+        inset-block-start: 1rem;
+        inset-inline-start: 1.5rem;
+        inline-size: calc(100% - 3rem);
+        block-size: calc(100% - 1.5rem);
+        aspect-ratio: auto;
+      }
+
+      /* In the sideways ledger the line number sits inside the photo cell. */
+      [data-line].ledger__photo::before {
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        inline-size: auto;
+        text-align: start;
+      }
+
+      .ledger__name {
+        font-size: 1.125rem;
+      }
+
+      .ledger__row:first-child .ledger__name {
+        font-size: 1.5rem;
+      }
+
+      .ledger__order {
+        text-align: start;
+      }
+
+      @keyframes ledger-slide {
+        to {
+          translate: var(--travel) 0;
+        }
+      }
+    }
+  }
+
+  /* ---------- Features and steps: ruled rows ---------- */
+  .block {
+    padding-block: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  .rows__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem 2rem;
+    padding-block: 1.1rem;
+  }
+
+  .ruled::after {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    block-size: 1px;
+    background: var(--carbon-faint);
+    content: "";
+  }
+
+  .rows__title {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .rows__text {
+    max-inline-size: 40rem;
+    color: var(--ink-soft);
+  }
+
+  .steps .rows__row {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .steps__num {
+    grid-row: span 2;
+    color: var(--carbon);
+    font-size: 2.25rem;
+    font-weight: 300;
+    line-height: 1;
+  }
+
+  @media (min-width: 48rem) {
+    .rows__row {
+      grid-template-columns: minmax(14rem, 22rem) minmax(0, 1fr);
+      align-items: baseline;
+    }
+
+    .steps .rows__row {
+      grid-template-columns: 4rem minmax(14rem, 22rem) minmax(0, 1fr);
+    }
+
+    .steps__num {
+      grid-row: auto;
+    }
+  }
+
+  /* ---------- Delivery fees, totals and the stamp ---------- */
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+
+  .zones th,
+  .zones td {
+    padding-block: 1rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--carbon-faint);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .zones thead th {
+    padding-block: 0.6rem;
+    border-block-end: 2px solid var(--carbon);
+    color: var(--ink-soft);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .zones__name {
+    font-weight: 600;
+  }
+
+  .zones__fee {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .totals {
+    position: relative;
+    display: grid;
+    gap: 0.25rem;
+    padding-block: 1.25rem 0;
+  }
+
+  .totals__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 0.75rem;
+    border-block: 1px solid var(--ink);
+    border-block-end: 4px double var(--ink);
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
+    font-weight: 600;
+  }
+
+  .totals__amount {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+  }
+
+  .totals__pay {
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
+    font-weight: 700;
+  }
+
+  .stamp {
+    justify-self: center;
+    margin-block-start: 1.5rem;
+    color: var(--carbon);
+    mix-blend-mode: multiply;
+    rotate: -9deg;
+  }
+
+  .stamp__ink {
+    display: grid;
+    justify-items: center;
+    padding-block: 0.6rem 0.8rem;
+    padding-inline: 1.6rem;
+    border: 4px double currentcolor;
+    border-radius: 0.6rem;
+    filter: url("#stamp-ink");
+    opacity: 0.88;
+  }
+
+  .stamp__word {
+    font-family: var(--font-hand);
+    font-size: 3.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .stamp__text {
+    padding-block-start: 0.2rem;
+    border-block-start: 2px solid currentcolor;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  @media (min-width: 48rem) {
+    .stamp {
+      position: absolute;
+      inset-block-start: -2.5rem;
+      inset-inline-end: clamp(0rem, 6vw, 5rem);
+      margin: 0;
+    }
+
+    .totals__line {
+      max-inline-size: calc(100% - 20rem);
+    }
+
+    .totals {
+      padding-block-start: 2rem;
+    }
+  }
+
+  /* ---------- Tear-off WhatsApp strip ---------- */
+  .strip {
+    padding-block: 0 clamp(3rem, 7vw, 5rem);
+    perspective: 1200px;
+  }
+
+  .strip__cut {
+    position: relative;
+    block-size: 1.5rem;
+  }
+
+  .strip__scissors {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 1rem;
+    color: var(--ink-soft);
+    font-size: 1.25rem;
+    line-height: 1;
+    translate: 0 -55%;
+  }
+
+  .strip__paper {
+    position: relative;
+    display: grid;
+    gap: 1.25rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid var(--carbon-faint);
+    border-block-start: 0;
+    background: var(--white);
+    box-shadow: 0 1px 0 var(--ledger);
+    transform-origin: 50% 100%;
+    transition:
+      transform 500ms var(--ease),
+      box-shadow 500ms var(--ease);
+  }
+
+  /* The perforation: a dashed rule with punched holes along the top. */
+  .strip__paper::before {
+    position: absolute;
+    inset-block-start: -0.4rem;
+    inset-inline: 0;
+    block-size: 0.8rem;
+    background:
+      radial-gradient(circle, var(--paper) 0 0.24rem, transparent 0.28rem) 0
+        50% / 1.1rem 100% repeat-x,
+      linear-gradient(var(--carbon), var(--carbon)) 0 50% / 100% 1px no-repeat;
+    content: "";
+  }
+
+  .strip__paper:hover,
+  .strip__paper:focus-within {
+    box-shadow:
+      0 1px 0 var(--ledger),
+      0 18px 30px -18px rgb(18 18 18 / 0.35);
+    transform: rotateX(9deg) rotateZ(-0.8deg);
+  }
+
+  .strip__title {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .strip__text p {
+    max-inline-size: 34rem;
+    margin-block-start: 0.35rem;
+    color: var(--ink-soft);
+  }
+
+  .strip__wa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: stretch;
+    min-block-size: 3.25rem;
+    padding-inline: 1.75rem;
+    background: var(--carbon);
+    color: var(--white);
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .strip__wa:hover {
+    background: #163b6c;
+  }
+
+  .strip__phone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25rem 0.6rem;
+    color: var(--ink-soft);
+  }
+
+  .strip__phone a {
+    color: var(--carbon);
+    font-size: 1.25rem;
+    font-weight: 700;
+    unicode-bidi: isolate;
+  }
+
+  @media (min-width: 56rem) {
+    .strip__paper {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 3rem;
+    }
+
+    .strip__phone {
+      grid-column: 2;
+      text-align: center;
+    }
+  }
+
+  /* ---------- Footer ---------- */
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    padding-block: 1.5rem 2rem;
+    padding-inline: var(--gutter) var(--pad-end);
+    border-block-start: 1px solid var(--carbon-faint);
+    color: var(--ink-soft);
+    font-size: 0.875rem;
+  }
+
+  /* ---------- Scroll-driven moments ---------- */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      /* Ruled lines draw themselves from the inline-start as rows arrive. */
+      .ruled::after,
+      .ledger__row::after {
+        animation-name: rule-draw;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
+        animation-range: entry 20% cover 40%;
+        animation-timeline: view();
+      }
+
+      /* The rubber stamp slams down as the totals come into view. */
+      .stamp {
+        animation-name: stamp-slam;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
+        animation-range: entry 70% cover 42%;
+        animation-timeline: view();
+      }
+
+      .stamp__ink {
+        animation-name: stamp-bleed;
+        animation-fill-mode: both;
+        animation-timing-function: linear;
+        animation-range: entry 70% cover 50%;
+        animation-timeline: view();
+      }
+
+      @keyframes rule-draw {
+        from {
+          inline-size: 0;
+        }
+      }
+
+      @keyframes stamp-slam {
+        0% {
+          opacity: 0;
+          rotate: -24deg;
+          scale: 2;
+          animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+        }
+
+        60% {
+          opacity: 1;
+          rotate: -8deg;
+          scale: 0.94;
+          animation-timing-function: ease-out;
+        }
+
+        100% {
+          opacity: 1;
+          rotate: -9deg;
+          scale: 1;
+        }
+      }
+
+      @keyframes stamp-bleed {
+        0%,
+        55% {
+          opacity: 0.5;
+          box-shadow: 0 0 0 0 transparent;
+        }
+
+        70% {
+          opacity: 1;
+          box-shadow: 0 0 0.5rem 0.1rem rgb(30 77 140 / 0.25);
+        }
+
+        100% {
+          opacity: 0.88;
+          box-shadow: 0 0 0.15rem 0 rgb(30 77 140 / 0.12);
+        }
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .strip__paper,
+    .strip__paper:hover,
+    .strip__paper:focus-within {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
