@@ -1,0 +1,1910 @@
+---
+// Style exploration 8, «المدار»: /1's white showroom, opened by the watch
+// itself. One hairline orbit with minute ticks circles the face; five nodes
+// on it are the five features. Picking one glides a marker to its node, draws
+// a leader line to the part of the watch it concerns, and shows it on the
+// screen. The picker is radios + :has(), so it all works without JS; the
+// script only fills in today's Hijri date and runs one slow tour.
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import { Picture } from "astro:assets";
+
+import logo from "../assets/logo.svg";
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+import { hijriParts } from "../lib/style-8";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const CARD_SIZE = 560;
+const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+
+// The black sport watch: a round face whose compass bezel already reads like
+// a dial diagram, and the darkest object on a white page. The overlay maths
+// below is measured on this exact photo.
+const HERO_ID = "ha-6506bw";
+const hero = products.find((product) => product.id === HERO_ID);
+
+if (!hero) {
+  throw new Error(`/8 is drawn around ${HERO_ID}, which is missing.`);
+}
+
+const [heroImage] = hero.data.images;
+const HERO_PHOTO_SIZE = 992;
+
+// ---- Orbit geometry, in a 1000 × 1000 box centred on the watch face. ----
+// Angles are clock bearings: 0° is 12 o'clock, clockwise positive.
+// In the photo (992 px) the screen is centred at (485, 460.7) with a
+// 149.5 px radius; the photo is drawn at 130% of the dial, so the screen rim
+// sits 196 units from the centre and the compass bezel's marks at 223.
+const CENTER = 500;
+const RING = 376;
+const SCREEN_RIM = 198;
+const BEZEL = 224;
+const TICK_MINOR = 386;
+const TICK_MAJOR = 396;
+const TICKS = 60;
+const TICK_STEP = 360 / TICKS;
+const MAJOR_EVERY = 5;
+const NODE_GAP = 26;
+const LEADER_START = RING - 26;
+
+// The five nodes sit on the arc facing the list, top to bottom.
+const FIRST_NODE = 270 + NODE_GAP * 2;
+const PLACARD_TOP = 870;
+const PRECISION = 10;
+const DEGREES_PER_RADIAN = 180 / Math.PI;
+
+const round = (value: number): number =>
+  Math.round(value * PRECISION) / PRECISION;
+
+const point = (radius: number, bearing: number): [number, number] => {
+  const radians = bearing / DEGREES_PER_RADIAN;
+
+  return [
+    round(CENTER + radius * Math.sin(radians)),
+    round(CENTER - radius * Math.cos(radians)),
+  ];
+};
+
+const segment = (from: [number, number], to: [number, number]): string =>
+  `M${from.join(" ")}L${to.join(" ")}`;
+
+const ticks = (major: boolean): string =>
+  Array.from({ length: TICKS }, (_, index) => index)
+    .filter((index) => (index % MAJOR_EVERY === 0) === major)
+    .map((index) =>
+      segment(
+        point(RING, index * TICK_STEP),
+        point(major ? TICK_MAJOR : TICK_MINOR, index * TICK_STEP)
+      )
+    )
+    .join("");
+
+const minorTicks = ticks(false);
+const majorTicks = ticks(true);
+
+// Where each feature's leader line ends: on the screen, on the compass
+// bezel, or straight down onto the placard under the watch.
+const SCREEN_FEATURES = new Set(["azan", "calendar", "qibla"]);
+
+const LEADER_REACH = new Map([
+  ["azan", SCREEN_RIM],
+  ["calendar", SCREEN_RIM],
+  ["qibla", BEZEL],
+]);
+
+const SHORT_NAMES = new Map([
+  ["azan", "الأذان"],
+  ["qibla", "القبلة"],
+  ["calendar", "الهجري"],
+  ["shield", "الضمان"],
+  ["truck", "التوصيل"],
+]);
+
+const ICONS = new Map([
+  [
+    "azan",
+    '<path d="M18.5 14.5A7.5 7.5 0 1 1 9.5 5.5a6 6 0 0 0 9 9z"/><path d="M17 4.5v3M15.5 6h3"/>',
+  ],
+  [
+    "qibla",
+    '<circle cx="12" cy="12" r="8.5"/><path d="m14.8 9.2-1.6 4-4 1.6 1.6-4z"/>',
+  ],
+  [
+    "calendar",
+    '<rect height="15" rx="1.5" width="16" x="4" y="5.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  ],
+  [
+    "shield",
+    '<path d="M12 3.5 5 6.2v5.6c0 4.2 2.9 7.3 7 8.7 4.1-1.4 7-4.5 7-8.7V6.2z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  ],
+  [
+    "truck",
+    '<path d="M3 6.5h11v9.5H3zM14 10h3.8l3.2 3.3V16h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
+  ],
+]);
+
+const orbit = features.map((feature, index) => {
+  const bearing = FIRST_NODE - index * NODE_GAP;
+  const node = point(RING, bearing);
+  const reach = LEADER_REACH.get(feature.icon);
+
+  const end: [number, number] =
+    reach === undefined ? [node[0], PLACARD_TOP] : point(reach, bearing);
+
+  const start: [number, number] =
+    reach === undefined
+      ? [node[0], round(node[1] + RING - LEADER_START)]
+      : point(LEADER_START, bearing);
+
+  return {
+    ...feature,
+    bearing,
+    end,
+    icon: ICONS.get(feature.icon) ?? "",
+    key: feature.icon,
+    leader: segment(start, end),
+    node,
+    short: SHORT_NAMES.get(feature.icon) ?? feature.title,
+  };
+});
+
+// One rule per feature: when its radio is checked, its pieces switch on
+// (--on: 1) and the marker turns to its node.
+const orbitCss = orbit
+  .map(
+    ({ bearing, key }) =>
+      `.hero:has(#f-${key}:checked) [data-f~="${key}"]{--on:1}.hero:has(#f-${key}:checked) .marker{rotate:${bearing}deg}`
+  )
+  .join("");
+
+const screenKeys = orbit
+  .filter(({ key }) => SCREEN_FEATURES.has(key))
+  .map(({ key }) => key)
+  .join(" ");
+
+// Screen examples. Prayer time and Qibla are illustrations; the Hijri date
+// is today's, refreshed in the browser.
+const FAJR_HOUR = 4;
+const FAJR_MINUTE = 52;
+const fajrTime = `${digits.format(FAJR_HOUR)}:${digits.format(FAJR_MINUTE)}`;
+
+// Qibla from Amman, true north. An example for the screen, not a calculation.
+const QIBLA_BEARING = 157;
+const qiblaLabel = `${digits.format(QIBLA_BEARING)}°`;
+const hijri = hijriParts(new Date());
+
+const { returnDays, warrantyYears } = store;
+const MONTHS_PER_YEAR = 12;
+const warrantyMonths = `${digits.format(warrantyYears * MONTHS_PER_YEAR)} شهرًا`;
+const returnWindow = `${digits.format(returnDays)} يومًا`;
+
+const categories = [
+  ...new Map(
+    products.map((product) => [product.data.category.id, categoryName(product)])
+  ),
+];
+
+// One rule per category: when its radio is checked, hide every other card.
+const filterCss = categories
+  .map(
+    ([id]) =>
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
+  )
+  .join("");
+
+const phoneMatch = JORDAN_PHONE.exec(store.contact.phone);
+
+const phoneParts = phoneMatch?.groups;
+
+const phoneLabel = phoneParts
+  ? `+962 ${phoneParts.area} ${phoneParts.mid} ${phoneParts.end}`
+  : store.contact.phone;
+
+const [cheapestZone] = zones;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{store.name} | المدار</title>
+    <meta name="description" content={store.tagline} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style is:inline set:html={filterCss + orbitCss}></style>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <div class="wrap masthead__inner">
+        <a class="brand" href="/8">
+          <img
+            alt=""
+            class="brand__mark"
+            height="28"
+            src={logo.src}
+            width="28"
+          />
+          <span>{store.name}</span>
+        </a>
+        <nav aria-label="أقسام الصفحة" class="masthead__nav">
+          <ul>
+            <li>
+              <a href="#catalog">الساعات</a>
+            </li>
+            <li>
+              <a href="#order">طريقة الطلب</a>
+            </li>
+            <li>
+              <a href="#contact">تواصل معنا</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="hero" data-orbit>
+        <div class="wrap hero__grid">
+          <figure class="stage">
+            <div class="stage__dial" data-stage>
+              <svg
+                aria-hidden="true"
+                class="dial dial--back"
+                viewBox="0 0 1000 1000"
+              >
+                <circle
+                  class="dial__ring"
+                  cx={CENTER}
+                  cy={CENTER}
+                  pathLength="1"
+                  r={RING}
+                  transform={`rotate(-90 ${CENTER} ${CENTER})`}
+                ></circle>
+                <path class="dial__ticks" d={minorTicks}></path>
+                <path
+                  class="dial__ticks dial__ticks--major"
+                  d={majorTicks}
+                ></path>
+              </svg>
+
+              <div class="stage__photo">
+                <Picture
+                  alt={heroImage.alt}
+                  fetchpriority="high"
+                  formats={["avif", "webp"]}
+                  height={HERO_PHOTO_SIZE}
+                  loading="eager"
+                  sizes="(min-width: 52rem) 50rem, 130vw"
+                  src={heroImage.src}
+                  width={HERO_PHOTO_SIZE}
+                  widths={[520, 780, HERO_PHOTO_SIZE]}
+                />
+              </div>
+
+              <div aria-hidden="true" class="lcd" data-f={screenKeys}>
+                <div class="readout" data-f="azan">
+                  <span class="readout__line">
+                    <svg class="readout__bell" viewBox="0 0 24 24">
+                      <path d="M6 16.5h12l-1.6-2.2V10a4.4 4.4 0 0 0-8.8 0v4.3z"></path>
+                      <path d="M10.2 19a1.9 1.9 0 0 0 3.6 0"></path>
+                    </svg>
+                    الفجر
+                  </span>
+                  <span class="readout__big">{fajrTime}</span>
+                </div>
+
+                <div class="readout" data-f="qibla">
+                  <svg
+                    class="readout__compass"
+                    style={`--bearing: ${QIBLA_BEARING}deg`}
+                    viewBox="0 0 40 40"
+                  >
+                    <circle cx="20" cy="20" r="17"></circle>
+                    <g class="readout__needle">
+                      <path d="M20 5 23.2 20h-6.4z"></path>
+                      <path
+                        class="readout__tail"
+                        d="M16.8 20h6.4L20 35z"
+                      ></path>
+                    </g>
+                  </svg>
+                  <span class="readout__mid">{qiblaLabel}</span>
+                  <span class="readout__small">مثال: من عمّان</span>
+                </div>
+
+                <div class="readout" data-f="calendar">
+                  <span class="readout__line" data-hijri="weekday">
+                    {hijri.weekday}
+                  </span>
+                  <span class="readout__big" data-hijri="day">
+                    {hijri.day}
+                  </span>
+                  <span class="readout__small">
+                    <span data-hijri="month">{hijri.month}</span>{" "}
+                    <span data-hijri="year">{hijri.year}</span>
+                  </span>
+                </div>
+              </div>
+
+              <svg
+                aria-hidden="true"
+                class="dial dial--front"
+                viewBox="0 0 1000 1000"
+              >
+                {orbit.map(({ end, key, leader }) => (
+                  <g class="leader" data-f={key}>
+                    <path class="leader__case" d={leader} pathLength="1" />
+                    <path class="leader__line" d={leader} pathLength="1" />
+                    <circle class="leader__dot" cx={end[0]} cy={end[1]} r="6" />
+                  </g>
+                ))}
+                {orbit.map(({ key, node }) => (
+                  <g class="node" data-f={key}>
+                    <circle
+                      class="node__base"
+                      cx={node[0]}
+                      cy={node[1]}
+                      r="8"
+                    />
+                    <circle
+                      class="node__fill"
+                      cx={node[0]}
+                      cy={node[1]}
+                      r="8"
+                    />
+                  </g>
+                ))}
+                <g class="marker">
+                  <circle cx={CENTER} cy={CENTER - RING} r="19"></circle>
+                </g>
+              </svg>
+
+              <div aria-hidden="true" class="placard" data-f="shield">
+                <p class="placard__value">{warrantyMonths}</p>
+                <p class="placard__note">ضمان، وإرجاع خلال {returnWindow}</p>
+              </div>
+
+              <div aria-hidden="true" class="placard" data-f="truck">
+                <p class="placard__value">كل المحافظات</p>
+                <p class="placard__note">
+                  الدفع عند الاستلام
+                  {cheapestZone && (
+                    <>
+                      ، والتوصيل من{" "}
+                      <span class="price">
+                        {formatPrice(
+                          cheapestZone.data.fee,
+                          cheapestZone.data.currency
+                        )}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <figcaption class="stage__caption">
+              <a href={`/watches/${hero.id}/`}>{hero.data.name}</a>
+              <span class="price">
+                {formatPrice(hero.data.price, hero.data.currency)}
+              </span>
+            </figcaption>
+          </figure>
+
+          <div class="hero__side">
+            <h1 class="hero__title" id="hero-title">
+              لا يفوتك أذان، أينما كنت
+            </h1>
+
+            <fieldset class="feats" data-controls>
+              <legend class="visually-hidden">
+                اختر ميزة لتراها على الساعة
+              </legend>
+              <ul class="feats__list">
+                {orbit.map((feature, index) => (
+                  <li class="feat">
+                    <label class="feat__pick">
+                      <input
+                        aria-describedby={`t-${feature.key}`}
+                        checked={index === 0}
+                        id={`f-${feature.key}`}
+                        name="feature"
+                        type="radio"
+                        value={feature.key}
+                      />
+                      <svg
+                        aria-hidden="true"
+                        class="feat__icon"
+                        set:html={feature.icon}
+                        viewBox="0 0 24 24"
+                      />
+                      <span class="feat__title">{feature.title}</span>
+                      <span aria-hidden="true" class="feat__short">
+                        {feature.short}
+                      </span>
+                    </label>
+                    <div class="feat__more">
+                      <p aria-hidden="true" class="feat__more-title">
+                        {feature.title}
+                      </p>
+                      <p class="feat__text" id={`t-${feature.key}`}>
+                        {feature.text}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+
+            <div class="hero__actions">
+              <a class="button" href="#catalog">
+                تسوّق الساعات
+              </a>
+              <a
+                class="quiet-link"
+                href={chatUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                اسألنا على واتساب
+                <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="catalog-title" class="catalog" id="catalog">
+        <div class="wrap">
+          <div class="section-head catalog__head">
+            <div>
+              <h2 class="section-title" id="catalog-title">
+                الساعات
+              </h2>
+              <p class="section-note">
+                {digits.format(products.length)} منتجات، كلها أصلية ومكفولة
+              </p>
+            </div>
+
+            {categories.length > 1 && (
+              <fieldset class="filters">
+                <legend class="visually-hidden">تصفية حسب الفئة</legend>
+                <label class="chip">
+                  <input checked name="category" type="radio" value="all" />
+                  الكل
+                </label>
+                {categories.map(([id, name]) => (
+                  <label class="chip">
+                    <input
+                      id={`filter-${id}`}
+                      name="category"
+                      type="radio"
+                      value={id}
+                    />
+                    {name}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+
+          <ul class="catalog__grid">
+            {products.map((product, index) => {
+              const [cover] = product.data.images;
+              const { compareAtPrice, currency, price } = product.data;
+
+              return (
+                <li
+                  class="catalog__item"
+                  data-category={product.data.category.id}
+                >
+                  <article class="card">
+                    <div class="card__frame">
+                      <Picture
+                        alt={cover.alt}
+                        formats={["avif", "webp"]}
+                        height={CARD_SIZE}
+                        loading={index < 4 ? "eager" : "lazy"}
+                        sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
+                        src={cover.src}
+                        width={CARD_SIZE}
+                        widths={[280, 420, CARD_SIZE]}
+                      />
+                    </div>
+                    <div class="card__body">
+                      <p class="card__category">{categoryName(product)}</p>
+                      <h3 class="card__name">
+                        <a href={`/watches/${product.id}/`}>
+                          {product.data.name}
+                        </a>
+                      </h3>
+                      <p class="card__price price">
+                        <span class="visually-hidden">السعر:</span>
+                        {formatPrice(price, currency)}
+                        {compareAtPrice !== undefined && (
+                          <s class="card__was">
+                            <span class="visually-hidden">بدلًا من</span>
+                            {formatPrice(compareAtPrice, currency)}
+                          </s>
+                        )}
+                      </p>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="order-title" class="order" id="order">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title" id="order-title">
+                طريقة الطلب
+              </h2>
+              <p class="section-note">
+                ثلاث خطوات، ولا تدفع شيئًا قبل أن تصلك الساعة.
+              </p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span aria-hidden="true" class="step__number">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <h3 class="delivery__title">التوصيل</h3>
+            <table class="zones">
+              <caption class="visually-hidden">
+                رسوم التوصيل ومدته حسب المنطقة
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td class="price">
+                      {formatPrice(zone.data.fee, zone.data.currency)}
+                    </td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
+                <circle cx="12" cy="12.5" r="2.5"></circle>
+              </svg>
+              الدفع نقدًا عند الاستلام
+              {cheapestZone && (
+                <span class="delivery__from">
+                  ، والتوصيل يبدأ من{" "}
+                  {formatPrice(
+                    cheapestZone.data.fee,
+                    cheapestZone.data.currency
+                  )}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="contact" id="contact">
+        <div class="wrap contact__inner">
+          <div>
+            <h2 class="contact__title" id="contact-title">
+              عندك سؤال عن ساعة؟ اسألنا قبل أن تطلب.
+            </h2>
+            <p class="section-note">
+              نرد على واتساب ونساعدك تختار الموديل المناسب لك أو لمن تهديه.
+            </p>
+          </div>
+          <div class="contact__actions">
+            <a
+              class="button"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              راسلنا على واتساب
+              <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+            </a>
+            <p class="contact__phone">
+              أو اتصل بنا:
+              <a dir="ltr" href={`tel:${store.contact.phone}`}>
+                {phoneLabel}
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <p>
+          {store.name}، {store.contact.address}
+        </p>
+        <p>
+          © <span>{digits.format(year).replaceAll("٬", "")}</span>
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      import { initOrbit } from "../lib/style-8";
+
+      initOrbit();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --white: #ffffff;
+    --chalk: #f5f6f3;
+    --ink: #19251f;
+    --muted: #56625b;
+    --hairline: #e3e3de;
+    --pine: #285a47;
+    --pine-deep: #1f4738;
+
+    --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --gutter: clamp(1rem, 4vw, 2.5rem);
+    --section: clamp(4rem, 9vw, 7rem);
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-block-start: 5rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  figure,
+  fieldset {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img,
+  picture,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  img {
+    block-size: auto;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+</style>
+
+<style>
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    block-size: 1px;
+    white-space: nowrap;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 0.75rem;
+    z-index: 20;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    background: var(--ink);
+    color: var(--white);
+    text-decoration: none;
+    translate: 0 -200%;
+  }
+
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+
+  .wrap {
+    inline-size: 100%;
+    max-inline-size: 76rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Header */
+
+  .masthead {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    border-block-end: 1px solid var(--hairline);
+    background: var(--white);
+  }
+
+  .masthead__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-block-size: 4rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand__mark {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+  }
+
+  .masthead__nav ul {
+    display: flex;
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  .masthead__nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .masthead__nav a:hover {
+    color: var(--ink);
+  }
+
+  /* Buttons and links */
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 3rem;
+    padding-inline: 1.75rem;
+    border-radius: 999px;
+    background: var(--pine);
+    color: var(--white);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 200ms var(--ease);
+  }
+
+  .button:hover {
+    background: var(--pine-deep);
+  }
+
+  .quiet-link {
+    padding-block: 0.5rem;
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--hairline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.45em;
+    transition: text-decoration-color 200ms var(--ease);
+  }
+
+  .quiet-link:hover {
+    text-decoration-color: var(--pine);
+  }
+
+  /* Hero: the watch on its orbit, the five features beside it. */
+
+  .hero {
+    --lcd: #d5dfde;
+    --lcd-ink: #1d2523;
+  }
+
+  .hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 2rem clamp(2rem, 4vw, 4rem);
+    padding-block: clamp(0.75rem, 2vw, 1.5rem) clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .stage {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+
+  .stage__dial {
+    position: relative;
+    inline-size: min(100%, calc(100svh - 8rem));
+    aspect-ratio: 1;
+    container-type: inline-size;
+  }
+
+  .dial {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: visible;
+  }
+
+  .dial path,
+  .dial circle {
+    vector-effect: non-scaling-stroke;
+  }
+
+  .dial__ring {
+    fill: none;
+    stroke: #c9ccc5;
+    stroke-width: 1;
+  }
+
+  .dial__ticks {
+    fill: none;
+    stroke: #c9ccc5;
+    stroke-width: 1;
+  }
+
+  .dial__ticks--major {
+    stroke: #8d948e;
+  }
+
+  /* The photo is multiplied onto the orbit, so the ring and ticks run
+     behind the strap. Top and bottom of the strap fade into the page. */
+  .stage__photo {
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    mix-blend-mode: multiply;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 10%,
+      #000 86%,
+      transparent
+    );
+  }
+
+  /* Drawn at 130% of the dial with the screen's centre on the dial's
+     centre (the screen sits at 48.9% / 46.4% of the photo). */
+  .stage__photo :global(img) {
+    position: absolute;
+    inset-block-start: -10.37%;
+    inset-inline-start: -16.44%;
+    inline-size: 130%;
+    max-inline-size: none;
+  }
+
+  /* The watch screen: a disc of LCD grey laid exactly over the photo's
+     screen, feathered into its dark rim. */
+  .lcd {
+    --on: 0;
+
+    position: absolute;
+    inset-block-start: 30.4%;
+    inset-inline-start: 30.4%;
+    inline-size: 39.2%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      var(--lcd) 96.5%,
+      rgb(213 223 222 / 0) 100%
+    );
+    color: var(--lcd-ink);
+    opacity: var(--on);
+    transition: opacity 500ms var(--ease);
+  }
+
+  .readout {
+    --on: 0;
+
+    position: absolute;
+    inset: 0;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.6cqi;
+    line-height: 1.15;
+    opacity: var(--on);
+    translate: 0 calc((1 - var(--on)) * 1.2cqi);
+    transition:
+      opacity 450ms var(--ease),
+      translate 600ms var(--ease);
+    transition-delay: calc(var(--on) * 220ms);
+  }
+
+  .readout__line {
+    display: inline-flex;
+    align-items: center;
+    gap: 1cqi;
+    font-size: 3.9cqi;
+    font-weight: 500;
+  }
+
+  .readout__bell {
+    inline-size: 4cqi;
+    block-size: 4cqi;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .readout__big {
+    font-size: 11.5cqi;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .readout__mid {
+    font-size: 7cqi;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .readout__small {
+    font-size: max(0.6875rem, 2.9cqi);
+    font-weight: 500;
+  }
+
+  .readout__compass {
+    inline-size: 13cqi;
+    block-size: 13cqi;
+  }
+
+  .readout__compass circle {
+    fill: none;
+    stroke: currentColor;
+    stroke-dasharray: 1 2.2;
+    stroke-width: 1;
+  }
+
+  /* The needle swings from north to the bearing as the screen lights. */
+  .readout__needle {
+    fill: currentColor;
+    rotate: calc(var(--on) * var(--bearing));
+    transform-origin: 20px 20px;
+    transition: rotate 1100ms var(--ease) 300ms;
+  }
+
+  .readout__tail {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+  }
+
+  .leader {
+    --on: 0;
+  }
+
+  .leader__case,
+  .leader__line {
+    fill: none;
+    stroke-dasharray: 1;
+    stroke-dashoffset: calc(1 - var(--on));
+    stroke-linecap: round;
+    transition: stroke-dashoffset 700ms var(--ease);
+    transition-delay: calc(var(--on) * 380ms);
+  }
+
+  .leader__case {
+    stroke: var(--white);
+    stroke-width: 4;
+  }
+
+  .leader__line {
+    stroke: var(--pine);
+    stroke-width: 1.25;
+  }
+
+  .leader__dot {
+    fill: var(--pine);
+    stroke: var(--white);
+    stroke-width: 2;
+    opacity: var(--on);
+    transition: opacity 300ms var(--ease);
+    transition-delay: calc(var(--on) * 900ms);
+  }
+
+  .node {
+    --on: 0;
+  }
+
+  .node__base {
+    fill: var(--white);
+    stroke: #8d948e;
+    stroke-width: 1;
+  }
+
+  .node__fill {
+    fill: var(--pine);
+    opacity: var(--on);
+    transition: opacity 400ms var(--ease);
+    transition-delay: calc(var(--on) * 450ms);
+  }
+
+  /* One ring glides along the orbit to the chosen node. */
+  .marker {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    transition: rotate 900ms var(--ease);
+  }
+
+  .marker circle {
+    fill: none;
+    stroke: var(--pine);
+    stroke-width: 1.25;
+  }
+
+  /* Warranty and delivery are not on the screen: a quiet placard under the
+     watch, where their leader lines land. */
+  .placard {
+    --on: 0;
+
+    position: absolute;
+    inset-block-start: 87%;
+    inset-inline-end: -3%;
+    inline-size: 34%;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--ink);
+    opacity: var(--on);
+    translate: 0 calc((1 - var(--on)) * 0.5rem);
+    transition:
+      opacity 450ms var(--ease),
+      translate 600ms var(--ease);
+    transition-delay: calc(var(--on) * 600ms);
+  }
+
+  .placard__value {
+    font-size: clamp(1rem, 3.6cqi, 1.5rem);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .placard__note {
+    margin-block-start: 0.125rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .stage__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .stage__caption a {
+    text-decoration: none;
+  }
+
+  .stage__caption a:hover {
+    color: var(--ink);
+  }
+
+  .stage__caption .price {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .hero__side {
+    display: grid;
+    gap: clamp(1.25rem, 2.6vw, 2rem);
+  }
+
+  .hero__title {
+    max-inline-size: 12ch;
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+  }
+
+  /* Feature picker: radios, one row per feature, all text always there. */
+
+  .feats {
+    min-inline-size: 0;
+    border: 0;
+  }
+
+  .feats__list {
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .feat {
+    position: relative;
+    padding-inline-start: 1rem;
+    border-block-end: 1px solid var(--hairline);
+  }
+
+  .feat::before {
+    position: absolute;
+    inset-block: -1px;
+    inset-inline-start: 0;
+    inline-size: 2px;
+    background: var(--pine);
+    content: "";
+    scale: 1 0;
+    transform-origin: top;
+    transition: scale 500ms var(--ease);
+  }
+
+  .feat:has(input:checked)::before {
+    scale: 1 1;
+  }
+
+  .feat__pick {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-block: 0.625rem 0.125rem;
+    color: var(--muted);
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 200ms var(--ease);
+  }
+
+  .feat__pick input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .feat__pick:hover,
+  .feat:has(input:checked) .feat__pick {
+    color: var(--ink);
+  }
+
+  .feat:has(input:checked) .feat__pick {
+    font-weight: 600;
+  }
+
+  .feat__pick:has(input:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .feat__icon,
+  .delivery__cash svg {
+    flex-shrink: 0;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.4;
+  }
+
+  .feat:has(input:checked) .feat__icon,
+  .delivery__cash svg {
+    stroke: var(--pine);
+  }
+
+  .feat__short,
+  .feat__more-title {
+    display: none;
+  }
+
+  .feat__more {
+    padding-block-end: 0.625rem;
+    padding-inline-start: 2rem;
+  }
+
+  .feat__text {
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  .delivery__cash {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  /* Section scaffolding */
+
+  .catalog,
+  .order,
+  .contact {
+    padding-block: var(--section);
+  }
+
+  .catalog {
+    padding-block-start: clamp(3rem, 6vw, 4.5rem);
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    margin-block-end: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .section-title {
+    font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .section-note {
+    max-inline-size: 36rem;
+    margin-block-start: 0.375rem;
+    color: var(--muted);
+  }
+
+  /* Filters: radios styled as quiet chips, no JS. */
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.5rem;
+    padding-inline: 1.125rem;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition:
+      border-color 200ms var(--ease),
+      color 200ms var(--ease),
+      background-color 200ms var(--ease);
+  }
+
+  .chip input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .chip:has(input:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+  }
+
+  /* Catalog */
+
+  .catalog__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .card__frame {
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    background: var(--chalk);
+  }
+
+  /* White studio photos melt into the chalk ground. */
+  .card__frame :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 8%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    transition: scale 700ms var(--ease);
+  }
+
+  .card:hover .card__frame :global(img) {
+    scale: 1.04;
+  }
+
+  .card__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-block-start: 1rem;
+  }
+
+  .card__category {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .card__name {
+    margin-block: 0.125rem 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .card__name a {
+    text-decoration: none;
+  }
+
+  /* The whole card is the link target. */
+  .card__name a::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .card:has(a:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 6px;
+  }
+
+  .card__name a:focus-visible {
+    outline: none;
+  }
+
+  .card__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-block-start: auto;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--hairline);
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+
+  .card__was {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  /* Order */
+
+  .order {
+    background: var(--chalk);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem clamp(1.5rem, 4vw, 3rem);
+    counter-reset: none;
+  }
+
+  .step {
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .step__number {
+    display: block;
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 2.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .step__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .step__text {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+  }
+
+  .delivery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1rem clamp(2rem, 6vw, 6rem);
+    margin-block-start: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .delivery__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+    text-align: start;
+  }
+
+  .zones th,
+  .zones td {
+    padding-block: 0.875rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--hairline);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .zones thead th {
+    padding-block-start: 0;
+    border-block-end-color: var(--ink);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .zones tbody th {
+    font-weight: 600;
+  }
+
+  .zones td.price {
+    font-weight: 500;
+  }
+
+  .delivery__cash {
+    grid-column: 2;
+    color: var(--ink);
+  }
+
+  .delivery__from {
+    margin-inline-start: -0.625rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Contact */
+
+  .contact__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .contact__title {
+    max-inline-size: 18ch;
+    font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .contact__actions {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+  }
+
+  .contact__phone {
+    color: var(--muted);
+  }
+
+  .contact__phone a {
+    margin-inline-start: 0.25rem;
+    color: var(--ink);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-decoration-color: var(--hairline);
+    text-underline-offset: 0.35em;
+    unicode-bidi: isolate;
+  }
+
+  /* Footer */
+
+  .footer {
+    border-block-start: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 1.75rem;
+  }
+
+  /* Responsive */
+
+  @media (max-width: 64rem) {
+    .catalog__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .masthead__nav {
+      display: none;
+    }
+
+    /* Watch first and full width, then the headline, then the features. */
+    .hero__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+      padding-block-start: 0;
+    }
+
+    .stage {
+      margin-inline: calc(var(--gutter) * -1);
+    }
+
+    .stage__dial {
+      inline-size: min(100%, 32rem);
+    }
+
+    .stage__caption {
+      display: none;
+    }
+
+    .placard {
+      inset-inline-end: 4%;
+      inline-size: 28%;
+      padding-block-start: 0.375rem;
+    }
+
+    .placard__note {
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+    .hero__title {
+      max-inline-size: none;
+    }
+
+    /* The picker becomes one row of five; the chosen feature's title and
+       text share one cell below it, so switching never shifts the page. */
+    .feats__list {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border-block-start: 0;
+    }
+
+    .feat {
+      display: contents;
+    }
+
+    .feat::before {
+      content: none;
+    }
+
+    .feat__pick {
+      flex-direction: column;
+      justify-content: center;
+      grid-row: 1;
+      gap: 0.25rem;
+      min-block-size: 4rem;
+      padding-block: 0.5rem;
+      border-block-end: 1px solid var(--hairline);
+      font-size: 0.8125rem;
+      text-align: center;
+    }
+
+    .feat__pick::after {
+      position: absolute;
+      inset-block-end: -1px;
+      inset-inline: 0;
+      block-size: 2px;
+      background: var(--pine);
+      content: "";
+      scale: 0 1;
+      transition: scale 500ms var(--ease);
+    }
+
+    .feat:has(input:checked) .feat__pick::after {
+      scale: 1 1;
+    }
+
+    .feat__title {
+      position: absolute;
+      overflow: hidden;
+      clip-path: inset(50%);
+      inline-size: 1px;
+      block-size: 1px;
+      white-space: nowrap;
+    }
+
+    .feat__short {
+      display: block;
+    }
+
+    .feat__more {
+      grid-row: 2;
+      grid-column: 1 / -1;
+      padding-block: 1rem 0;
+      padding-inline: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 400ms var(--ease),
+        visibility 0s 400ms;
+    }
+
+    .feat:has(input:checked) .feat__more {
+      opacity: 1;
+      visibility: visible;
+      transition-delay: 0s;
+    }
+
+    .feat__more-title {
+      display: block;
+      font-weight: 600;
+    }
+
+    .delivery {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .delivery__cash {
+      grid-column: auto;
+    }
+
+    .steps {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      column-gap: 1rem;
+    }
+
+    .step__number {
+      grid-row: span 2;
+      font-size: 2rem;
+    }
+
+    .step__text {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    /* One swipeable row of chips instead of a ragged wrap. */
+    .filters {
+      flex: 0 0 calc(100% + var(--gutter) * 2);
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      min-inline-size: 0;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-block: 0.25rem;
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+    }
+
+    .catalog__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.75rem 0.875rem;
+    }
+
+    .card__name {
+      font-size: 0.9375rem;
+    }
+
+    .card__price {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* Motion: the orbit draws itself once on load, then everything else only
+     answers a choice. Without motion the dial is simply there and choices
+     switch in place. */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dial__ring {
+      stroke-dasharray: 1;
+      animation: draw-ring 1800ms var(--ease) 150ms both;
+    }
+
+    .dial__ticks,
+    .node {
+      animation: fade-in 900ms var(--ease) 900ms both;
+    }
+
+    .stage__photo {
+      animation: settle 1300ms var(--ease) 100ms both;
+    }
+
+    @supports (animation-timeline: view()) {
+      .card,
+      .step {
+        animation-name: reveal;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 60%;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marker,
+    .leader__case,
+    .leader__line,
+    .readout__needle,
+    .feat::before,
+    .feat__pick::after {
+      transition: none;
+    }
+
+    .readout,
+    .placard {
+      translate: none;
+    }
+  }
+
+  @keyframes draw-ring {
+    from {
+      stroke-dashoffset: 1;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes settle {
+    from {
+      opacity: 0;
+      scale: 0.97;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+  }
+</style>

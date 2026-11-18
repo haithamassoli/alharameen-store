@@ -1,0 +1,2004 @@
+---
+// Style exploration 9, «الأسطرلاب»: /1's white showroom, opened by an
+// astrolabe. Five thin porcelain and brass rings, one per feature, circle the
+// real watch photo; scrolling turns them one by one into a flat plate and a
+// brass rule swings to the Qibla. The rings are a static SVG at first paint;
+// three.js (src/lib/style-9-scene.ts) takes over only when WebGL is there,
+// motion is allowed and the hero is on screen.
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import { Picture } from "astro:assets";
+
+import logo from "../assets/logo.svg";
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const HERO_SIZE = 960;
+const CARD_SIZE = 560;
+const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+
+// The black sport watch: its compass bezel already speaks the astrolabe's
+// language. The ring geometry below is fitted to this photo's case.
+const HERO_MODEL = "HA-6506BW";
+
+const hero =
+  products.find((product) => product.data.model === HERO_MODEL) ??
+  products.find((product) => product.data.featured);
+
+if (!hero) {
+  throw new Error("The home page needs at least one product.");
+}
+
+const [heroImage] = hero.data.images;
+
+if (!heroImage) {
+  throw new Error(`${hero.id} has no photo.`);
+}
+
+// ---- Astrolabe geometry, shared with the three.js scene. ----
+// Scene units: the instrument square spans ±SCENE_HALF; the photo fills it,
+// nudged so the watch case (radius ≈ 0.54, buttons ≈ 0.59) sits dead centre.
+const VIEW = 1000;
+const MID = VIEW / 2;
+const SCENE_HALF = 1.15;
+const SCALE = MID / SCENE_HALF;
+const RAD = Math.PI / 180;
+const ARC_STEPS = 144;
+const LABEL_ANGLE = 128;
+const LABEL_GAP = 0.042;
+const PRECISION = 10;
+
+// Qibla from Amman, degrees clockwise from north: an example for the copy,
+// not a calculation for the visitor's location.
+const QIBLA_BEARING = 157;
+
+// Tilts keep every loose ring clear of the watch face (minor axis ≥ 0.6).
+const RING_LAYOUT = [
+  { axis: 95, brass: false, radius: 0.63, ticks: false, tilt: 18 },
+  { axis: 30, brass: true, radius: 0.715, ticks: false, tilt: -32 },
+  { axis: 140, brass: false, radius: 0.8, ticks: false, tilt: 40 },
+  { axis: 70, brass: false, radius: 0.885, ticks: false, tilt: -46 },
+  { axis: -12, brass: false, radius: 0.975, ticks: true, tilt: 50 },
+] as const;
+
+type RingLayout = (typeof RING_LAYOUT)[number];
+
+interface Point {
+  x: number;
+  y: number;
+  z: number;
+}
+
+const round = (value: number): number =>
+  Math.round(value * PRECISION) / PRECISION;
+
+/** A point in the ring's plane, tilted then turned as the loose ring is. */
+const place = (ring: RingLayout, x: number, y: number): Point => {
+  const tilt = ring.tilt * RAD;
+  const axis = ring.axis * RAD;
+  const lifted = y * Math.cos(tilt);
+
+  return {
+    x: x * Math.cos(axis) - lifted * Math.sin(axis),
+    y: x * Math.sin(axis) + lifted * Math.cos(axis),
+    z: y * Math.sin(tilt),
+  };
+};
+
+const toView = (point: Point): string =>
+  `${round(MID + point.x * SCALE)} ${round(MID - point.y * SCALE)}`;
+
+const toPath = (runs: readonly Point[][]): string =>
+  runs.map((run) => `M${run.map(toView).join("L")}`).join("");
+
+/** The ring's outline, split into the arcs behind and in front of the photo. */
+interface Arcs {
+  back: string;
+  front: string;
+}
+
+const ringArcs = (ring: RingLayout): Arcs => {
+  const back: Point[][] = [];
+  const front: Point[][] = [];
+  let run: Point[] = [];
+  let inFront: boolean | null = null;
+
+  for (let step = 0; step <= ARC_STEPS; step += 1) {
+    const angle = (step / ARC_STEPS) * Math.PI * 2;
+
+    const point = place(
+      ring,
+      Math.cos(angle) * ring.radius,
+      Math.sin(angle) * ring.radius
+    );
+
+    const side = point.z >= 0;
+
+    if (inFront !== null && side !== inFront) {
+      run.push(point);
+      (inFront ? front : back).push(run);
+      run = [];
+    }
+
+    inFront = side;
+    run.push(point);
+  }
+
+  (inFront ? front : back).push(run);
+
+  return { back: toPath(back), front: toPath(front) };
+};
+
+const TICK_COUNT = 72;
+const TICKS_PER_HOUR = 6;
+const TICK_INSET = 0.016;
+
+const tickPath = (ring: RingLayout): string => {
+  const parts: string[] = [];
+  const outer = ring.radius - TICK_INSET;
+
+  for (let index = 0; index < TICK_COUNT; index += 1) {
+    const angle = 90 * RAD - (index / TICK_COUNT) * Math.PI * 2;
+    const isHour = index % TICKS_PER_HOUR === 0;
+    let length = isHour ? 0.044 : 0.022;
+
+    if (index === 0) {
+      length = 0.064;
+    }
+
+    const from = place(ring, Math.cos(angle) * outer, Math.sin(angle) * outer);
+
+    const to = place(
+      ring,
+      Math.cos(angle) * (outer - length),
+      Math.sin(angle) * (outer - length)
+    );
+
+    parts.push(`M${toView(from)}L${toView(to)}`);
+  }
+
+  return parts.join("");
+};
+
+const rings = features.map((feature, index) => {
+  const layout = RING_LAYOUT[index % RING_LAYOUT.length];
+  const labelRadius = layout.radius + LABEL_GAP;
+
+  const labelPoint = place(
+    layout,
+    Math.cos(LABEL_ANGLE * RAD) * labelRadius,
+    Math.sin(LABEL_ANGLE * RAD) * labelRadius
+  );
+
+  return {
+    ...layout,
+    ...ringArcs(layout),
+    feature,
+    label: digits.format(index + 1),
+    labelX: round(MID + labelPoint.x * SCALE),
+    labelY: round(MID - labelPoint.y * SCALE),
+    ticksPath: layout.ticks ? tickPath(layout) : "",
+  };
+});
+
+const ringData = JSON.stringify(
+  rings.map(({ axis, brass, label, radius, ticks, tilt }) => ({
+    axis,
+    brass,
+    label,
+    radius,
+    ticks,
+    tilt,
+  }))
+);
+
+// The finished plate's Qibla rule, for the SVG and the label beside its tip.
+const RULE_INNER = 0.66;
+const RULE_OUTER = 1.03;
+const RULE_TIP = 1.105;
+const RULE_HALF_WIDTH = 0.026;
+
+const bearingPoint = (radius: number, bearing: number, side = 0): Point => {
+  const angle = bearing * RAD;
+  const across = (bearing + 90) * RAD;
+
+  return {
+    x: Math.sin(angle) * radius + Math.sin(across) * side,
+    y: Math.cos(angle) * radius + Math.cos(across) * side,
+    z: 0,
+  };
+};
+
+const rulePath = `M${toView(bearingPoint(RULE_INNER, QIBLA_BEARING))}L${toView(bearingPoint(RULE_OUTER, QIBLA_BEARING))}`;
+
+const ruleTip = [
+  bearingPoint(RULE_OUTER, QIBLA_BEARING, RULE_HALF_WIDTH),
+  bearingPoint(RULE_TIP, QIBLA_BEARING),
+  bearingPoint(RULE_OUTER, QIBLA_BEARING, -RULE_HALF_WIDTH),
+]
+  .map(toView)
+  .join(" ");
+
+const tipPoint = bearingPoint(RULE_TIP, QIBLA_BEARING);
+const PERCENT = 100;
+const qiblaX = round(((MID + tipPoint.x * SCALE) / VIEW) * PERCENT);
+const qiblaY = round(((MID - tipPoint.y * SCALE) / VIEW) * PERCENT);
+const qiblaExample = `مثال من عمّان ${digits.format(QIBLA_BEARING)}°`;
+
+const categories = [
+  ...new Map(
+    products.map((product) => [product.data.category.id, categoryName(product)])
+  ),
+];
+
+// One rule per category: when its radio is checked, hide every other card.
+const filterCss = categories
+  .map(
+    ([id]) =>
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
+  )
+  .join("");
+
+const phoneMatch = JORDAN_PHONE.exec(store.contact.phone);
+
+const phoneParts = phoneMatch?.groups;
+
+const phoneLabel = phoneParts
+  ? `+962 ${phoneParts.area} ${phoneParts.mid} ${phoneParts.end}`
+  : store.contact.phone;
+
+const [cheapestZone] = zones;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{store.name} | الأسطرلاب</title>
+    <meta name="description" content={store.tagline} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style is:inline set:html={filterCss}></style>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <div class="wrap masthead__inner">
+        <a class="brand" href="/9">
+          <img
+            alt=""
+            class="brand__mark"
+            height="28"
+            src={logo.src}
+            width="28"
+          />
+          <span>{store.name}</span>
+        </a>
+        <nav aria-label="أقسام الصفحة" class="masthead__nav">
+          <ul>
+            <li>
+              <a href="#catalog">الساعات</a>
+            </li>
+            <li>
+              <a href="#features">المزايا</a>
+            </li>
+            <li>
+              <a href="#order">طريقة الطلب</a>
+            </li>
+            <li>
+              <a href="#contact">تواصل معنا</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="hero" data-hero>
+        <div class="wrap hero__stage" data-stage>
+          <div class="hero__intro">
+            <p class="hero__eyebrow rise" style="--i: 0">
+              ساعات الحرمين الأصلية في الأردن
+            </p>
+            <h1 class="hero__title rise" id="hero-title" style="--i: 1">
+              لا يفوتك أذان، أينما كنت
+            </h1>
+          </div>
+
+          <figure class="hero__figure">
+            <div
+              class="instrument"
+              data-bearing={QIBLA_BEARING}
+              data-instrument
+              data-rings={ringData}
+            >
+              <svg
+                aria-hidden="true"
+                class="instrument__layer instrument__svg"
+                viewBox={`0 0 ${VIEW} ${VIEW}`}
+              >
+                {rings.map((ring, index) => (
+                  <g
+                    class:list={["ring", { "ring--brass": ring.brass }]}
+                    data-ring={index}
+                  >
+                    <path class="ring__line" d={ring.back} />
+                    {ring.ticksPath && (
+                      <path class="ring__ticks" d={ring.ticksPath} />
+                    )}
+                    <text class="ring__label" x={ring.labelX} y={ring.labelY}>
+                      {ring.label}
+                    </text>
+                  </g>
+                ))}
+              </svg>
+              <canvas
+                aria-hidden="true"
+                class="instrument__layer instrument__canvas"
+                data-layer="back"
+              ></canvas>
+              <Picture
+                alt={heroImage.alt}
+                fetchpriority="high"
+                formats={["avif", "webp"]}
+                height={HERO_SIZE}
+                loading="eager"
+                sizes="(min-width: 72rem) and (min-height: 40rem) min(46rem, 100vh - 10.5rem), min(100vw, 54vh)"
+                src={heroImage.src}
+                width={HERO_SIZE}
+                widths={[400, 600, 800, HERO_SIZE]}
+              />
+              <svg
+                aria-hidden="true"
+                class="instrument__layer instrument__svg instrument__svg--front"
+                viewBox={`0 0 ${VIEW} ${VIEW}`}
+              >
+                {rings.map((ring, index) => (
+                  <g
+                    class:list={["ring", { "ring--brass": ring.brass }]}
+                    data-ring={index}
+                  >
+                    <path class="ring__line" d={ring.front} />
+                  </g>
+                ))}
+                <g class="rule">
+                  <path d={rulePath} />
+                  <polygon points={ruleTip} />
+                </g>
+              </svg>
+              <canvas
+                aria-hidden="true"
+                class="instrument__layer instrument__canvas instrument__canvas--front"
+                data-layer="front"
+              ></canvas>
+              <p class="qibla" style={`--qx: ${qiblaX}%; --qy: ${qiblaY}%`}>
+                <span>اتجاه القبلة</span>
+                <span class="qibla__dot"> · </span>
+                <span>{qiblaExample}</span>
+              </p>
+            </div>
+            <figcaption class="hero__caption">
+              <a href={`/watches/${hero.id}/`}>{hero.data.name}</a>
+              <span class="price">
+                {formatPrice(hero.data.price, hero.data.currency)}
+              </span>
+            </figcaption>
+          </figure>
+
+          <div class="hero__more">
+            <p class="hero__lede rise" style="--i: 2">
+              ما كان يحسبه الأسطرلاب صار على معصمك: مواقيت الأذان واتجاه القبلة.
+              اختر ساعتك، واطلبها عبر واتساب، وادفع عند الاستلام.
+            </p>
+            <div class="hero__actions rise" style="--i: 3">
+              <a class="button" href="#catalog">
+                تسوّق الساعات
+              </a>
+              <a
+                class="quiet-link"
+                href={chatUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                اسألنا على واتساب
+                <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="legend" id="features">
+            <h2 class="visually-hidden">مزايا كل ساعة</h2>
+            <ol class="legend__list">
+              {rings.map((ring, index) => (
+                <li class="legend__item" data-item>
+                  <button
+                    aria-pressed={index === 0 ? "true" : "false"}
+                    class="legend__button"
+                    data-feature={index}
+                    type="button"
+                  >
+                    <span aria-hidden="true" class="legend__index">
+                      {ring.label}
+                    </span>
+                    <span class="legend__title">{ring.feature.title}</span>
+                  </button>
+                  <p class="legend__text">{ring.feature.text}</p>
+                </li>
+              ))}
+            </ol>
+            <p class="legend__hint">
+              كل حلقة حول الساعة تحمل رقم ميزة. اختر ميزة، أو مرّر الصفحة، لتصطف
+              الحلقات.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="catalog-title" class="catalog" id="catalog">
+        <div class="wrap">
+          <div class="section-head catalog__head">
+            <div>
+              <h2 class="section-title" id="catalog-title">
+                الساعات
+              </h2>
+              <p class="section-note">
+                {digits.format(products.length)} منتجات، كلها أصلية ومكفولة
+              </p>
+            </div>
+
+            {categories.length > 1 && (
+              <fieldset class="filters">
+                <legend class="visually-hidden">تصفية حسب الفئة</legend>
+                <label class="chip">
+                  <input checked name="category" type="radio" value="all" />
+                  الكل
+                </label>
+                {categories.map(([id, name]) => (
+                  <label class="chip">
+                    <input
+                      id={`filter-${id}`}
+                      name="category"
+                      type="radio"
+                      value={id}
+                    />
+                    {name}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+
+          <ul class="catalog__grid">
+            {products.map((product) => {
+              const [cover] = product.data.images;
+              const { compareAtPrice, currency, price } = product.data;
+
+              return (
+                <li
+                  class="catalog__item"
+                  data-category={product.data.category.id}
+                >
+                  <article class="card">
+                    <div class="card__frame">
+                      <Picture
+                        alt={cover.alt}
+                        formats={["avif", "webp"]}
+                        height={CARD_SIZE}
+                        loading="lazy"
+                        sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
+                        src={cover.src}
+                        width={CARD_SIZE}
+                        widths={[280, 420, CARD_SIZE]}
+                      />
+                    </div>
+                    <div class="card__body">
+                      <p class="card__category">{categoryName(product)}</p>
+                      <h3 class="card__name">
+                        <a href={`/watches/${product.id}/`}>
+                          {product.data.name}
+                        </a>
+                      </h3>
+                      <p class="card__price price">
+                        <span class="visually-hidden">السعر:</span>
+                        {formatPrice(price, currency)}
+                        {compareAtPrice !== undefined && (
+                          <s class="card__was">
+                            <span class="visually-hidden">بدلًا من</span>
+                            {formatPrice(compareAtPrice, currency)}
+                          </s>
+                        )}
+                      </p>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="order-title" class="order" id="order">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title" id="order-title">
+                طريقة الطلب
+              </h2>
+              <p class="section-note">
+                ثلاث خطوات، ولا تدفع شيئًا قبل أن تصلك الساعة.
+              </p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span aria-hidden="true" class="step__number">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <h3 class="delivery__title">التوصيل</h3>
+            <table class="zones">
+              <caption class="visually-hidden">
+                رسوم التوصيل ومدته حسب المنطقة
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td class="price">
+                      {formatPrice(zone.data.fee, zone.data.currency)}
+                    </td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
+                <circle cx="12" cy="12.5" r="2.5"></circle>
+              </svg>
+              الدفع نقدًا عند الاستلام
+              {cheapestZone && (
+                <span class="delivery__from">
+                  ، والتوصيل يبدأ من{" "}
+                  {formatPrice(
+                    cheapestZone.data.fee,
+                    cheapestZone.data.currency
+                  )}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="contact" id="contact">
+        <div class="wrap contact__inner">
+          <div>
+            <h2 class="contact__title" id="contact-title">
+              عندك سؤال عن ساعة؟ اسألنا قبل أن تطلب.
+            </h2>
+            <p class="section-note">
+              نرد على واتساب ونساعدك تختار الموديل المناسب لك أو لمن تهديه.
+            </p>
+          </div>
+          <div class="contact__actions">
+            <a
+              class="button"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              راسلنا على واتساب
+              <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+            </a>
+            <p class="contact__phone">
+              أو اتصل بنا:
+              <a dir="ltr" href={`tel:${store.contact.phone}`}>
+                {phoneLabel}
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <p>
+          {store.name}، {store.contact.address}
+        </p>
+        <p>
+          © <span>{digits.format(year).replaceAll("٬", "")}</span>
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      import type { Astrolabe } from "../lib/style-9-scene";
+
+      // Keep in sync with the CSS media query of the sticky desktop stage.
+      const STAGE_QUERY = "(min-width: 72rem) and (min-height: 40rem)";
+      const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+      const PRELOAD_MARGIN = "200px";
+
+      /** Extra scroll after the last ring locks, so the plate rests a while. */
+      const HOLD = 0.7;
+
+      /** The Qibla label shows once the rule has nearly finished its swing. */
+      const QIBLA_SLACK = 0.12;
+
+      /** On narrow screens an item counts as read as it crosses this line. */
+      const READ_LINE = 0.8;
+
+      const clamp = (value: number, min: number, max: number): number =>
+        Math.min(max, Math.max(min, value));
+
+      const hasWebGL2 = (): boolean => {
+        try {
+          const probe = document.createElement("canvas").getContext("webgl2");
+          probe?.getExtension("WEBGL_lose_context")?.loseContext();
+
+          return probe !== null;
+        } catch {
+          return false;
+        }
+      };
+
+      const setupAstrolabe = (): void => {
+        const hero = document.querySelector<HTMLElement>("[data-hero]");
+        const stage = hero?.querySelector<HTMLElement>("[data-stage]");
+
+        const instrument =
+          hero?.querySelector<HTMLElement>("[data-instrument]");
+
+        const back = instrument?.querySelector<HTMLCanvasElement>(
+          "[data-layer='back']"
+        );
+
+        const front = instrument?.querySelector<HTMLCanvasElement>(
+          "[data-layer='front']"
+        );
+
+        if (!hero || !stage || !instrument || !back || !front) {
+          return;
+        }
+
+        const buttons = [
+          ...hero.querySelectorAll<HTMLButtonElement>("[data-feature]"),
+        ];
+
+        const items = [...hero.querySelectorAll<HTMLElement>("[data-item]")];
+
+        const rings = [
+          ...instrument.querySelectorAll<SVGGElement>("[data-ring]"),
+        ];
+
+        const count = buttons.length;
+        const reduced = window.matchMedia(REDUCED_MOTION).matches;
+        const stageQuery = window.matchMedia(STAGE_QUERY);
+
+        let scene: Astrolabe | null = null;
+        let progress = 0;
+
+        const show = (value: number): void => {
+          progress = clamp(value, 0, count);
+          const active = clamp(Math.ceil(progress) - 1, 0, count - 1);
+
+          for (const [index, button] of buttons.entries()) {
+            button.setAttribute("aria-pressed", String(index === active));
+          }
+
+          for (const ring of rings) {
+            ring.classList.toggle(
+              "is-active",
+              ring.dataset.ring === String(active)
+            );
+          }
+
+          // Without motion the plate never turns, so the rule just stays.
+          instrument.dataset.qibla = String(
+            reduced || progress >= count - QIBLA_SLACK
+          );
+
+          scene?.setProgress(progress);
+        };
+
+        /** How far the pinned stage has travelled down its scroll track. */
+        const track = () => {
+          const heroRect = hero.getBoundingClientRect();
+          const stageRect = stage.getBoundingClientRect();
+
+          return {
+            range: heroRect.height - stageRect.height,
+            travelled: stageRect.top - heroRect.top,
+          };
+        };
+
+        /** Scroll position → ring progress, 0 (all loose) to count. */
+        const readProgress = (): number => {
+          if (stageQuery.matches) {
+            const { range, travelled } = track();
+
+            if (range <= 0) {
+              return progress;
+            }
+
+            return clamp(travelled / range, 0, 1) * (count + HOLD);
+          }
+
+          const line = window.innerHeight * READ_LINE;
+          let read = 0;
+
+          for (const item of items) {
+            const rect = item.getBoundingClientRect();
+            read += clamp((line - rect.top) / rect.height, 0, 1);
+          }
+
+          return read;
+        };
+
+        /** How far to scroll so readProgress() lands on `goal`. */
+        const distanceTo = (goal: number): number => {
+          if (stageQuery.matches) {
+            const { range, travelled } = track();
+
+            return (goal / (count + HOLD)) * range - travelled;
+          }
+
+          const item = items.at(goal - 1);
+
+          if (!item) {
+            return 0;
+          }
+
+          const rect = item.getBoundingClientRect();
+
+          return rect.top - (window.innerHeight * READ_LINE - rect.height);
+        };
+
+        for (const [index, button] of buttons.entries()) {
+          button.addEventListener("click", () => {
+            const goal = index + 1;
+            const distance = reduced ? 0 : distanceTo(goal);
+
+            if (Math.abs(distance) < 2) {
+              show(goal);
+
+              return;
+            }
+
+            window.scrollBy({ behavior: "smooth", top: distance });
+          });
+        }
+
+        show(0);
+
+        if (reduced) {
+          return;
+        }
+
+        let frame = 0;
+
+        const follow = (): void => {
+          frame = 0;
+          show(readProgress());
+        };
+
+        const onScroll = (): void => {
+          if (frame === 0) {
+            frame = requestAnimationFrame(follow);
+          }
+        };
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll, { passive: true });
+        follow();
+
+        if (!hasWebGL2()) {
+          return;
+        }
+
+        let requested = false;
+        let inView = false;
+
+        const sync = (): void => {
+          if (inView && document.visibilityState === "visible") {
+            scene?.start();
+          } else {
+            scene?.stop();
+          }
+        };
+
+        const load = async (): Promise<void> => {
+          requested = true;
+
+          try {
+            const { createAstrolabe } = await import("../lib/style-9-scene");
+
+            scene = await createAstrolabe({
+              back,
+              container: instrument,
+              front,
+              progress,
+              qiblaBearing: Number(instrument.dataset.bearing),
+              rings: instrument.dataset.rings ?? "[]",
+            });
+
+            instrument.dataset.state = "live";
+          } catch {
+            // Keep the SVG rings if three.js or WebGL fails.
+            instrument.dataset.state = "static";
+          }
+
+          sync();
+        };
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            inView = entries.some((entry) => entry.isIntersecting);
+
+            if (inView && !requested) {
+              load();
+
+              return;
+            }
+
+            sync();
+          },
+          { rootMargin: PRELOAD_MARGIN }
+        );
+
+        observer.observe(instrument);
+        document.addEventListener("visibilitychange", sync);
+
+        window.addEventListener("pagehide", (event) => {
+          if (event.persisted) {
+            scene?.stop();
+
+            return;
+          }
+
+          observer.disconnect();
+          window.removeEventListener("scroll", onScroll);
+          window.removeEventListener("resize", onScroll);
+          scene?.dispose();
+          scene = null;
+        });
+      };
+
+      setupAstrolabe();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --white: #ffffff;
+    --chalk: #f5f6f3;
+    --ink: #19251f;
+    --muted: #56625b;
+    --hairline: #e3e3de;
+    --pine: #285a47;
+    --pine-deep: #1f4738;
+    --porcelain-line: #c8c6be;
+    --brass: #b8945e;
+    --brass-text: #7a5f2c;
+
+    --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --gutter: clamp(1rem, 4vw, 2.5rem);
+    --section: clamp(4rem, 9vw, 7rem);
+    --masthead: 4rem;
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-block-start: 5rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  figure,
+  fieldset {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img,
+  picture,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  img {
+    block-size: auto;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+</style>
+
+<style>
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    block-size: 1px;
+    white-space: nowrap;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 0.75rem;
+    z-index: 20;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    background: var(--ink);
+    color: var(--white);
+    text-decoration: none;
+    translate: 0 -200%;
+  }
+
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+
+  .wrap {
+    inline-size: 100%;
+    max-inline-size: 76rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Header */
+
+  .masthead {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    border-block-end: 1px solid var(--hairline);
+    background: var(--white);
+  }
+
+  .masthead__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-block-size: var(--masthead);
+  }
+
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand__mark {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+  }
+
+  .masthead__nav ul {
+    display: flex;
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  .masthead__nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .masthead__nav a:hover {
+    color: var(--ink);
+  }
+
+  /* Buttons and links */
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 3rem;
+    padding-inline: 1.75rem;
+    border-radius: 999px;
+    background: var(--pine);
+    color: var(--white);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 200ms var(--ease);
+  }
+
+  .button:hover {
+    background: var(--pine-deep);
+  }
+
+  .quiet-link {
+    padding-block: 0.5rem;
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--hairline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.45em;
+    transition: text-decoration-color 200ms var(--ease);
+  }
+
+  .quiet-link:hover {
+    text-decoration-color: var(--pine);
+  }
+
+  /* Hero. Base = narrow screens: the instrument sticks under the header and
+     the lede and the five features scroll up beneath it. */
+
+  /* Stacked: the watch leads, then the headline (the owner's call). */
+  .hero__stage.wrap {
+    display: flex;
+    flex-direction: column;
+    padding-block: clamp(1.25rem, 3vw, 2rem) clamp(2rem, 6vw, 3.5rem);
+    padding-inline: 0;
+  }
+
+  .hero__figure {
+    order: -1;
+  }
+
+  .hero__intro,
+  .hero__more,
+  .legend {
+    padding-inline: var(--gutter);
+  }
+
+  .hero__eyebrow {
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .hero__title {
+    font-size: clamp(2rem, 8vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .hero__lede {
+    max-inline-size: 34rem;
+    color: var(--muted);
+    font-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+    text-wrap: pretty;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+    margin-block-start: 1.5rem;
+  }
+
+  .hero__figure {
+    position: sticky;
+    inset-block-start: var(--masthead);
+    z-index: 3;
+    margin-block: 0.5rem 1.25rem;
+    padding-block-end: 0.5rem;
+    background: var(--white);
+  }
+
+  /* A soft white edge so text slides under the instrument, not into it. */
+  .hero__figure::after {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline: 0;
+    block-size: 1.5rem;
+    background: linear-gradient(var(--white), rgb(255 255 255 / 0));
+    content: "";
+    pointer-events: none;
+  }
+
+  .hero__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .hero__caption a {
+    text-decoration-color: var(--hairline);
+    text-underline-offset: 0.35em;
+  }
+
+  .hero__caption .price {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* The instrument: SVG or 3D rings behind, the photo, rings in front. */
+
+  .instrument {
+    --size: min(100vw, 54svh);
+
+    position: relative;
+    isolation: isolate;
+    inline-size: var(--size);
+    aspect-ratio: 1;
+    margin-inline: auto;
+    background: var(--white);
+  }
+
+  /* Contact shadow under the plate. */
+  .instrument::before {
+    position: absolute;
+    inset-block: 90% 2%;
+    inset-inline: 24%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      rgb(25 37 31 / 0.09),
+      rgb(25 37 31 / 0)
+    );
+    content: "";
+  }
+
+  .instrument__layer {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    pointer-events: none;
+  }
+
+  .instrument__canvas {
+    opacity: 0;
+    transition: opacity 1200ms var(--ease);
+  }
+
+  .instrument__svg {
+    transition: opacity 1200ms var(--ease);
+  }
+
+  .instrument__svg--front,
+  .instrument__canvas--front {
+    z-index: 2;
+  }
+
+  .instrument[data-state="live"] .instrument__canvas {
+    opacity: 1;
+  }
+
+  .instrument[data-state="live"] .instrument__svg {
+    opacity: 0;
+  }
+
+  /* White studio photo: multiply lets the rings behind show through the
+     white, while the watch itself hides them. It sits on the picture, which
+     is the stacking context. The nudge centres the case; the mask fades the
+     photo's mirror reflection so the watch floats inside the rings. */
+  .instrument :global(picture) {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    mix-blend-mode: multiply;
+  }
+
+  .instrument :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    mask-image: linear-gradient(#000 84%, transparent 95%);
+    translate: 1.3% 3%;
+  }
+
+  .ring__line {
+    fill: none;
+    stroke: var(--porcelain-line);
+    stroke-linecap: round;
+    stroke-width: 1.4;
+    vector-effect: non-scaling-stroke;
+    transition: stroke 600ms var(--ease);
+  }
+
+  .ring--brass .ring__line,
+  .ring__ticks {
+    stroke: var(--brass);
+  }
+
+  .ring__ticks {
+    fill: none;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .ring__label {
+    fill: var(--muted);
+    font-family: var(--font);
+    font-size: 25px;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: central;
+    transition: fill 600ms var(--ease);
+  }
+
+  .ring.is-active .ring__line {
+    stroke: var(--pine);
+  }
+
+  .ring.is-active .ring__label {
+    fill: var(--pine);
+  }
+
+  .rule {
+    fill: var(--brass);
+    stroke: var(--brass);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    transition: opacity 900ms var(--ease);
+  }
+
+  .instrument[data-qibla="true"] .rule {
+    opacity: 1;
+  }
+
+  /* Pinned beside the rule's tip; the page is RTL, so inline-end is left. */
+  .qibla {
+    position: absolute;
+    inset-block-start: var(--qy);
+    inset-inline-end: calc(var(--qx) + 1.5%);
+    z-index: 3;
+    display: grid;
+    justify-items: end;
+    color: var(--brass-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: end;
+    opacity: 0;
+    translate: 0 -50%;
+    transition: opacity 900ms var(--ease);
+  }
+
+  .qibla span {
+    white-space: nowrap;
+  }
+
+  /* Two short lines beside the tip; the dot only reads on one line. */
+  .qibla__dot {
+    display: none;
+  }
+
+  .instrument[data-qibla="true"] .qibla {
+    opacity: 1;
+  }
+
+  /* The five features: the legend to the rings. */
+
+  .legend {
+    margin-block-start: 1.75rem;
+  }
+
+  .legend__list {
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .legend__item {
+    padding-block: 1rem 1.125rem;
+    border-block-end: 1px solid var(--hairline);
+    /* Keep a focused feature clear of the pinned instrument above it. */
+    scroll-margin-block-start: calc(var(--masthead) + min(100vw, 54svh) + 3rem);
+  }
+
+  .legend__button {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    inline-size: 100%;
+    min-block-size: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: start;
+    cursor: pointer;
+    transition: color 400ms var(--ease);
+  }
+
+  .legend__button:hover,
+  .legend__button[aria-pressed="true"] {
+    color: var(--ink);
+  }
+
+  .legend__index {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    inline-size: 2rem;
+    block-size: 2rem;
+    border: 1px solid var(--hairline);
+    border-radius: 50%;
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition:
+      border-color 400ms var(--ease),
+      color 400ms var(--ease);
+  }
+
+  .legend__button[aria-pressed="true"] .legend__index {
+    border-color: var(--pine);
+    color: var(--pine);
+  }
+
+  .legend__text {
+    margin-block-start: 0.125rem;
+    padding-inline-start: 2.875rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    transition: color 400ms var(--ease);
+  }
+
+  .legend__item:has([aria-pressed="true"]) .legend__text {
+    color: var(--ink);
+  }
+
+  .legend__hint {
+    margin-block-start: 1rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  /* Wide and tall enough: one pinned stage, copy | instrument | legend. */
+  @media (min-width: 72rem) and (min-height: 40rem) {
+    .hero__stage.wrap {
+      position: sticky;
+      inset-block-start: var(--masthead);
+      display: grid;
+      grid-template-areas:
+        "intro figure legend"
+        "more figure legend";
+      grid-template-columns: minmax(0, 19rem) minmax(0, 1fr) minmax(0, 17rem);
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      column-gap: clamp(1.5rem, 3vw, 3rem);
+      min-block-size: calc(100svh - var(--masthead));
+      max-inline-size: 90rem;
+      padding-block: 1.5rem;
+      padding-inline: var(--gutter);
+    }
+
+    .hero__intro,
+    .hero__more,
+    .legend {
+      padding-inline: 0;
+    }
+
+    .hero__intro {
+      grid-area: intro;
+      align-self: end;
+    }
+
+    .hero__title {
+      font-size: clamp(2.375rem, 3.4vw, 3.25rem);
+    }
+
+    .hero__more {
+      grid-area: more;
+      align-self: start;
+      padding-block-start: 1.25rem;
+    }
+
+    .hero__figure {
+      position: static;
+      grid-area: figure;
+      grid-row: 1 / -1;
+      margin: 0;
+      padding: 0;
+    }
+
+    .hero__figure::after {
+      content: none;
+    }
+
+    .instrument {
+      --size: min(100%, calc(100svh - var(--masthead) - 6.5rem), 46rem);
+    }
+
+    .hero__caption {
+      margin-block-start: 0.25rem;
+    }
+
+    .legend {
+      grid-area: legend;
+      grid-row: 1 / -1;
+      margin: 0;
+    }
+
+    .legend__item {
+      padding-block: 0.75rem 0.875rem;
+      scroll-margin-block-start: 0;
+    }
+
+    .legend__text {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Laptop-height screens: a tighter legend so the pinned stage still fits. */
+  @media (min-width: 72rem) and (min-height: 40rem) and (max-height: 52rem) {
+    .legend__item {
+      padding-block: 0.375rem 0.5rem;
+    }
+
+    .legend__button {
+      min-block-size: 2.25rem;
+    }
+
+    .legend__text {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .legend__hint {
+      display: none;
+    }
+  }
+
+  /* One extra screen of scroll drives the rings; only when it can. */
+  @media (min-width: 72rem) and (min-height: 40rem) and (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+    .hero {
+      block-size: calc(200svh - var(--masthead));
+    }
+  }
+
+  /* Section scaffolding */
+
+  .catalog,
+  .order,
+  .contact {
+    padding-block: var(--section);
+  }
+
+  .catalog {
+    padding-block-start: clamp(2.5rem, 5vw, 4rem);
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    margin-block-end: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .section-title {
+    font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .section-note {
+    max-inline-size: 36rem;
+    margin-block-start: 0.375rem;
+    color: var(--muted);
+  }
+
+  /* Filters: radios styled as quiet chips, no JS. */
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.5rem;
+    padding-inline: 1.125rem;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition:
+      border-color 200ms var(--ease),
+      color 200ms var(--ease),
+      background-color 200ms var(--ease);
+  }
+
+  .chip input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .chip:has(input:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+  }
+
+  /* Catalog */
+
+  .catalog__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .card__frame {
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    background: var(--chalk);
+  }
+
+  /* White studio photos melt into the chalk ground. */
+  .card__frame :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 8%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    transition: scale 700ms var(--ease);
+  }
+
+  .card:hover .card__frame :global(img) {
+    scale: 1.04;
+  }
+
+  .card__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-block-start: 1rem;
+  }
+
+  .card__category {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .card__name {
+    margin-block: 0.125rem 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .card__name a {
+    text-decoration: none;
+  }
+
+  /* The whole card is the link target. */
+  .card__name a::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .card:has(a:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 6px;
+  }
+
+  .card__name a:focus-visible {
+    outline: none;
+  }
+
+  .card__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-block-start: auto;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--hairline);
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+
+  .card__was {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  /* Order */
+
+  .order {
+    background: var(--chalk);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .step {
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .step__number {
+    display: block;
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 2.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .step__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .step__text {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+  }
+
+  .delivery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1rem clamp(2rem, 6vw, 6rem);
+    margin-block-start: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .delivery__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+    text-align: start;
+  }
+
+  .zones th,
+  .zones td {
+    padding-block: 0.875rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--hairline);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .zones thead th {
+    padding-block-start: 0;
+    border-block-end-color: var(--ink);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .zones tbody th {
+    font-weight: 600;
+  }
+
+  .zones td.price {
+    font-weight: 500;
+  }
+
+  .delivery__cash {
+    display: inline-flex;
+    grid-column: 2;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .delivery__cash svg {
+    flex-shrink: 0;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    fill: none;
+    stroke: var(--pine);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.4;
+  }
+
+  .delivery__from {
+    margin-inline-start: -0.625rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Contact */
+
+  .contact__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .contact__title {
+    max-inline-size: 18ch;
+    font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .contact__actions {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+  }
+
+  .contact__phone {
+    color: var(--muted);
+  }
+
+  .contact__phone a {
+    margin-inline-start: 0.25rem;
+    color: var(--ink);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-decoration-color: var(--hairline);
+    text-underline-offset: 0.35em;
+    unicode-bidi: isolate;
+  }
+
+  /* Footer */
+
+  .footer {
+    border-block-start: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 1.75rem;
+  }
+
+  /* Responsive */
+
+  @media (max-width: 64rem) {
+    .catalog__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .masthead__nav {
+      display: none;
+    }
+
+    .delivery {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .delivery__cash {
+      grid-column: auto;
+    }
+
+    .steps {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      column-gap: 1rem;
+    }
+
+    .step__number {
+      grid-row: span 2;
+      font-size: 2rem;
+    }
+
+    .step__text {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    /* One swipeable row of chips instead of a ragged wrap. */
+    .filters {
+      flex: 0 0 calc(100% + var(--gutter) * 2);
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      min-inline-size: 0;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-block: 0.25rem;
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+    }
+
+    .catalog__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.75rem 0.875rem;
+    }
+
+    .card__name {
+      font-size: 0.9375rem;
+    }
+
+    .card__price {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* Motion: one quiet load sequence for the copy and gentle scroll reveals.
+     Without motion everything is simply there. */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rise {
+      animation: rise 900ms var(--ease) both;
+      animation-delay: calc(var(--i, 0) * 90ms);
+    }
+
+    @supports (animation-timeline: view()) {
+      .card,
+      .step {
+        animation-name: reveal;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 60%;
+      }
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+  }
+</style>

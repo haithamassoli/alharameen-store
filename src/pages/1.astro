@@ -1,0 +1,1343 @@
+---
+// Style exploration 1, «المعرض الأبيض»: a calm, product-first white
+// storefront. Spacing, hairlines and type do the work; the photos are the
+// only colour. Zero client JS: the category filter is radios + :has().
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import { Picture } from "astro:assets";
+
+import logo from "../assets/logo.svg";
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  warranty,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const HERO_SIZE = 720;
+const CARD_SIZE = 560;
+const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+
+const hero = products.find((product) => product.data.featured) ?? products[0];
+const [heroImage] = hero.data.images;
+
+const categories = [
+  ...new Map(
+    products.map((product) => [product.data.category.id, categoryName(product)])
+  ),
+];
+
+// One rule per category: when its radio is checked, hide every other card.
+const filterCss = categories
+  .map(
+    ([id]) =>
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
+  )
+  .join("");
+
+const phoneMatch = JORDAN_PHONE.exec(store.contact.phone);
+
+const phoneParts = phoneMatch?.groups;
+
+const phoneLabel = phoneParts
+  ? `+962 ${phoneParts.area} ${phoneParts.mid} ${phoneParts.end}`
+  : store.contact.phone;
+
+const [cheapestZone] = zones;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{store.name} | المعرض الأبيض</title>
+    <meta name="description" content={store.tagline} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style is:inline set:html={filterCss}></style>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <div class="wrap masthead__inner">
+        <a class="brand" href="/1">
+          <img
+            alt=""
+            class="brand__mark"
+            height="28"
+            src={logo.src}
+            width="28"
+          />
+          <span>{store.name}</span>
+        </a>
+        <nav aria-label="أقسام الصفحة" class="masthead__nav">
+          <ul>
+            <li>
+              <a href="#catalog">الساعات</a>
+            </li>
+            <li>
+              <a href="#features">المزايا</a>
+            </li>
+            <li>
+              <a href="#order">طريقة الطلب</a>
+            </li>
+            <li>
+              <a href="#contact">تواصل معنا</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="hero">
+        <div class="wrap hero__grid">
+          <div class="hero__copy">
+            <p class="hero__eyebrow rise" style="--i: 0">
+              ساعات الحرمين الأصلية في الأردن
+            </p>
+            <h1 class="hero__title rise" id="hero-title" style="--i: 1">
+              لا يفوتك أذان، أينما كنت
+            </h1>
+            <p class="hero__lede rise" style="--i: 2">
+              ساعات يد ومكتب تنبّهك لكل صلاة وتدلّك على القبلة. اختر ساعتك،
+              واطلبها عبر واتساب، وادفع عند الاستلام.
+            </p>
+            <div class="hero__actions rise" style="--i: 3">
+              <a class="button" href="#catalog">
+                تسوّق الساعات
+              </a>
+              <a
+                class="quiet-link"
+                href={chatUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                اسألنا على واتساب
+                <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+              </a>
+            </div>
+          </div>
+
+          <a class="hero__figure" href={`/watches/${hero.id}/`}>
+            <Picture
+              alt={heroImage.alt}
+              fetchpriority="high"
+              formats={["avif", "webp"]}
+              height={HERO_SIZE}
+              loading="eager"
+              sizes="(min-width: 56rem) 34rem, 70vw"
+              src={heroImage.src}
+              width={HERO_SIZE}
+              widths={[360, 540, HERO_SIZE]}
+            />
+            <span class="hero__caption">
+              <span>{hero.data.name}</span>
+              <span class="price">
+                {formatPrice(hero.data.price, hero.data.currency)}
+              </span>
+            </span>
+          </a>
+        </div>
+
+        <div class="wrap">
+          <ul aria-label="لماذا تطلب منا" class="trust">
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
+                <circle cx="12" cy="12.5" r="2.5"></circle>
+              </svg>
+              الدفع عند الاستلام
+            </li>
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 3.5 5 6.2v5.6c0 4.2 2.9 7.3 7 8.7 4.1-1.4 7-4.5 7-8.7V6.2z"></path>
+                <path d="m9 12 2.2 2.2L15.5 10"></path>
+              </svg>
+              ضمان {warranty}
+            </li>
+            <li>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M3 6.5h11v9.5H3zM14 10h3.8l3.2 3.3V16h-7"></path>
+                <circle cx="7" cy="17.5" r="1.8"></circle>
+                <circle cx="17.5" cy="17.5" r="1.8"></circle>
+              </svg>
+              توصيل لكل المحافظات
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="catalog-title" class="catalog" id="catalog">
+        <div class="wrap">
+          <div class="section-head catalog__head">
+            <div>
+              <h2 class="section-title" id="catalog-title">
+                الساعات
+              </h2>
+              <p class="section-note">
+                {digits.format(products.length)} منتجات، كلها أصلية ومكفولة
+              </p>
+            </div>
+
+            {categories.length > 1 && (
+              <fieldset class="filters">
+                <legend class="visually-hidden">تصفية حسب الفئة</legend>
+                <label class="chip">
+                  <input checked name="category" type="radio" value="all" />
+                  الكل
+                </label>
+                {categories.map(([id, name]) => (
+                  <label class="chip">
+                    <input
+                      id={`filter-${id}`}
+                      name="category"
+                      type="radio"
+                      value={id}
+                    />
+                    {name}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+
+          <ul class="catalog__grid">
+            {products.map((product, index) => {
+              const [cover] = product.data.images;
+              const { compareAtPrice, currency, price } = product.data;
+
+              return (
+                <li
+                  class="catalog__item"
+                  data-category={product.data.category.id}
+                >
+                  <article class="card">
+                    <div class="card__frame">
+                      <Picture
+                        alt={cover.alt}
+                        formats={["avif", "webp"]}
+                        height={CARD_SIZE}
+                        loading={index < 4 ? "eager" : "lazy"}
+                        sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
+                        src={cover.src}
+                        width={CARD_SIZE}
+                        widths={[280, 420, CARD_SIZE]}
+                      />
+                    </div>
+                    <div class="card__body">
+                      <p class="card__category">{categoryName(product)}</p>
+                      <h3 class="card__name">
+                        <a href={`/watches/${product.id}/`}>
+                          {product.data.name}
+                        </a>
+                      </h3>
+                      <p class="card__price price">
+                        <span class="visually-hidden">السعر:</span>
+                        {formatPrice(price, currency)}
+                        {compareAtPrice !== undefined && (
+                          <s class="card__was">
+                            <span class="visually-hidden">بدلًا من</span>
+                            {formatPrice(compareAtPrice, currency)}
+                          </s>
+                        )}
+                      </p>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="features-title" class="features" id="features">
+        <div class="wrap split">
+          <div class="split__aside">
+            <h2 class="section-title" id="features-title">
+              ما تحصل عليه مع كل ساعة
+            </h2>
+            <p class="section-note">
+              خمس مزايا تجدها في ساعات الحرمين، ومعها خدمتنا في الأردن.
+            </p>
+          </div>
+
+          <ul class="feature-list">
+            {features.map((feature) => (
+              <li class="feature">
+                <svg
+                  aria-hidden="true"
+                  class="feature__icon"
+                  viewBox="0 0 24 24"
+                >
+                  {feature.icon === "azan" && (
+                    <>
+                      <path d="M18.5 14.5A7.5 7.5 0 1 1 9.5 5.5a6 6 0 0 0 9 9z" />
+                      <path d="M17 4.5v3M15.5 6h3" />
+                    </>
+                  )}
+                  {feature.icon === "qibla" && (
+                    <>
+                      <circle cx="12" cy="12" r="8.5" />
+                      <path d="m14.8 9.2-1.6 4-4 1.6 1.6-4z" />
+                    </>
+                  )}
+                  {feature.icon === "calendar" && (
+                    <>
+                      <rect height="15" rx="1.5" width="16" x="4" y="5.5" />
+                      <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" />
+                    </>
+                  )}
+                  {feature.icon === "shield" && (
+                    <>
+                      <path d="M12 3.5 5 6.2v5.6c0 4.2 2.9 7.3 7 8.7 4.1-1.4 7-4.5 7-8.7V6.2z" />
+                      <path d="m9 12 2.2 2.2L15.5 10" />
+                    </>
+                  )}
+                  {feature.icon === "truck" && (
+                    <>
+                      <path d="M3 6.5h11v9.5H3zM14 10h3.8l3.2 3.3V16h-7" />
+                      <circle cx="7" cy="17.5" r="1.8" />
+                      <circle cx="17.5" cy="17.5" r="1.8" />
+                    </>
+                  )}
+                </svg>
+                <h3 class="feature__title">{feature.title}</h3>
+                <p class="feature__text">{feature.text}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="order-title" class="order" id="order">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title" id="order-title">
+                طريقة الطلب
+              </h2>
+              <p class="section-note">
+                ثلاث خطوات، ولا تدفع شيئًا قبل أن تصلك الساعة.
+              </p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span aria-hidden="true" class="step__number">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <h3 class="delivery__title">التوصيل</h3>
+            <table class="zones">
+              <caption class="visually-hidden">
+                رسوم التوصيل ومدته حسب المنطقة
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td class="price">
+                      {formatPrice(zone.data.fee, zone.data.currency)}
+                    </td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
+                <circle cx="12" cy="12.5" r="2.5"></circle>
+              </svg>
+              الدفع نقدًا عند الاستلام
+              {cheapestZone && (
+                <span class="delivery__from">
+                  ، والتوصيل يبدأ من{" "}
+                  {formatPrice(
+                    cheapestZone.data.fee,
+                    cheapestZone.data.currency
+                  )}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="contact" id="contact">
+        <div class="wrap contact__inner">
+          <div>
+            <h2 class="contact__title" id="contact-title">
+              عندك سؤال عن ساعة؟ اسألنا قبل أن تطلب.
+            </h2>
+            <p class="section-note">
+              نرد على واتساب ونساعدك تختار الموديل المناسب لك أو لمن تهديه.
+            </p>
+          </div>
+          <div class="contact__actions">
+            <a
+              class="button"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              راسلنا على واتساب
+              <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+            </a>
+            <p class="contact__phone">
+              أو اتصل بنا:
+              <a dir="ltr" href={`tel:${store.contact.phone}`}>
+                {phoneLabel}
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <p>
+          {store.name}، {store.contact.address}
+        </p>
+        <p>
+          © <span>{digits.format(year).replaceAll("٬", "")}</span>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --white: #ffffff;
+    --chalk: #f5f6f3;
+    --ink: #19251f;
+    --muted: #56625b;
+    --hairline: #e3e3de;
+    --pine: #285a47;
+    --pine-deep: #1f4738;
+
+    --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --gutter: clamp(1rem, 4vw, 2.5rem);
+    --section: clamp(4rem, 9vw, 7rem);
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-block-start: 5rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  figure,
+  fieldset {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img,
+  picture,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  img {
+    block-size: auto;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+</style>
+
+<style>
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    block-size: 1px;
+    white-space: nowrap;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 0.75rem;
+    z-index: 20;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    background: var(--ink);
+    color: var(--white);
+    text-decoration: none;
+    translate: 0 -200%;
+  }
+
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+
+  .wrap {
+    inline-size: 100%;
+    max-inline-size: 76rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Header */
+
+  .masthead {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    border-block-end: 1px solid var(--hairline);
+    background: var(--white);
+  }
+
+  .masthead__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-block-size: 4rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand__mark {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+  }
+
+  .masthead__nav ul {
+    display: flex;
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  .masthead__nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .masthead__nav a:hover {
+    color: var(--ink);
+  }
+
+  /* Buttons and links */
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 3rem;
+    padding-inline: 1.75rem;
+    border-radius: 999px;
+    background: var(--pine);
+    color: var(--white);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 200ms var(--ease);
+  }
+
+  .button:hover {
+    background: var(--pine-deep);
+  }
+
+  .quiet-link {
+    padding-block: 0.5rem;
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--hairline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.45em;
+    transition: text-decoration-color 200ms var(--ease);
+  }
+
+  .quiet-link:hover {
+    text-decoration-color: var(--pine);
+  }
+
+  /* Hero */
+
+  .hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(1.5rem, 5vw, 5rem);
+    padding-block: clamp(1.5rem, 3.5vw, 2.5rem) clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .hero__eyebrow {
+    margin-block-end: 1rem;
+    color: var(--pine);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .hero__title {
+    max-inline-size: 12ch;
+    font-size: clamp(2.25rem, 4.6vw, 3.75rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .hero__lede {
+    max-inline-size: 34rem;
+    margin-block-start: 1.25rem;
+    color: var(--muted);
+    font-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+    text-wrap: pretty;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+    margin-block-start: 2rem;
+  }
+
+  .hero__figure {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .hero__figure :global(img) {
+    inline-size: min(100%, 21rem);
+    aspect-ratio: 1;
+    object-fit: contain;
+    transition: scale 700ms var(--ease);
+  }
+
+  .hero__figure:hover :global(img) {
+    scale: 1.025;
+  }
+
+  .hero__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .hero__caption .price {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .trust {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    padding-block: 1.125rem;
+    border-block: 1px solid var(--hairline);
+  }
+
+  .trust li,
+  .delivery__cash {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .trust svg,
+  .delivery__cash svg,
+  .feature__icon {
+    flex-shrink: 0;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    fill: none;
+    stroke: var(--pine);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.4;
+  }
+
+  /* Section scaffolding */
+
+  .catalog,
+  .features,
+  .order,
+  .contact {
+    padding-block: var(--section);
+  }
+
+  .catalog {
+    padding-block-start: clamp(2rem, 4vw, 3rem);
+  }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    margin-block-end: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .section-title {
+    font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .section-note {
+    max-inline-size: 36rem;
+    margin-block-start: 0.375rem;
+    color: var(--muted);
+  }
+
+  /* Filters: radios styled as quiet chips, no JS. */
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.5rem;
+    padding-inline: 1.125rem;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition:
+      border-color 200ms var(--ease),
+      color 200ms var(--ease),
+      background-color 200ms var(--ease);
+  }
+
+  .chip input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .chip:has(input:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+  }
+
+  /* Catalog */
+
+  .catalog__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .card__frame {
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    background: var(--chalk);
+  }
+
+  /* White studio photos melt into the chalk ground. */
+  .card__frame :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 8%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    transition: scale 700ms var(--ease);
+  }
+
+  .card:hover .card__frame :global(img) {
+    scale: 1.04;
+  }
+
+  .card__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-block-start: 1rem;
+  }
+
+  .card__category {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .card__name {
+    margin-block: 0.125rem 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .card__name a {
+    text-decoration: none;
+  }
+
+  /* The whole card is the link target. */
+  .card__name a::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .card:has(a:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 6px;
+  }
+
+  .card__name a:focus-visible {
+    outline: none;
+  }
+
+  .card__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-block-start: auto;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--hairline);
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+
+  .card__was {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  /* Features */
+
+  .features {
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 2rem clamp(2rem, 6vw, 6rem);
+  }
+
+  .split__aside {
+    position: sticky;
+    inset-block-start: 6rem;
+    align-self: start;
+  }
+
+  .feature-list {
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .feature {
+    display: grid;
+    grid-template-columns: 1.375rem minmax(0, 14rem) minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.25rem 1.25rem;
+    padding-block: 1.375rem;
+    border-block-end: 1px solid var(--hairline);
+  }
+
+  .feature__icon {
+    align-self: start;
+    margin-block-start: 0.25rem;
+  }
+
+  .feature__title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+
+  .feature__text {
+    color: var(--muted);
+  }
+
+  /* Order */
+
+  .order {
+    background: var(--chalk);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem clamp(1.5rem, 4vw, 3rem);
+    counter-reset: none;
+  }
+
+  .step {
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .step__number {
+    display: block;
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 2.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .step__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .step__text {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+  }
+
+  .delivery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1rem clamp(2rem, 6vw, 6rem);
+    margin-block-start: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .delivery__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+    text-align: start;
+  }
+
+  .zones th,
+  .zones td {
+    padding-block: 0.875rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--hairline);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .zones thead th {
+    padding-block-start: 0;
+    border-block-end-color: var(--ink);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .zones tbody th {
+    font-weight: 600;
+  }
+
+  .zones td.price {
+    font-weight: 500;
+  }
+
+  .delivery__cash {
+    grid-column: 2;
+    color: var(--ink);
+  }
+
+  .delivery__from {
+    margin-inline-start: -0.625rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Contact */
+
+  .contact__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .contact__title {
+    max-inline-size: 18ch;
+    font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .contact__actions {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+  }
+
+  .contact__phone {
+    color: var(--muted);
+  }
+
+  .contact__phone a {
+    margin-inline-start: 0.25rem;
+    color: var(--ink);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-decoration-color: var(--hairline);
+    text-underline-offset: 0.35em;
+    unicode-bidi: isolate;
+  }
+
+  /* Footer */
+
+  .footer {
+    border-block-start: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 1.75rem;
+  }
+
+  /* Responsive */
+
+  @media (max-width: 64rem) {
+    .catalog__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .feature {
+      grid-template-columns: 1.375rem minmax(0, 1fr);
+    }
+
+    .feature__text {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .masthead__nav {
+      display: none;
+    }
+
+    /* Watch sits beside the headline; copy and actions run full width. */
+    .hero__grid {
+      grid-template-areas:
+        "eyebrow eyebrow"
+        "title figure"
+        "lede lede"
+        "actions actions";
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.55fr);
+      align-items: center;
+      gap: 0 1rem;
+    }
+
+    .hero__copy {
+      display: contents;
+    }
+
+    .hero__eyebrow {
+      grid-area: eyebrow;
+    }
+
+    .hero__title {
+      grid-area: title;
+      font-size: clamp(2rem, 8.4vw, 2.75rem);
+    }
+
+    .hero__lede {
+      grid-area: lede;
+    }
+
+    .hero__actions {
+      grid-area: actions;
+      margin-block-start: 1.5rem;
+    }
+
+    .hero__figure {
+      grid-area: figure;
+    }
+
+    .hero__figure :global(img) {
+      inline-size: min(100%, 15rem);
+    }
+
+    .hero__caption {
+      display: none;
+    }
+
+    .split,
+    .delivery {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .split__aside {
+      position: static;
+    }
+
+    .delivery__cash {
+      grid-column: auto;
+    }
+
+    .steps {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      column-gap: 1rem;
+    }
+
+    .step__number {
+      grid-row: span 2;
+      font-size: 2rem;
+    }
+
+    .step__text {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    /* One swipeable row of chips instead of a ragged wrap. */
+    .filters {
+      flex: 0 0 calc(100% + var(--gutter) * 2);
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      min-inline-size: 0;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-block: 0.25rem;
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+    }
+
+    .catalog__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.75rem 0.875rem;
+    }
+
+    .card__name {
+      font-size: 0.9375rem;
+    }
+
+    .card__price {
+      font-size: 0.9375rem;
+    }
+
+    .trust {
+      justify-content: start;
+      gap: 0.5rem 1.5rem;
+    }
+
+    .trust li {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Motion: one quiet load sequence, the trust rule drawing in, and gentle
+     scroll reveals. Without motion everything is simply there. */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rise {
+      animation: rise 900ms var(--ease) both;
+      animation-delay: calc(var(--i, 0) * 90ms);
+    }
+
+    .hero__figure {
+      animation: settle 1300ms var(--ease) 120ms both;
+    }
+
+    .trust::before {
+      position: absolute;
+      inset-block-start: -1px;
+      inset-inline-start: 0;
+      block-size: 1px;
+      background: var(--ink);
+      content: "";
+      animation: draw 1400ms var(--ease) 350ms both;
+    }
+
+    @supports (animation-timeline: view()) {
+      .card,
+      .feature,
+      .step {
+        animation-name: reveal;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 60%;
+      }
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+  }
+
+  @keyframes settle {
+    from {
+      opacity: 0;
+      translate: 0 1.25rem;
+      scale: 0.97;
+    }
+  }
+
+  @keyframes draw {
+    from {
+      inline-size: 0;
+      opacity: 1;
+    }
+
+    to {
+      inline-size: 100%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+  }
+</style>

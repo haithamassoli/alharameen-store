@@ -1,0 +1,1442 @@
+---
+// Style exploration 6, «على الطاولة»: a magazine spread lying on a shop
+// table in Amman. The watches are photographed from above and "set down" on
+// the paper as you scroll; the editorial pages (features, ordering) are white
+// sheets on the same table.
+import "@fontsource/amiri/arabic-700.css";
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import { Picture } from "astro:assets";
+
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  warranty,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const NEW_TAB = "(يفتح في نافذة جديدة)";
+const PHONE_GROUPS = /^\+(?<cc>\d{3})(?<op>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+const SMALL_CATEGORY = "wrist-watches";
+const SMALL_IMAGE = 560;
+const LARGE_IMAGE = 880;
+const HERO_IMAGE = 640;
+
+// Each photo rests at a slightly different angle, as if put down by hand.
+const REST_ANGLES = [-2, 1.5, -1, 2.5, -2.5, 1, -1.5, 2] as const;
+
+const folio = new Intl.NumberFormat("ar-JO", { minimumIntegerDigits: 2 });
+const year = digits.format(new Date().getFullYear()).replaceAll("٬", "");
+const { phone } = store.contact;
+const phoneDisplay = phone.replace(PHONE_GROUPS, "+$<cc> $<op> $<mid> $<end>");
+
+const [heroProduct] = products;
+const [heroCover] = heroProduct.data.images;
+
+const restAngle = (index: number): number =>
+  REST_ANGLES[index % REST_ANGLES.length] ?? 0;
+
+const tiles = products.map((product, index) => ({
+  angle: restAngle(index),
+  category: categoryName(product),
+  isSmall: product.data.category.id === SMALL_CATEGORY,
+  number: folio.format(index + 1),
+  product,
+}));
+
+const titleWords = ["ساعات", "تؤذن"] as const;
+
+const bandWords = [
+  titleWords.join(" "),
+  ...features.map(({ icon, title }) =>
+    icon === "shield" ? `ضمان ${warranty}` : title
+  ),
+];
+
+const BAND_REPEATS = 3;
+const band = Array.from({ length: BAND_REPEATS }, () => bandWords).flat();
+---
+
+<!doctype html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="noindex" name="robots" />
+    <meta content="light" name="color-scheme" />
+    <meta content={store.tagline} name="description" />
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml" />
+    <title>{store.name}: على الطاولة</title>
+  </head>
+  <body>
+    <svg aria-hidden="true" class="defs" focusable="false">
+      <!-- Turns the white studio backdrop transparent so a real drop
+           shadow can follow each watch's own outline on the paper. -->
+      <filter
+        color-interpolation-filters="sRGB"
+        height="1"
+        id="cutout"
+        width="1"
+        x="0"
+        y="0"
+      >
+        <feColorMatrix
+          type="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -11 -11 -11 0 32.3"
+        />
+      </filter>
+    </svg>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <div class="wrap masthead__issue">
+        <p>{store.contact.address}</p>
+        <p>فهرس ساعات الأذان، {year}</p>
+        <p>
+          <a dir="ltr" href={`tel:${phone}`}>
+            {phoneDisplay}
+          </a>
+        </p>
+      </div>
+      <div class="wrap masthead__bar">
+        <a class="masthead__name" href="/6">
+          {store.name}
+        </a>
+        <nav aria-label="الأقسام">
+          <ul class="masthead__nav">
+            <li>
+              <a href="#catalog">الفهرس</a>
+            </li>
+            <li>
+              <a href="#features">المزايا</a>
+            </li>
+            <li>
+              <a href="#order">الطلب والتوصيل</a>
+            </li>
+            <li>
+              <a
+                class="masthead__chat"
+                href={chatUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                واتساب<span class="visually-hidden">{NEW_TAB}</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="hero">
+        <div class="wrap hero__stage">
+          <h1 class="hero__title" id="hero-title">
+            {titleWords.map((word, index) => (
+              <span class="hero__word" style={`--i: ${index}`}>
+                {word}{" "}
+              </span>
+            ))}
+          </h1>
+
+          <figure class="hero__watch">
+            <Picture
+              alt={heroCover.alt}
+              class="hero__photo"
+              fetchpriority="high"
+              formats={["avif", "webp"]}
+              height={HERO_IMAGE}
+              loading="eager"
+              sizes="(min-width: 64rem) 30rem, 60vw"
+              src={heroCover.src}
+              width={HERO_IMAGE}
+              widths={[360, HERO_IMAGE, 960]}
+            />
+          </figure>
+
+          <div class="hero__deck">
+            <p class="hero__lede">{store.tagline}.</p>
+            <ul aria-label="باختصار" class="hero__facts">
+              <li>من {store.contact.address}</li>
+              <li>الدفع عند الاستلام</li>
+              <li>ضمان {warranty}</li>
+              <li>
+                <a class="button" href="#catalog">
+                  تصفّح الساعات ({digits.format(products.length)})
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div aria-hidden="true" class="band">
+        <p class="band__track">
+          {band.map((word) => (
+            <span class="band__item">
+              {word}
+              <span class="band__mark">۞</span>
+            </span>
+          ))}
+        </p>
+      </div>
+
+      <section aria-labelledby="catalog-title" class="catalog" id="catalog">
+        <div class="wrap">
+          <header class="section-head">
+            <p class="folio">
+              <span>{store.name}</span>
+              <span>
+                {digits.format(products.length)} قطع، ص {digits.format(2)}
+              </span>
+            </p>
+            <h2 class="display" id="catalog-title">
+              الفهرس
+            </h2>
+            <p class="section-head__lede">
+              كل قطعة بصورتها وسعرها. اضغط على أي ساعة لترى مواصفاتها وتطلبها.
+            </p>
+          </header>
+
+          <ol class="spread" role="list">
+            {tiles.map(({ angle, category, isSmall, number, product }) => {
+              const { data, id } = product;
+              const [cover] = data.images;
+              const size = isSmall ? SMALL_IMAGE : LARGE_IMAGE;
+              return (
+                <li
+                  class:list={["tile", isSmall ? "tile--small" : "tile--large"]}
+                  style={`--rest: ${angle}deg`}
+                >
+                  <div class="tile__table">
+                    <div class="tile__photo">
+                      <Picture
+                        alt={cover.alt}
+                        formats={["avif", "webp"]}
+                        height={size}
+                        loading="lazy"
+                        sizes={
+                          isSmall
+                            ? "(min-width: 48rem) 34vw, 86vw"
+                            : "(min-width: 48rem) 52vw, 92vw"
+                        }
+                        src={cover.src}
+                        width={size}
+                        widths={
+                          isSmall ? [320, SMALL_IMAGE] : [480, LARGE_IMAGE]
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div class="tile__caption">
+                    <p class="tile__meta">
+                      <span class="tile__folio">{number}</span>
+                      <span>{category}</span>
+                      <span dir="ltr">{data.model}</span>
+                    </p>
+                    <h3 class="tile__name">{data.name}</h3>
+                    <p class="tile__price">
+                      <span class="visually-hidden">السعر:</span>
+                      {formatPrice(data.price, data.currency)}
+                      {data.compareAtPrice !== undefined && (
+                        <s class="tile__was">
+                          <span class="visually-hidden">بدلًا من</span>
+                          {formatPrice(data.compareAtPrice, data.currency)}
+                        </s>
+                      )}
+                    </p>
+                    {!isSmall && <p class="tile__story">{data.description}</p>}
+                    <a class="tile__link" href={`/watches/${id}/`}>
+                      التفاصيل والطلب
+                      <span class="visually-hidden">: {data.name}</span>
+                    </a>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="features-title" class="sheet" id="features">
+        <div class="wrap sheet__page">
+          <header class="section-head features__head">
+            <p class="folio">
+              <span>{store.name}</span>
+              <span>ص {digits.format(3)}</span>
+            </p>
+            <h2 class="display" id="features-title">
+              في كل ساعة
+            </h2>
+            <svg
+              aria-label={`ضمان ${warranty}`}
+              class="seal"
+              role="img"
+              viewBox="0 0 200 200"
+            >
+              <defs>
+                <path
+                  d="M100 100 m-74 0 a74 74 0 1 1 148 0 a74 74 0 1 1 -148 0"
+                  id="seal-ring"
+                />
+                <filter id="seal-ink">
+                  <feTurbulence
+                    baseFrequency="0.9"
+                    numOctaves="2"
+                    seed="6"
+                    type="fractalNoise"
+                  />
+                  <feDisplacementMap in="SourceGraphic" scale="3" />
+                </filter>
+              </defs>
+              <g filter="url(#seal-ink)">
+                <circle class="seal__rim" cx="100" cy="100" r="94" />
+                <circle
+                  class="seal__rim seal__rim--thin"
+                  cx="100"
+                  cy="100"
+                  r="58"
+                />
+                <text class="seal__ring" direction="ltr">
+                  <textPath href="#seal-ring" startOffset="0">
+                    ساعات الحرمين الأصلية ۞ ضمان {warranty} ۞ عمّان ۞
+                  </textPath>
+                </text>
+                <text class="seal__word" x="100" y="96">
+                  ضمان
+                </text>
+                <text class="seal__years" x="100" y="128">
+                  {warranty}
+                </text>
+              </g>
+            </svg>
+          </header>
+
+          <ol class="features" role="list">
+            {features.map((feature, index) => (
+              <li class="feature">
+                <span aria-hidden="true" class="feature__cap">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="feature__title">{feature.title}</h3>
+                <p class="feature__text">{feature.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="order-title"
+        class="sheet sheet--order"
+        id="order"
+      >
+        <div class="wrap sheet__page">
+          <header class="section-head">
+            <p class="folio">
+              <span>{store.name}</span>
+              <span>ص {digits.format(4)}</span>
+            </p>
+            <h2 class="display" id="order-title">
+              كيف تطلب
+            </h2>
+          </header>
+
+          <ol class="steps" role="list">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span aria-hidden="true" class="step__number">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <table class="fees">
+              <caption>التوصيل داخل الأردن</caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map(({ data }) => (
+                  <tr>
+                    <th scope="row">{data.name}</th>
+                    <td>{formatPrice(data.fee, data.currency)}</td>
+                    <td>{deliveryTime(data.minDays, data.maxDays)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <strong>الدفع نقدًا عند الاستلام.</strong>
+              تفحص الساعة بيدك ثم تدفع للمندوب، ولك الإرجاع خلال{" "}
+              {digits.format(store.returnDays)} يومًا.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="contact">
+        <div class="wrap">
+          <p class="folio">
+            <span>للطلب والاستفسار</span>
+            <span>نرد خلال ساعات العمل</span>
+          </p>
+          <h2 class="contact__title" id="contact-title">
+            <a
+              class="contact__chat"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              راسلنا على واتساب<span class="visually-hidden">{NEW_TAB}</span>
+            </a>
+          </h2>
+          <p class="contact__phone">
+            أو اتصل بنا:
+            <a dir="ltr" href={`tel:${phone}`}>
+              {phoneDisplay}
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="colophon">
+      <div class="wrap colophon__row">
+        <p>{store.name}</p>
+        <p>{store.contact.address}</p>
+        <p>
+          © {year}، ساعات أصلية بضمان {warranty}
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --paper: #f3eee6;
+    --white: #fff;
+    --ink: #1e1c19;
+    --rule: #2a2826;
+    --muted: #5a544c;
+    --hair: rgb(42 40 38 / 0.22);
+    --stamp: #8e2f2a;
+    --serif: "Amiri", "Noto Naskh Arabic", serif;
+    --sans: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --gutter: clamp(1rem, 4vw, 3.5rem);
+    --settle: cubic-bezier(0.2, 0.9, 0.25, 1);
+    /* A watch flat on the table, and the same watch held a hand's width
+       above it. Same filter list, so the two interpolate. */
+    --shadow-rest: drop-shadow(1px 2px 1.5px rgb(30 28 25 / 0.3))
+      drop-shadow(-6px 14px 16px rgb(30 28 25 / 0.18));
+    --shadow-lift: drop-shadow(4px 12px 8px rgb(30 28 25 / 0.1))
+      drop-shadow(-26px 60px 42px rgb(30 28 25 / 0.16));
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--paper);
+    scroll-behavior: smooth;
+    scroll-padding-block-start: 1rem;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow-x: clip;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  /* Fine paper grain over the whole table. */
+  body::after {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0 0.24 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    content: "";
+    mix-blend-mode: multiply;
+    opacity: 0.12;
+    pointer-events: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ol,
+  ul,
+  figure {
+    margin: 0;
+  }
+
+  ol,
+  ul {
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<style>
+  .defs {
+    position: absolute;
+    inline-size: 0;
+    block-size: 0;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 60;
+    padding: 0.5rem 1rem;
+    background: var(--ink);
+    color: var(--white);
+    transform: translateY(-200%);
+  }
+
+  .skip:focus-visible {
+    transform: none;
+  }
+
+  .wrap {
+    inline-size: min(100%, 88rem);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* ---------- Masthead ---------- */
+
+  .masthead__issue {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+    padding-block: 0.6rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .masthead__issue a {
+    text-decoration: none;
+  }
+
+  .masthead__issue a:hover {
+    text-decoration: underline;
+  }
+
+  .masthead__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 0.5rem 0.9rem;
+    border-block: 3px double var(--rule);
+  }
+
+  /* Rules sit inside the margins, like the folio lines below. */
+  .masthead__bar,
+  .masthead__issue {
+    inline-size: min(100% - 2 * var(--gutter), 88rem - 2 * var(--gutter));
+    padding-inline: 0;
+  }
+
+  .masthead__name {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .masthead__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.75rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .masthead__nav a {
+    display: inline-block;
+    padding-block: 0.4rem;
+    text-decoration: none;
+    text-underline-offset: 0.35em;
+  }
+
+  .masthead__nav a:hover {
+    text-decoration: underline;
+  }
+
+  .masthead__chat {
+    border-block-end: 2px solid var(--ink);
+  }
+
+  /* ---------- Hero ---------- */
+
+  .hero {
+    overflow-x: clip;
+  }
+
+  .hero__stage {
+    position: relative;
+    padding-block: clamp(1.5rem, 4vw, 3rem) clamp(2.5rem, 6vw, 5rem);
+  }
+
+  /* Set at a size the column cannot hold: the last word runs off the end
+     edge of the page, the way a cover line runs off a trimmed spread. */
+  .hero__title {
+    position: relative;
+    font-family: var(--serif);
+    font-size: clamp(6rem, 27vw, 30rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .hero__word {
+    display: inline-block;
+    animation: word-in 1100ms var(--settle) both;
+    animation-delay: calc(120ms + var(--i) * 260ms);
+  }
+
+  @keyframes word-in {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      translate: 0 0.16em;
+    }
+  }
+
+  /* Put down on the last word, a few degrees off square. */
+  .hero__watch {
+    position: absolute;
+    inset-block-start: clamp(1rem, 4vw, 3.5rem);
+    inset-inline-end: clamp(1rem, 12vw, 13rem);
+    inline-size: clamp(13rem, 31vw, 31rem);
+    filter: var(--shadow-rest);
+    rotate: -3deg;
+    animation: set-down 1200ms var(--settle) 700ms both;
+  }
+
+  .hero__watch :global(img),
+  .tile__photo :global(img) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    filter: url("#cutout");
+    clip-path: inset(1.5%);
+  }
+
+  @keyframes set-down {
+    from {
+      filter: var(--shadow-lift);
+      rotate: 2deg;
+      scale: 1.12;
+      translate: 0 -5%;
+    }
+
+    65% {
+      filter: var(--shadow-rest);
+      rotate: -3deg;
+      scale: 0.985;
+      translate: 0 0.5%;
+    }
+
+    82% {
+      scale: 1.008;
+    }
+  }
+
+  .hero__deck {
+    position: relative;
+    display: grid;
+    gap: 1.25rem;
+    max-inline-size: 46rem;
+    margin-block-start: clamp(1rem, 3vw, 2rem);
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .hero__lede {
+    max-inline-size: 36ch;
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    font-weight: 500;
+    line-height: 1.7;
+  }
+
+  .hero__facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 0;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .hero__facts li {
+    padding-inline: 1rem;
+    border-inline-start: 1px solid var(--hair);
+  }
+
+  .hero__facts li:first-child {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .hero__facts li:last-child {
+    border-inline-start: 0;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.875rem;
+    padding-inline: 1.5rem;
+    background: var(--ink);
+    color: var(--white);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 200ms ease;
+  }
+
+  .button:hover {
+    background: var(--stamp);
+  }
+
+  /* ---------- Scroll band ---------- */
+
+  .band {
+    overflow: clip;
+    border-block: 1px solid var(--rule);
+    background: var(--white);
+  }
+
+  .band__track {
+    display: flex;
+    inline-size: max-content;
+    padding-block: 0.6rem 0.2rem;
+    font-family: var(--serif);
+    font-size: clamp(2.25rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .band__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding-inline-end: 0.5em;
+  }
+
+  .band__mark {
+    color: var(--stamp);
+    font-size: 0.45em;
+  }
+
+  /* ---------- Section heads ---------- */
+
+  .folio {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.4rem;
+    border-block: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .section-head {
+    position: relative;
+    margin-block-end: clamp(2rem, 5vw, 4rem);
+  }
+
+  .display {
+    margin-block-start: clamp(1rem, 3vw, 2rem);
+    font-family: var(--serif);
+    font-size: clamp(3.5rem, 11vw, 10rem);
+    font-weight: 700;
+    line-height: 1.05;
+  }
+
+  .section-head__lede {
+    max-inline-size: 40ch;
+    margin-block-start: 0.75rem;
+    color: var(--muted);
+    font-size: 1.0625rem;
+  }
+
+  /* ---------- Catalog: the table ---------- */
+
+  .catalog {
+    overflow-x: clip;
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+
+  .spread {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(3rem, 6vw, 5.5rem) clamp(1rem, 3vw, 2.5rem);
+  }
+
+  .tile {
+    position: relative;
+    display: grid;
+    align-content: start;
+    view-timeline: --drop block;
+  }
+
+  /* Wrist watches come in pairs, set on the table off the grid:
+     narrow and wide columns alternate, and the second of each pair sits
+     lower, like two watches put down one after the other. */
+  .tile--small {
+    grid-column: span 6;
+  }
+
+  .tile--small:nth-child(even of .tile--small) {
+    margin-block-start: 3rem;
+  }
+
+  .tile--large {
+    grid-column: 1 / -1;
+  }
+
+  .tile__table {
+    position: relative;
+    aspect-ratio: 1;
+  }
+
+  .tile__photo {
+    filter: var(--shadow-rest);
+    rotate: var(--rest);
+  }
+
+  /* Desk clocks and devices are shot standing, so they arrive as photo
+     prints dropped on the table instead of cut-out objects. */
+  .tile--large .tile__table {
+    aspect-ratio: auto;
+  }
+
+  .tile--large .tile__photo {
+    padding: clamp(0.5rem, 1.4vw, 1rem);
+    background: var(--white);
+  }
+
+  .tile--large .tile__photo :global(img) {
+    filter: none;
+    clip-path: none;
+  }
+
+  .tile__caption {
+    position: relative;
+    display: grid;
+    gap: 0.35rem;
+    align-content: start;
+    margin-block-start: 0.5rem;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .tile__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .tile__folio {
+    color: var(--stamp);
+    font-weight: 600;
+  }
+
+  .tile__name {
+    max-inline-size: 26ch;
+    font-size: clamp(1.1875rem, 1.6vw, 1.375rem);
+    font-weight: 600;
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+
+  .tile__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .tile__was {
+    color: var(--muted);
+    font-size: 0.9375rem;
+    font-weight: 400;
+  }
+
+  .tile__story {
+    max-inline-size: 48ch;
+    margin-block-start: 0.5rem;
+    color: var(--muted);
+  }
+
+  .tile__link {
+    justify-self: start;
+    margin-block-start: 0.5rem;
+    padding-block: 0.25rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.4em;
+  }
+
+  /* The whole tile picks up the link, photo included. */
+  .tile__link::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .tile__link:focus-visible {
+    outline: none;
+  }
+
+  .tile:has(.tile__link:focus-visible) {
+    outline: 2px solid var(--ink);
+    outline-offset: 8px;
+  }
+
+  .tile:hover .tile__link {
+    text-decoration-thickness: 2px;
+  }
+
+  @media (min-width: 48rem) {
+    .tile--small:nth-child(odd of .tile--small) {
+      grid-column: 1 / span 5;
+    }
+
+    .tile--small:nth-child(even of .tile--small) {
+      grid-column: 8 / span 5;
+      margin-block-start: clamp(4rem, 8vw, 7rem);
+    }
+
+    /* The next pair swaps which watch sits lower. */
+    .tile--small:nth-child(4n + 3 of .tile--small) {
+      grid-column: 2 / span 5;
+      margin-block-start: clamp(4rem, 8vw, 7rem);
+    }
+
+    .tile--small:nth-child(4n of .tile--small) {
+      grid-column: 8 / span 5;
+      margin-block-start: 0;
+    }
+
+    .tile--large {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: clamp(1.5rem, 4vw, 4rem);
+      align-items: end;
+      padding-block-start: clamp(2rem, 4vw, 3rem);
+      border-block-start: 3px double var(--rule);
+    }
+
+    .tile--large .tile__caption {
+      padding-block-end: 1rem;
+    }
+
+    .tile--large .tile__name {
+      font-size: clamp(1.5rem, 2.4vw, 2rem);
+    }
+
+    .tile--large:nth-child(even of .tile--large) .tile__table {
+      order: 1;
+    }
+  }
+
+  /* ---------- White sheets on the table ---------- */
+
+  .sheet {
+    overflow-x: clip;
+    padding-block: clamp(1rem, 3vw, 2rem);
+  }
+
+  .sheet__page {
+    inline-size: min(100% - 2 * var(--gutter) * 0.5, 84rem);
+    padding-block: clamp(2rem, 5vw, 4.5rem);
+    background: var(--white);
+    box-shadow:
+      0 1px 1px rgb(30 28 25 / 0.06),
+      0 18px 40px -18px rgb(30 28 25 / 0.28);
+  }
+
+  .features__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 1rem;
+  }
+
+  .features__head .folio {
+    grid-column: 1 / -1;
+  }
+
+  .seal {
+    inline-size: clamp(7.5rem, 14vw, 11rem);
+    block-size: auto;
+    color: var(--stamp);
+    rotate: -4deg;
+    mix-blend-mode: multiply;
+  }
+
+  .seal__rim {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 5;
+  }
+
+  .seal__rim--thin {
+    stroke-width: 2;
+  }
+
+  .seal__ring {
+    fill: currentColor;
+    font-family: var(--sans);
+    font-size: 18.5px;
+    font-weight: 600;
+  }
+
+  .seal__word,
+  .seal__years {
+    fill: currentColor;
+    font-family: var(--serif);
+    font-weight: 700;
+    text-anchor: middle;
+  }
+
+  .seal__word {
+    font-size: 40px;
+  }
+
+  .seal__years {
+    font-size: 21px;
+  }
+
+  .features {
+    columns: 2 22rem;
+    column-gap: clamp(2rem, 5vw, 4.5rem);
+    column-rule: 1px solid var(--hair);
+  }
+
+  .feature {
+    display: flow-root;
+    padding-block: 1.25rem;
+    border-block-start: 1px solid var(--hair);
+    break-inside: avoid;
+  }
+
+  .feature__cap {
+    float: inline-start;
+    margin-inline-end: 0.9rem;
+    font-family: var(--serif);
+    font-size: 4.5rem;
+    font-weight: 700;
+    line-height: 0.95;
+  }
+
+  .feature__title {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+
+  .feature__text {
+    color: var(--muted);
+  }
+
+  /* ---------- Order ---------- */
+
+  .steps {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .step__number {
+    display: block;
+    font-family: var(--serif);
+    font-size: clamp(5rem, 9vw, 8rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .step__title {
+    margin-block-start: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .step__text {
+    max-inline-size: 30ch;
+    color: var(--muted);
+  }
+
+  @media (min-width: 48rem) {
+    .steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+
+    .step {
+      padding-inline: clamp(1rem, 3vw, 2.5rem);
+      border-inline-start: 1px solid var(--hair);
+    }
+
+    .step:first-child {
+      padding-inline-start: 0;
+      border-inline-start: 0;
+    }
+  }
+
+  .delivery {
+    display: grid;
+    gap: 1.5rem 3rem;
+    margin-block-start: clamp(3rem, 6vw, 5rem);
+    padding-block-start: 1.5rem;
+    border-block-start: 3px double var(--rule);
+  }
+
+  @media (min-width: 56rem) {
+    .delivery {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      align-items: end;
+    }
+  }
+
+  .fees {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fees caption {
+    padding-block-end: 0.75rem;
+    font-family: var(--serif);
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: start;
+  }
+
+  .fees th,
+  .fees td {
+    padding-block: 0.7rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--hair);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .fees thead th {
+    border-block-end-color: var(--rule);
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .fees tbody th {
+    font-weight: 600;
+  }
+
+  .delivery__cash {
+    max-inline-size: 36ch;
+    padding-inline-start: 1rem;
+    border-inline-start: 3px solid var(--stamp);
+    color: var(--muted);
+  }
+
+  .delivery__cash strong {
+    display: block;
+    color: var(--ink);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* ---------- Contact ---------- */
+
+  .contact {
+    padding-block: clamp(3rem, 8vw, 7rem) clamp(2rem, 5vw, 4rem);
+  }
+
+  .contact__title {
+    margin-block-start: clamp(1.5rem, 4vw, 3rem);
+    font-family: var(--serif);
+    font-size: clamp(3rem, 9vw, 8.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .contact__chat {
+    text-decoration-line: underline;
+    text-decoration-thickness: 0.05em;
+    text-underline-offset: 0.22em;
+    transition: color 200ms ease;
+  }
+
+  .contact__chat:hover {
+    color: var(--stamp);
+  }
+
+  .contact__phone {
+    margin-block-start: 1.25rem;
+    font-size: 1.125rem;
+  }
+
+  .contact__phone a {
+    margin-inline-start: 0.35em;
+    font-weight: 600;
+  }
+
+  /* ---------- Colophon ---------- */
+
+  .colophon {
+    padding-block: 1rem 2rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .colophon__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+  }
+
+  .colophon__row p {
+    padding-block-start: 0.6rem;
+  }
+
+  .colophon__row::before {
+    flex-basis: 100%;
+    border-block-start: 3px double var(--rule);
+    content: "";
+  }
+
+  /* ---------- Scroll-driven moments ---------- */
+
+  @supports (animation-timeline: view()) {
+    /* 1. The headline words slide with the page, not on their own. */
+    .band__track {
+      animation-name: band-slide;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+    }
+
+    @keyframes band-slide {
+      from {
+        translate: -8% 0;
+      }
+
+      to {
+        translate: 30% 0;
+      }
+    }
+
+    /* 2. Each photo drops onto the table: lifted and turned, then flat with
+       a small bounce, while its shadow tightens underneath. */
+    .tile__photo {
+      animation-name: drop;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --drop;
+      animation-range: entry 5% cover 42%;
+    }
+
+    @keyframes drop {
+      from {
+        filter: var(--shadow-lift);
+        rotate: calc(var(--rest) + 7deg);
+        scale: 1.14;
+        translate: 0 -8%;
+        animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+      }
+
+      62% {
+        filter: var(--shadow-rest);
+        rotate: var(--rest);
+        scale: 0.985;
+        translate: 0 0.8%;
+        animation-timing-function: ease-out;
+      }
+
+      80% {
+        scale: 1.01;
+        translate: 0 -0.5%;
+      }
+
+      to {
+        filter: var(--shadow-rest);
+        rotate: var(--rest);
+        scale: 1;
+        translate: 0 0;
+      }
+    }
+
+    /* 3. The warranty seal is pressed onto the sheet. */
+    .seal {
+      animation-name: stamp;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 45%;
+    }
+
+    @keyframes stamp {
+      from {
+        opacity: 0;
+        rotate: -28deg;
+        scale: 1.6;
+      }
+
+      55% {
+        opacity: 0.95;
+        rotate: -4deg;
+        scale: 0.92;
+        filter: blur(0.6px);
+      }
+
+      72% {
+        scale: 1.03;
+      }
+
+      to {
+        opacity: 1;
+        rotate: -4deg;
+        scale: 1;
+        filter: none;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .hero__word,
+    .hero__watch,
+    .band__track,
+    .tile__photo,
+    .seal {
+      animation: none;
+    }
+  }
+
+  /* ---------- Small screens ---------- */
+
+  @media (max-width: 47.99rem) {
+    .masthead__issue p:nth-child(2) {
+      display: none;
+    }
+
+    .hero__title {
+      font-size: 43vw;
+      line-height: 1;
+    }
+
+    .hero__word {
+      display: block;
+    }
+
+    .hero__word:last-child {
+      margin-inline-start: 8vw;
+    }
+
+    .hero__watch {
+      inset-block-start: 30vw;
+      inset-inline-end: -4vw;
+      inline-size: 58vw;
+    }
+
+    .hero__facts li {
+      padding-inline: 0 1.25rem;
+      border-inline-start: 0;
+    }
+
+    .hero__facts li:last-child {
+      flex-basis: 100%;
+      padding-inline: 0;
+      margin-block-start: 0.5rem;
+    }
+
+    .tile--small .tile__table {
+      inline-size: 86%;
+      margin-inline: auto;
+    }
+
+    .features__head {
+      grid-template-columns: 1fr;
+    }
+
+    .seal {
+      position: absolute;
+      inset-block-end: -1rem;
+      inset-inline-end: 0;
+      inline-size: 6.5rem;
+    }
+  }
+</style>

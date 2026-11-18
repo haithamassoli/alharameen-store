@@ -166,13 +166,34 @@ importers:
 
   .:
     dependencies:
+      '@fontsource-variable/el-messiri':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/kufam':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/noto-kufi-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource-variable/noto-naskh-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/readex-pro':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource-variable/reem-kufi':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/amiri':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/aref-ruqaa-ink':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/ibm-plex-sans-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/tajawal':
         specifier: ^5.3.0
         version: 5.3.0
       astro:
@@ -669,14 +690,35 @@ packages:
   '@emnapi/wasi-threads@2.2.0':
     resolution: {integrity: sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw==}
 
+  '@fontsource-variable/el-messiri@5.3.0':
+    resolution: {integrity: sha512-N5tqDwWLQa/PguZdOkYqSRchVDzoGCi7Hu7XNYnF/5rVp5/dIsEDVQ78D/el/3pgFloKiWiWIKbVMLCbvVevLA==}
+
+  '@fontsource-variable/kufam@5.3.0':
+    resolution: {integrity: sha512-N76j7Tt6IJdTFbH9lce9pMWfMrrKUbUfemi4OUfEo1H6BrKe14C3LL8yj1yKp7MMeG2MX7p6NS8eskIbVdYEag==}
+
+  '@fontsource-variable/noto-kufi-arabic@5.3.0':
+    resolution: {integrity: sha512-I2VKOHPcXg2ltFjSnVY7tfhI/gpWl+kuKzDdC8mv9lSlNQOgbSZBbKSrARDNVJ/d4tWS5ma1POH6OczJV9HL5w==}
+
   '@fontsource-variable/noto-naskh-arabic@5.3.0':
     resolution: {integrity: sha512-Ot0G5iln5MeLPKp1WNt6AGi4KHbPIVm0GEow2ED6rZ+8Rao+OuswhX4D+RPerc3aQ6teneLdqXSL8VPGorJvGg==}
+
+  '@fontsource-variable/readex-pro@5.3.0':
+    resolution: {integrity: sha512-ebrEcz8sjzQk92x6K3WtYzOgEKTIDe5D+iPqef0YYvPdqCfxzVkRgpsog5POX4sWa7e4wccCQ1IhmMuRka2hZg==}
 
   '@fontsource-variable/reem-kufi@5.3.0':
     resolution: {integrity: sha512-Q2MbKKWX2JVUIGbs0GTdFp2GTahGmink5mFCo7kKLPYfbY9S8xdvCFC+eMSDI33jj8Cvox5QpWrifTUQol07iw==}
 
   '@fontsource/amiri@5.3.0':
     resolution: {integrity: sha512-i4SWJnVIphj8556EdVzNrEG/Qu82k6JXjXTtSUIohx3tHmo2GHw1Kv60TWo+xjk7Yf1Etb2Gskh0lUFclTKyUw==}
+
+  '@fontsource/aref-ruqaa-ink@5.3.0':
+    resolution: {integrity: sha512-uYd29eIb5GXwXoTqO0XAK/ZFyE/bcKRNdMHpA5VcZDZxtORQr0Bn30Z/eaNr0541P46oKf3Enk0m3ZVRU3r3NQ==}
+
+  '@fontsource/ibm-plex-sans-arabic@5.3.0':
+    resolution: {integrity: sha512-ZZ4g+JDgQY0NqSh4o0MNWU1sHQmtcee1g++aKAwyJvZxnT5y51JXsN1cIXnaQaMd40dcbK6QFYa+Z1LbaiNuqA==}
+
+  '@fontsource/tajawal@5.3.0':
+    resolution: {integrity: sha512-R2GUdHHAebeZ+CyYvulaSECfZe3BWbNjEWX3TXG0Csnx4RADO/zyqk6Y//NYdSx5n74zRJh9HTvd61mpX/UzZQ==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -3752,11 +3794,25 @@ snapshots:
       tslib: 2.9.1
     optional: true
 
+  '@fontsource-variable/el-messiri@5.3.0': {}
+
+  '@fontsource-variable/kufam@5.3.0': {}
+
+  '@fontsource-variable/noto-kufi-arabic@5.3.0': {}
+
   '@fontsource-variable/noto-naskh-arabic@5.3.0': {}
+
+  '@fontsource-variable/readex-pro@5.3.0': {}
 
   '@fontsource-variable/reem-kufi@5.3.0': {}
 
   '@fontsource/amiri@5.3.0': {}
+
+  '@fontsource/aref-ruqaa-ink@5.3.0': {}
+
+  '@fontsource/ibm-plex-sans-arabic@5.3.0': {}
+
+  '@fontsource/tajawal@5.3.0': {}
 
   '@img/colour@1.1.0': {}
 
