@@ -39,7 +39,7 @@ const categoryName = (id: string): string => categoryById.get(id)?.name ?? "";
 const zones = await getShippingZones();
 const [cheapestZone] = zones;
 
-const digits = new Intl.NumberFormat("ar-JO");
+const digits = new Intl.NumberFormat("ar-JO-u-nu-latn");
 const { contact, returnDays, warrantyYears } = store;
 
 const WARRANTY_WORDS = new Map([
@@ -210,12 +210,15 @@ const [labelX, labelY] = onBearing(LABEL_RADIUS, QIBLA_BEARING);
 const qiblaLabel = `${digits.format(QIBLA_BEARING)}°`;
 
 // Rendered at build so the note is never empty; the page script refreshes it.
-const hijriToday = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
-  day: "numeric",
-  month: "long",
-  timeZone: "Asia/Amman",
-  year: "numeric",
-}).format(new Date());
+const hijriToday = new Intl.DateTimeFormat(
+  "ar-SA-u-ca-islamic-umalqura-nu-latn",
+  {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Amman",
+    year: "numeric",
+  }
+).format(new Date());
 
 const categories = [
   ...new Set(products.map((product) => product.data.category.id)),

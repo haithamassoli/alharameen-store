@@ -14,7 +14,7 @@ const formatInPage = async (page: Page, fils: number): Promise<string> =>
     const FILS_PER_DINAR = 1000;
     const whole = amount % FILS_PER_DINAR === 0;
 
-    const formatter = new Intl.NumberFormat("ar-JO", {
+    const formatter = new Intl.NumberFormat("ar-JO-u-nu-latn", {
       currency: "JOD",
       minimumFractionDigits: whole ? 0 : 3,
       style: "currency",

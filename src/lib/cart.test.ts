@@ -151,12 +151,12 @@ describe("buildWhatsAppMessage", () => {
 
   it("lists each item with model, quantity and line total", () => {
     expect(message).toContain(
-      "١. ساعة الحرمين الرياضية باللون الأسود (HA-6506BW)"
+      "1. ساعة الحرمين الرياضية باللون الأسود (HA-6506BW)"
     );
     expect(message).toContain(
-      `٢ × ${formatPrice(26_000)} = ${formatPrice(52_000)}`
+      `2 × ${formatPrice(26_000)} = ${formatPrice(52_000)}`
     );
-    expect(message).toContain("٢. جهاز أذكار الباب من الحرمين (HA-1013)");
+    expect(message).toContain("2. جهاز أذكار الباب من الحرمين (HA-1013)");
   });
 
   it("includes subtotal, delivery zone and grand total", () => {

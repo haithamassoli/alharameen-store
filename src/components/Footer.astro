@@ -8,9 +8,9 @@ const zones = await getShippingZones();
 const { name, tagline, contact } = await getStore();
 const whatsappDigits = contact.whatsapp.replace("+", "");
 
-const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
-  new Date().getFullYear()
-);
+const year = new Intl.NumberFormat("ar-JO-u-nu-latn", {
+  useGrouping: false,
+}).format(new Date().getFullYear());
 ---
 
 <footer class="site-footer">

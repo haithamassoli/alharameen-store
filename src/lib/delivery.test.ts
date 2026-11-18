@@ -7,5 +7,5 @@ it("says one to two days in words", () => {
 });
 
 it("uses an Arabic-digit range for longer windows", () => {
-  expect(deliveryTime(2, 4)).toBe("خلال ٢–٤ أيام");
+  expect(deliveryTime(2, 4)).toBe("خلال 2–4 أيام");
 });

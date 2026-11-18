@@ -17,8 +17,11 @@ describe("formatPrice", () => {
   });
 
   it("defaults to Jordanian dinars", () => {
-    expect(formatPrice(25_500)).toBe(formatPrice(25_500, "JOD", "ar-JO"));
+    expect(formatPrice(25_500)).toBe(
+      formatPrice(25_500, "JOD", "ar-JO-u-nu-latn")
+    );
     expect(formatPrice(25_500, "JOD", "en-US")).toBe("JOD\u00A025.500");
+    expect(formatPrice(26_000)).toContain("26");
   });
 
   it("rejects fractional minor units", () => {
