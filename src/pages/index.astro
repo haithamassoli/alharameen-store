@@ -223,11 +223,15 @@ const categories = [
   ...new Set(products.map((product) => product.data.category.id)),
 ];
 
-// One rule per category: when its radio is checked, hide every other card.
+// One rule set per category: when its radio is checked, hide every other card
+// and switch the cards to that category's own (identical) keyframes. A new
+// animation-name restarts the entrance on every visible card, no JS needed.
 const filterCss = categories
   .map(
     (id) =>
-      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
+      `.catalog:has(#filter-${id}:checked) .catalog__item{animation-name:filter-${id}}` +
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}` +
+      `@keyframes filter-${id}{from{opacity:0;translate:0 0.75rem}}`
   )
   .join("");
 
@@ -993,6 +997,18 @@ const storeJsonLd = {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
+  }
+
+  /* Cards rise in whenever the filter changes (see filterCss). */
+  .catalog__item {
+    animation: filter-all 400ms var(--ease) backwards;
+  }
+
+  @keyframes filter-all {
+    from {
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
   }
 
   /* FAQ: native exclusive <details>. Where ::details-content and
