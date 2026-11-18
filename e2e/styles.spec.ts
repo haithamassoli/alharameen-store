@@ -1,8 +1,8 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-// The /1…/7 home-page style explorations: same catalog, different design.
-const STYLES = ["1", "2", "3", "4", "5", "6", "7"] as const;
+// The /1…/10 home-page style explorations: same catalog, different design.
+const STYLES = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] as const;
 const PRODUCT_COUNT = 8;
 
 for (const style of STYLES) {

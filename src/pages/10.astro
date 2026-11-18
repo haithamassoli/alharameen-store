@@ -1,0 +1,2108 @@
+---
+// Style exploration 10, «التشريح»: /1's white showroom, opened like a
+// product page. One big watch holds the screen while scrolling draws its
+// five features out of it, one leader line at a time, until they settle into
+// a calm technical drawing. CSS scroll-driven animations do the work; a small
+// script steps through the same states where they are not supported.
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import { Picture } from "astro:assets";
+
+import logo from "../assets/logo.svg";
+import { deliveryTime } from "../lib/delivery";
+import { getHomeData } from "../lib/home-data";
+import { formatPrice } from "../lib/money";
+
+const {
+  store,
+  products,
+  categoryName,
+  zones,
+  chatUrl,
+  digits,
+  features,
+  steps,
+} = await getHomeData();
+
+const HERO_SIZE = 992;
+const CARD_SIZE = 560;
+const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
+
+// The white sport watch: its screen shows a Hijri date and its bezel the
+// compass letters, so every annotation has a real detail to point at.
+const ANATOMY_WATCH = "ha-6506ww";
+
+const featured = products.find((product) => product.data.featured);
+
+const hero =
+  products.find((product) => product.id === ANATOMY_WATCH) ??
+  featured ??
+  products[0];
+
+if (!hero) {
+  throw new Error("The home page needs at least one product.");
+}
+
+const [heroImage] = hero.data.images;
+
+if (!heroImage) {
+  throw new Error(`${hero.id} has no photo.`);
+}
+
+// ---- The drawing ----
+// Coordinates are in the photo's own 1000 × 1000 box, measured on
+// ha-6506ww-1.jpg. The drawing is 1600 wide, so the photo sits between
+// x = 0 and x = 1000 with 300 units of margin on either side.
+const DIAL = { x: 494, y: 441 };
+const NOTE_EDGE = { left: 230, right: 770 } as const;
+const ELBOW = 50;
+const QIBLA_BEARING = 157;
+const COMPASS_RADIUS = 252;
+const NEEDLE_INNER = 214;
+const NEEDLE_OUTER = 282;
+const LABEL_RADIUS = 312;
+const CARDINAL_TICK = 9;
+const DEGREES_PER_RADIAN = 180 / Math.PI;
+const PERCENT_PER_UNIT = 0.1;
+
+type Side = keyof typeof NOTE_EDGE;
+
+interface Callout {
+  /** The detail the leader points at; delivery has none. */
+  anchor?: readonly [number, number];
+  side: Side;
+  /** Height of the note's top rule. */
+  y: number;
+}
+
+const CALLOUTS = new Map<string, Callout>([
+  // The prayer-time row at the foot of the screen.
+  ["azan", { anchor: [446, 528], side: "left", y: 470 }],
+  // The SE letter on the compass bezel.
+  ["qibla", { anchor: [606, 566], side: "right", y: 640 }],
+  // The Hijri date at the top of the screen.
+  ["calendar", { anchor: [588, 372], side: "right", y: 372 }],
+  // The case shoulder above the bezel.
+  ["shield", { anchor: [352, 242], side: "left", y: 242 }],
+  ["truck", { side: "left", y: 720 }],
+]);
+
+const round = (value: number): number => Math.round(value * 10) / 10;
+
+const onBearing = (radius: number, bearing: number): [number, number] => {
+  const angle = bearing / DEGREES_PER_RADIAN;
+
+  return [
+    round(DIAL.x + radius * Math.sin(angle)),
+    round(DIAL.y - radius * Math.cos(angle)),
+  ];
+};
+
+const leaderPath = (
+  [x, y]: readonly [number, number],
+  side: Side,
+  ruleY: number
+): string => {
+  const edge = NOTE_EDGE[side];
+  const elbow = side === "left" ? edge + ELBOW : edge - ELBOW;
+
+  return `M${x} ${y}L${elbow} ${ruleY}H${edge}`;
+};
+
+const notes = features.map((feature, index) => {
+  const callout = CALLOUTS.get(feature.icon);
+
+  if (!callout) {
+    throw new Error(`No callout for the ${feature.icon} feature.`);
+  }
+
+  return {
+    ...feature,
+    ...callout,
+    index: index + 1,
+    path: callout.anchor && leaderPath(callout.anchor, callout.side, callout.y),
+    top: `${callout.y * PERCENT_PER_UNIT}%`,
+  };
+});
+
+const qiblaIndex = notes.find((note) => note.icon === "qibla")?.index ?? 0;
+
+const cardinalTicks = [0, 90, 180, 270]
+  .map((bearing) => {
+    const [x1, y1] = onBearing(COMPASS_RADIUS - CARDINAL_TICK, bearing);
+    const [x2, y2] = onBearing(COMPASS_RADIUS + CARDINAL_TICK, bearing);
+
+    return `M${x1} ${y1}L${x2} ${y2}`;
+  })
+  .join("");
+
+// Drawn pointing north; CSS turns it to the bearing.
+const needle = `M${DIAL.x} ${DIAL.y - NEEDLE_INNER}V${DIAL.y - NEEDLE_OUTER}`;
+
+const needleTip = `M${DIAL.x} ${DIAL.y - NEEDLE_OUTER - 14}l-7 16h14z`;
+
+const [labelX, labelY] = onBearing(LABEL_RADIUS, QIBLA_BEARING);
+const qiblaLabel = `${digits.format(QIBLA_BEARING)}°`;
+
+// Rendered at build so the note is never empty; the page script refreshes it.
+const hijriToday = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+  day: "numeric",
+  month: "long",
+  timeZone: "Asia/Amman",
+  year: "numeric",
+}).format(new Date());
+
+const categories = [
+  ...new Map(
+    products.map((product) => [product.data.category.id, categoryName(product)])
+  ),
+];
+
+// One rule per category: when its radio is checked, hide every other card.
+const filterCss = categories
+  .map(
+    ([id]) =>
+      `.catalog:has(#filter-${id}:checked) .catalog__item:not([data-category="${id}"]){display:none}`
+  )
+  .join("");
+
+const phoneMatch = JORDAN_PHONE.exec(store.contact.phone);
+
+const phoneParts = phoneMatch?.groups;
+
+const phoneLabel = phoneParts
+  ? `+962 ${phoneParts.area} ${phoneParts.mid} ${phoneParts.end}`
+  : store.contact.phone;
+
+const [cheapestZone] = zones;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{store.name} | التشريح</title>
+    <meta name="description" content={store.tagline} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style is:inline set:html={filterCss}></style>
+    <!-- Decide before first paint whether the scroll story runs, so the
+         layout never jumps. Without JS the page is a static drawing. -->
+    <script is:inline>
+      if (matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+        document.documentElement.classList.add("scrolly");
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      تخطَّ إلى المحتوى
+    </a>
+
+    <header class="masthead">
+      <div class="wrap masthead__inner">
+        <a class="brand" href="/10">
+          <img
+            alt=""
+            class="brand__mark"
+            height="28"
+            src={logo.src}
+            width="28"
+          />
+          <span>{store.name}</span>
+        </a>
+        <nav aria-label="أقسام الصفحة" class="masthead__nav">
+          <ul>
+            <li>
+              <a href="#catalog">الساعات</a>
+            </li>
+            <li>
+              <a href="#features">المزايا</a>
+            </li>
+            <li>
+              <a href="#order">طريقة الطلب</a>
+            </li>
+            <li>
+              <a href="#contact">تواصل معنا</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section aria-labelledby="hero-title" class="anatomy" data-anatomy>
+        <div class="stage">
+          <div class="drawing">
+            <div class="intro">
+              <p class="intro__eyebrow">ساعات الحرمين الأصلية في الأردن</p>
+              <h1 class="intro__title" id="hero-title">
+                لا يفوتك أذان، أينما كنت
+              </h1>
+              <p class="intro__lede">
+                ساعات يد ومكتب تنبّهك لكل صلاة وتدلّك على القبلة. اطلبها عبر
+                واتساب، وادفع عند الاستلام.
+              </p>
+              <div class="intro__actions">
+                <a class="button" href="#catalog">
+                  تسوّق الساعات
+                </a>
+                <a
+                  class="quiet-link"
+                  href={chatUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  اسألنا على واتساب
+                  <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+                </a>
+              </div>
+              <a class="intro__product" href={`/watches/${hero.id}/`}>
+                <span>{hero.data.name}</span>
+                <span class="price">
+                  {formatPrice(hero.data.price, hero.data.currency)}
+                </span>
+              </a>
+            </div>
+
+            <div class="plate">
+              <div class="figure">
+                <div class="figure__zoom">
+                  <Picture
+                    alt={heroImage.alt}
+                    fetchpriority="high"
+                    formats={["avif", "webp"]}
+                    height={HERO_SIZE}
+                    loading="eager"
+                    sizes="(min-width: 56rem) min(82vh, 50rem), 130vw"
+                    src={heroImage.src}
+                    width={HERO_SIZE}
+                    widths={[480, 720, HERO_SIZE]}
+                  />
+
+                  <svg aria-hidden="true" class="marks" viewBox="0 0 1000 1000">
+                    <g
+                      class="compass"
+                      data-note={qiblaIndex}
+                      style={`--i: ${qiblaIndex}`}
+                    >
+                      <circle
+                        class="compass__ring"
+                        cx={DIAL.x}
+                        cy={DIAL.y}
+                        r={COMPASS_RADIUS}
+                      ></circle>
+                      <path class="compass__ticks" d={cardinalTicks}></path>
+                      <g class="compass__needle">
+                        <path class="compass__line" d={needle}></path>
+                        <path class="compass__tip" d={needleTip}></path>
+                      </g>
+                      <text
+                        class="compass__label"
+                        direction="ltr"
+                        text-anchor="middle"
+                        x={labelX}
+                        y={labelY}
+                      >
+                        {qiblaLabel}
+                      </text>
+                    </g>
+
+                    {notes.map(
+                      (note) =>
+                        note.anchor &&
+                        note.path && (
+                          <g
+                            class="leader"
+                            data-note={note.index}
+                            style={`--i: ${note.index}`}
+                          >
+                            <path
+                              class="leader__line"
+                              d={note.path}
+                              pathLength="1"
+                            />
+                            <circle
+                              class="leader__halo"
+                              cx={note.anchor[0]}
+                              cy={note.anchor[1]}
+                              r="15"
+                            />
+                            <circle
+                              class="leader__dot"
+                              cx={note.anchor[0]}
+                              cy={note.anchor[1]}
+                              r="5.5"
+                            />
+                          </g>
+                        )
+                    )}
+                  </svg>
+                </div>
+              </div>
+
+              <div class="notes" id="features">
+                <h2 class="visually-hidden">ما تحصل عليه مع كل ساعة</h2>
+                <ol class="notes__list">
+                  {notes.map((note) => (
+                    <li
+                      class="note"
+                      data-note={note.index}
+                      data-side={note.side}
+                      style={`--i: ${note.index}; --y: ${note.top}`}
+                    >
+                      {note.icon === "truck" && (
+                        <span aria-hidden="true" class="route">
+                          <span>إربد</span>
+                          <span>عمّان</span>
+                          <span>العقبة</span>
+                        </span>
+                      )}
+                      <h3 class="note__title">{note.title}</h3>
+                      <p class="note__text">{note.text}</p>
+                      {note.icon === "calendar" && (
+                        <p class="note__extra">
+                          اليوم <span data-hijri>{hijriToday}</span>
+                        </p>
+                      )}
+                      {note.icon === "qibla" && (
+                        <p class="note__extra">
+                          الإبرة على <bdi dir="ltr">{qiblaLabel}</bdi>، مثال: من
+                          عمّان
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <ol aria-hidden="true" class="ticks">
+            {notes.map((note) => (
+              <li data-note={note.index} style={`--i: ${note.index}`}></li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="catalog-title" class="catalog" id="catalog">
+        <div class="wrap">
+          <div class="section-head catalog__head">
+            <div>
+              <h2 class="section-title" id="catalog-title">
+                الساعات
+              </h2>
+              <p class="section-note">
+                {digits.format(products.length)} منتجات، كلها أصلية ومكفولة
+              </p>
+            </div>
+
+            {categories.length > 1 && (
+              <fieldset class="filters">
+                <legend class="visually-hidden">تصفية حسب الفئة</legend>
+                <label class="chip">
+                  <input checked name="category" type="radio" value="all" />
+                  الكل
+                </label>
+                {categories.map(([id, name]) => (
+                  <label class="chip">
+                    <input
+                      id={`filter-${id}`}
+                      name="category"
+                      type="radio"
+                      value={id}
+                    />
+                    {name}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+
+          <ul class="catalog__grid">
+            {products.map((product) => {
+              const [cover] = product.data.images;
+              const { compareAtPrice, currency, price } = product.data;
+
+              return (
+                <li
+                  class="catalog__item"
+                  data-category={product.data.category.id}
+                >
+                  <article class="card">
+                    <div class="card__frame">
+                      <Picture
+                        alt={cover.alt}
+                        formats={["avif", "webp"]}
+                        height={CARD_SIZE}
+                        loading="lazy"
+                        sizes="(min-width: 64rem) 17rem, (min-width: 40rem) 30vw, 45vw"
+                        src={cover.src}
+                        width={CARD_SIZE}
+                        widths={[280, 420, CARD_SIZE]}
+                      />
+                    </div>
+                    <div class="card__body">
+                      <p class="card__category">{categoryName(product)}</p>
+                      <h3 class="card__name">
+                        <a href={`/watches/${product.id}/`}>
+                          {product.data.name}
+                        </a>
+                      </h3>
+                      <p class="card__price price">
+                        <span class="visually-hidden">السعر:</span>
+                        {formatPrice(price, currency)}
+                        {compareAtPrice !== undefined && (
+                          <s class="card__was">
+                            <span class="visually-hidden">بدلًا من</span>
+                            {formatPrice(compareAtPrice, currency)}
+                          </s>
+                        )}
+                      </p>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="order-title" class="order" id="order">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title" id="order-title">
+                طريقة الطلب
+              </h2>
+              <p class="section-note">
+                ثلاث خطوات، ولا تدفع شيئًا قبل أن تصلك الساعة.
+              </p>
+            </div>
+          </div>
+
+          <ol class="steps">
+            {steps.map((step, index) => (
+              <li class="step">
+                <span aria-hidden="true" class="step__number">
+                  {digits.format(index + 1)}
+                </span>
+                <h3 class="step__title">{step.title}</h3>
+                <p class="step__text">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div class="delivery">
+            <h3 class="delivery__title">التوصيل</h3>
+            <table class="zones">
+              <caption class="visually-hidden">
+                رسوم التوصيل ومدته حسب المنطقة
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">المنطقة</th>
+                  <th scope="col">الرسوم</th>
+                  <th scope="col">المدة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zones.map((zone) => (
+                  <tr>
+                    <th scope="row">{zone.data.name}</th>
+                    <td class="price">
+                      {formatPrice(zone.data.fee, zone.data.currency)}
+                    </td>
+                    <td>
+                      {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="delivery__cash">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
+                <circle cx="12" cy="12.5" r="2.5"></circle>
+              </svg>
+              الدفع نقدًا عند الاستلام
+              {cheapestZone && (
+                <span class="delivery__from">
+                  ، والتوصيل يبدأ من{" "}
+                  {formatPrice(
+                    cheapestZone.data.fee,
+                    cheapestZone.data.currency
+                  )}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="contact-title" class="contact" id="contact">
+        <div class="wrap contact__inner">
+          <div>
+            <h2 class="contact__title" id="contact-title">
+              عندك سؤال عن ساعة؟ اسألنا قبل أن تطلب.
+            </h2>
+            <p class="section-note">
+              نرد على واتساب ونساعدك تختار الموديل المناسب لك أو لمن تهديه.
+            </p>
+          </div>
+          <div class="contact__actions">
+            <a
+              class="button"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              راسلنا على واتساب
+              <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+            </a>
+            <p class="contact__phone">
+              أو اتصل بنا:
+              <a dir="ltr" href={`tel:${store.contact.phone}`}>
+                {phoneLabel}
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <p>
+          {store.name}، {store.contact.address}
+        </p>
+        <p>
+          © <span>{digits.format(year).replaceAll("٬", "")}</span>
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      import { initAnatomy } from "../lib/style-10";
+
+      initAnatomy();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --white: #ffffff;
+    --chalk: #f5f6f3;
+    --ink: #19251f;
+    --muted: #56625b;
+    --hairline: #e3e3de;
+    --line: #aeb5b0;
+    --pine: #285a47;
+    --pine-deep: #1f4738;
+
+    --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --gutter: clamp(1rem, 4vw, 2.5rem);
+    --section: clamp(4rem, 9vw, 7rem);
+    --header: 4rem;
+
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Anchors clear the sticky header with scroll-margin, not
+     scroll-padding: scroll-padding would also shift the view timeline. */
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  figure,
+  fieldset {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  img,
+  picture,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  img {
+    block-size: auto;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  [id] {
+    scroll-margin-block-start: 5rem;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+</style>
+
+<style>
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    block-size: 1px;
+    white-space: nowrap;
+  }
+
+  .skip {
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 0.75rem;
+    z-index: 20;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    background: var(--ink);
+    color: var(--white);
+    text-decoration: none;
+    translate: 0 -200%;
+  }
+
+  .skip:focus-visible {
+    translate: 0 0;
+  }
+
+  .wrap {
+    inline-size: 100%;
+    max-inline-size: 76rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Header */
+
+  .masthead {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 10;
+    border-block-end: 1px solid var(--hairline);
+    background: var(--white);
+  }
+
+  .masthead__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-block-size: var(--header);
+  }
+
+  .brand {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand__mark {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+  }
+
+  .masthead__nav ul {
+    display: flex;
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  .masthead__nav a {
+    display: inline-block;
+    padding-block: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .masthead__nav a:hover {
+    color: var(--ink);
+  }
+
+  /* Buttons and links */
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 3rem;
+    padding-inline: 1.75rem;
+    border-radius: 999px;
+    background: var(--pine);
+    color: var(--white);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 200ms var(--ease);
+  }
+
+  .button:hover {
+    background: var(--pine-deep);
+  }
+
+  .quiet-link {
+    padding-block: 0.5rem;
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--hairline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.45em;
+    transition: text-decoration-color 200ms var(--ease);
+  }
+
+  .quiet-link:hover {
+    text-decoration-color: var(--pine);
+  }
+
+  /* ---- The anatomy ----
+     Default (reduced motion, no JS): a static, fully annotated drawing.
+     The scroll story further down only adds the sticky stage and timing. */
+
+  .stage {
+    position: relative;
+    padding-block: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .drawing {
+    inline-size: 100%;
+    max-inline-size: 76rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .intro {
+    max-inline-size: 34rem;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .intro__eyebrow {
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .intro__title {
+    font-size: clamp(2.125rem, 3.8vw, 3.25rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .intro__lede {
+    margin-block-start: 1rem;
+    color: var(--muted);
+    font-size: clamp(1rem, 1.3vw, 1.125rem);
+    text-wrap: pretty;
+  }
+
+  .intro__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.75rem;
+    margin-block-start: 1.75rem;
+  }
+
+  .intro__product {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.875rem;
+    margin-block-start: 1.75rem;
+    padding-block-start: 0.875rem;
+    border-block-start: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .intro__product .price {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .intro__product:hover {
+    color: var(--ink);
+  }
+
+  /* The plate is the drawing sheet: 1600 × 1000 units, the photo square in
+     the middle third, notes on the white flanks. */
+  .plate {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    margin-block-start: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .figure {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 18.75%;
+    inline-size: 62.5%;
+  }
+
+  .figure__zoom {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  /* The studio backdrop is 254 white in places; lift it to the page. */
+  .figure__zoom :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    filter: brightness(1.02);
+  }
+
+  .marks {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    inline-size: 100%;
+    block-size: 100%;
+    fill: none;
+    stroke-linecap: round;
+  }
+
+  .leader__line {
+    stroke: var(--line);
+    stroke-dasharray: 1;
+    stroke-width: 1.5;
+  }
+
+  .leader__dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    fill: var(--pine);
+    stroke: var(--white);
+    stroke-width: 2.5;
+  }
+
+  .leader__halo {
+    opacity: 0;
+    stroke: var(--pine);
+    stroke-width: 1.5;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .compass__ring,
+  .compass__ticks,
+  .compass__line {
+    stroke: var(--line);
+    stroke-width: 1.5;
+  }
+
+  .compass__ring {
+    stroke-dasharray: 2 7;
+  }
+
+  .compass__line {
+    stroke: var(--pine);
+    stroke-width: 2.5;
+  }
+
+  .compass__tip {
+    fill: var(--pine);
+  }
+
+  .compass__needle {
+    transform-box: view-box;
+    transform-origin: 494px 441px;
+    transform: rotate(157deg);
+  }
+
+  .compass__label {
+    fill: var(--pine);
+    font-family: var(--font);
+    font-size: 26px;
+    font-weight: 500;
+  }
+
+  .notes__list {
+    position: absolute;
+    inset: 0;
+  }
+
+  .note {
+    position: absolute;
+    inset-block-start: var(--y);
+    inline-size: min(17rem, 30%);
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  /* Each note's rule starts where its leader ends, 230 units in from the
+     sheet edge: (1600 - 300 - 230) / 1600. */
+  .note[data-side="left"] {
+    inset-inline-start: 66.875%;
+  }
+
+  .note[data-side="right"] {
+    inset-inline-end: 66.875%;
+  }
+
+  .note__title {
+    margin-block-end: 0.125rem;
+    color: var(--ink);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .note__extra {
+    margin-block-start: 0.375rem;
+    color: var(--pine);
+    font-weight: 500;
+  }
+
+  /* Delivery has no detail on the watch; its rule is a little Jordan,
+     north to south. */
+  .note:has(.route) {
+    border-block-start-color: transparent;
+    padding-block-start: 0;
+  }
+
+  .route {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    margin-block-end: 0.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .route span {
+    position: relative;
+  }
+
+  .route span::before {
+    position: absolute;
+    inset-block-start: calc(-0.5rem - 3.5px);
+    inset-inline-start: 0;
+    inline-size: 6px;
+    block-size: 6px;
+    border-radius: 50%;
+    background: var(--pine);
+    content: "";
+  }
+
+  .route span:nth-child(2)::before {
+    inset-inline-start: calc(50% - 3px);
+  }
+
+  .route span:last-child::before {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+  }
+
+  .ticks {
+    display: none;
+  }
+
+  /* Section scaffolding */
+
+  .catalog,
+  .order,
+  .contact {
+    padding-block: var(--section);
+  }
+
+  .catalog {
+    border-block-start: 1px solid var(--hairline);
+  }
+
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    margin-block-end: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .section-title {
+    font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .section-note {
+    max-inline-size: 36rem;
+    margin-block-start: 0.375rem;
+    color: var(--muted);
+  }
+
+  /* Filters: radios styled as quiet chips, no JS. */
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 2.5rem;
+    padding-inline: 1.125rem;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition:
+      border-color 200ms var(--ease),
+      color 200ms var(--ease),
+      background-color 200ms var(--ease);
+  }
+
+  .chip input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .chip:has(input:checked) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+  }
+
+  /* Catalog */
+
+  .catalog__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+  }
+
+  .card__frame {
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    background: var(--chalk);
+  }
+
+  /* White studio photos melt into the chalk ground. */
+  .card__frame :global(img) {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 8%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    transition: scale 700ms var(--ease);
+  }
+
+  .card:hover .card__frame :global(img) {
+    scale: 1.04;
+  }
+
+  .card__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding-block-start: 1rem;
+  }
+
+  .card__category {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .card__name {
+    margin-block: 0.125rem 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .card__name a {
+    text-decoration: none;
+  }
+
+  /* The whole card is the link target. */
+  .card__name a::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+  }
+
+  .card:has(a:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 6px;
+  }
+
+  .card__name a:focus-visible {
+    outline: none;
+  }
+
+  .card__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin-block-start: auto;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--hairline);
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+
+  .card__was {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  /* Order */
+
+  .order {
+    background: var(--chalk);
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .step {
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .step__number {
+    display: block;
+    margin-block-end: 0.75rem;
+    color: var(--pine);
+    font-size: 2.5rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .step__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .step__text {
+    margin-block-start: 0.25rem;
+    color: var(--muted);
+  }
+
+  .delivery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1rem clamp(2rem, 6vw, 6rem);
+    margin-block-start: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .delivery__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .zones {
+    inline-size: 100%;
+    border-collapse: collapse;
+    text-align: start;
+  }
+
+  .zones th,
+  .zones td {
+    padding-block: 0.875rem;
+    padding-inline: 0 1rem;
+    border-block-end: 1px solid var(--hairline);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .zones thead th {
+    padding-block-start: 0;
+    border-block-end-color: var(--ink);
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+  }
+
+  .zones tbody th {
+    font-weight: 600;
+  }
+
+  .zones td.price {
+    font-weight: 500;
+  }
+
+  .delivery__cash {
+    display: inline-flex;
+    grid-column: 2;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .delivery__cash svg {
+    flex-shrink: 0;
+    inline-size: 1.375rem;
+    block-size: 1.375rem;
+    fill: none;
+    stroke: var(--pine);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.4;
+  }
+
+  .delivery__from {
+    margin-inline-start: -0.625rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Contact */
+
+  .contact__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .contact__title {
+    max-inline-size: 18ch;
+    font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .contact__actions {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+  }
+
+  .contact__phone {
+    color: var(--muted);
+  }
+
+  .contact__phone a {
+    margin-inline-start: 0.25rem;
+    color: var(--ink);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-decoration-color: var(--hairline);
+    text-underline-offset: 0.35em;
+    unicode-bidi: isolate;
+  }
+
+  /* Footer */
+
+  .footer {
+    border-block-start: 1px solid var(--hairline);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 2rem;
+    padding-block: 1.75rem;
+  }
+
+  /* Responsive */
+
+  @media (max-width: 64rem) {
+    .catalog__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Phones and tablets: the watch fills the width, zoomed onto the case,
+     and the notes become a list below it. */
+  @media (max-width: 56rem) {
+    .drawing,
+    .plate {
+      display: contents;
+    }
+
+    .stage {
+      display: grid;
+      gap: 1.5rem;
+      padding-inline: var(--gutter);
+    }
+
+    .intro {
+      text-align: start;
+    }
+
+    .intro__actions {
+      justify-content: start;
+    }
+
+    .figure {
+      position: relative;
+      inset: auto;
+      overflow: clip;
+      inline-size: 100%;
+      max-inline-size: 30rem;
+      aspect-ratio: 1;
+      margin-inline: auto;
+    }
+
+    .figure__zoom {
+      scale: 1.45;
+      transform-origin: 49.4% 44.1%;
+    }
+
+    .leader__line {
+      display: none;
+    }
+
+    /* The watch is zoomed, but the dots stay a finger's width apart. */
+    .leader__dot {
+      r: 8px;
+    }
+
+    .leader__halo {
+      r: 20px;
+    }
+
+    .notes__list {
+      position: static;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .note,
+    .note[data-side] {
+      position: static;
+      inset: auto;
+      inline-size: auto;
+    }
+  }
+
+  @media (max-width: 52rem) {
+    .masthead__nav {
+      display: none;
+    }
+
+    .delivery {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .delivery__cash {
+      grid-column: auto;
+    }
+
+    .steps {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      column-gap: 1rem;
+    }
+
+    .step__number {
+      grid-row: span 2;
+      font-size: 2rem;
+    }
+
+    .step__text {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    /* One swipeable row of chips instead of a ragged wrap. */
+    .filters {
+      flex: 0 0 calc(100% + var(--gutter) * 2);
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      min-inline-size: 0;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-block: 0.25rem;
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+
+    .chip {
+      flex-shrink: 0;
+    }
+
+    .catalog__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.75rem 0.875rem;
+    }
+
+    .card__name {
+      font-size: 0.9375rem;
+    }
+
+    .card__price {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* ---- The scroll story ----
+     The head script adds .scrolly when motion is welcome. The section grows
+     tall, the stage sticks, and the progress through the section drives
+     everything. Each annotation owns 16% of the scroll, starting at 8%:
+     it draws in over its first 6%, holds, and settles to its quiet look
+     over the 4% after its turn ends. */
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.scrolly) .anatomy {
+      block-size: 480vh;
+      view-timeline-name: --anatomy;
+      view-timeline-axis: block;
+    }
+
+    :global(.scrolly) .stage {
+      position: sticky;
+      inset-block-start: 0;
+      display: grid;
+      place-items: center;
+      overflow: clip;
+      block-size: 100vh;
+      block-size: 100svh;
+      padding-block: calc(var(--header) + 1.25rem) 1.25rem;
+      padding-inline: var(--gutter);
+      container-type: size;
+    }
+
+    :global(.scrolly) .drawing {
+      position: relative;
+      inline-size: min(100cqi - 2.5rem, 160cqb);
+      max-inline-size: none;
+      padding-inline: 0;
+    }
+
+    :global(.scrolly) .plate {
+      margin-block-start: 0;
+      scale: 1.06;
+    }
+
+    :global(.scrolly) .intro {
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 0;
+      z-index: 1;
+      inline-size: 31%;
+      margin: 0;
+      text-align: start;
+      translate: 0 -50%;
+    }
+
+    :global(.scrolly) .intro__title {
+      font-size: clamp(2rem, 3.4vw, 3rem);
+    }
+
+    :global(.scrolly) .intro__actions {
+      justify-content: start;
+    }
+
+    :global(.scrolly) .ticks {
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-end: var(--gutter);
+      display: grid;
+      justify-items: end;
+      gap: 0.875rem;
+      translate: 0 -50%;
+    }
+
+    :global(.scrolly) .ticks li {
+      inline-size: 0.875rem;
+      block-size: 2px;
+      border-radius: 1px;
+      background: var(--hairline);
+    }
+
+    :global(.scrolly) [data-note] {
+      --from: calc(8% + (var(--i) - 1) * 16%);
+      --to: calc(var(--from) + 20%);
+    }
+
+    :global(.scrolly) .compass__needle {
+      transform: rotate(0deg);
+    }
+
+    /* Phones: watch on top, one note at a time in the slot below it. */
+    @media (max-width: 56rem) {
+      :global(.scrolly) .anatomy {
+        block-size: 420vh;
+      }
+
+      :global(.scrolly) .stage {
+        grid-template-rows: minmax(0, 1fr) auto;
+        place-items: stretch;
+        gap: 1.5rem;
+        padding-block: calc(var(--header) + 0.5rem) 1.5rem;
+        container-type: normal;
+      }
+
+      :global(.scrolly) .figure {
+        display: grid;
+        place-items: center;
+        grid-row: 1;
+        inline-size: 100%;
+        max-inline-size: none;
+        block-size: 100%;
+        aspect-ratio: auto;
+        container-type: size;
+      }
+
+      :global(.scrolly) .figure__zoom {
+        inline-size: min(100cqi, 100cqb);
+        block-size: min(100cqi, 100cqb);
+        scale: 1.5;
+      }
+
+      :global(.scrolly) .intro,
+      :global(.scrolly) .notes {
+        grid-row: 2;
+        grid-column: 1;
+      }
+
+      :global(.scrolly) .intro {
+        position: static;
+        inline-size: auto;
+        translate: none;
+      }
+
+      :global(.scrolly) .intro__lede {
+        display: none;
+      }
+
+      :global(.scrolly) .intro__actions,
+      :global(.scrolly) .intro__product {
+        margin-block-start: 1.25rem;
+      }
+
+      :global(.scrolly) .intro__title {
+        font-size: clamp(1.75rem, 7.5vw, 2.25rem);
+      }
+
+      :global(.scrolly) .notes__list {
+        display: grid;
+        align-items: start;
+      }
+
+      :global(.scrolly) .note {
+        position: relative;
+        grid-area: 1 / 1;
+        margin-block-start: 1.75rem;
+        color: var(--ink);
+      }
+
+      /* The stub: a short leader rising from the note toward the watch. */
+      :global(.scrolly) .note::before {
+        position: absolute;
+        inset-block-end: 100%;
+        inset-inline-start: 0;
+        inline-size: 1px;
+        block-size: 1.75rem;
+        background: var(--pine);
+        content: "";
+      }
+
+      :global(.scrolly) .note:has(.route)::before {
+        inset-inline-start: calc(50% - 0.5px);
+      }
+
+      :global(.scrolly) .note,
+      :global(.scrolly) .route {
+        border-block-start-color: var(--pine);
+      }
+
+      :global(.scrolly) .note:has(.route) {
+        border-block-start-color: transparent;
+      }
+
+      :global(.scrolly) .ticks {
+        inset-block-start: calc(var(--header) + 1.5rem);
+        inset-inline-end: var(--gutter);
+        translate: none;
+      }
+    }
+
+    @supports (animation-timeline: view()) {
+      :global(.scrolly) .intro {
+        animation-name: intro-out;
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --anatomy;
+        animation-range-start: contain 0%;
+        animation-range-end: contain 6%;
+      }
+
+      :global(.scrolly) .plate {
+        animation-name: plate;
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --anatomy;
+        animation-range-start: contain 0%;
+        animation-range-end: contain 92%;
+      }
+
+      :global(.scrolly) .note,
+      :global(.scrolly) .leader__line,
+      :global(.scrolly) .leader__dot,
+      :global(.scrolly) .leader__halo,
+      :global(.scrolly) .compass,
+      :global(.scrolly) .compass__needle,
+      :global(.scrolly) .ticks li {
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --anatomy;
+        animation-range-start: contain var(--from);
+        animation-range-end: contain var(--to);
+      }
+
+      :global(.scrolly) .note {
+        animation-name: note;
+      }
+
+      :global(.scrolly) .leader__line {
+        animation-name: lead;
+      }
+
+      :global(.scrolly) .leader__dot {
+        animation-name: dot;
+      }
+
+      :global(.scrolly) .leader__halo {
+        animation-name: halo;
+      }
+
+      :global(.scrolly) .compass {
+        animation-name: compass;
+      }
+
+      :global(.scrolly) .compass__needle {
+        animation-name: needle;
+      }
+
+      :global(.scrolly) .ticks li {
+        animation-name: tick;
+      }
+
+      @media (max-width: 56rem) {
+        :global(.scrolly) .plate {
+          animation-name: none;
+        }
+
+        :global(.scrolly) .figure__zoom {
+          animation-name: zoom;
+          animation-duration: auto;
+          animation-timing-function: linear;
+          animation-fill-mode: both;
+          animation-timeline: --anatomy;
+          animation-range-start: contain 0%;
+          animation-range-end: contain 92%;
+        }
+
+        :global(.scrolly) .note {
+          animation-name: card;
+        }
+
+        :global(.scrolly) .note:last-child {
+          animation-name: card-last;
+        }
+      }
+    }
+
+    /* No scroll-driven animations (Firefox): the page script sets
+       data-state on every [data-note] and data-intro on the section. */
+    @supports not (animation-timeline: view()) {
+      :global(.scrolly) .plate {
+        scale: calc(1.06 - var(--progress, 0) * 0.11);
+        transition: scale 400ms var(--ease);
+      }
+
+      :global(.scrolly) .intro {
+        transition:
+          opacity 400ms var(--ease),
+          translate 400ms var(--ease),
+          visibility 400ms;
+      }
+
+      :global(.scrolly) [data-intro="out"] .intro {
+        visibility: hidden;
+        opacity: 0;
+        translate: 0 -54%;
+      }
+
+      :global(.scrolly) .note {
+        opacity: 0;
+        translate: 0 0.5rem;
+        transition:
+          opacity 500ms var(--ease),
+          translate 500ms var(--ease),
+          color 500ms var(--ease),
+          border-color 500ms var(--ease);
+      }
+
+      :global(.scrolly) .leader__line {
+        stroke-dashoffset: 1;
+        transition:
+          stroke-dashoffset 700ms var(--ease),
+          stroke 500ms var(--ease);
+      }
+
+      :global(.scrolly) .leader__dot {
+        scale: 0;
+        transform-box: fill-box;
+        transform-origin: center;
+        transition: scale 400ms var(--ease);
+      }
+
+      :global(.scrolly) .leader__halo,
+      :global(.scrolly) .compass {
+        opacity: 0;
+        transition: opacity 500ms var(--ease);
+      }
+
+      :global(.scrolly) .compass__needle {
+        transition: transform 900ms var(--ease);
+      }
+
+      :global(.scrolly) .ticks li {
+        transition:
+          background-color 400ms var(--ease),
+          inline-size 400ms var(--ease);
+      }
+
+      :global(.scrolly) .note:not([data-state="hidden"]) {
+        opacity: 1;
+        translate: 0 0;
+      }
+
+      :global(.scrolly) .note[data-state="active"] {
+        border-block-start-color: var(--pine);
+        color: var(--ink);
+      }
+
+      :global(.scrolly) .leader:not([data-state="hidden"]) .leader__line {
+        stroke-dashoffset: 0;
+      }
+
+      :global(.scrolly) .leader[data-state="active"] .leader__line {
+        stroke: var(--pine);
+      }
+
+      :global(.scrolly) .leader:not([data-state="hidden"]) .leader__dot {
+        scale: 1;
+      }
+
+      :global(.scrolly) .leader[data-state="active"] .leader__halo {
+        opacity: 0.45;
+      }
+
+      :global(.scrolly) .compass:not([data-state="hidden"]) {
+        opacity: 1;
+      }
+
+      :global(.scrolly) .compass:not([data-state="hidden"]) .compass__needle {
+        transform: rotate(157deg);
+      }
+
+      :global(.scrolly) .ticks li[data-state="active"] {
+        inline-size: 1.75rem;
+        background: var(--pine);
+      }
+
+      :global(.scrolly) .ticks li[data-state="quiet"] {
+        background: var(--ink);
+      }
+
+      @media (max-width: 56rem) {
+        :global(.scrolly) .note[data-state="quiet"]:not(:last-child) {
+          opacity: 0;
+        }
+      }
+    }
+  }
+
+  @keyframes intro-out {
+    to {
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 -54%;
+    }
+  }
+
+  @keyframes plate {
+    from {
+      scale: 1.06;
+      translate: 0 1.5%;
+    }
+
+    to {
+      scale: 0.95;
+      translate: 0 -0.5%;
+    }
+  }
+
+  @keyframes zoom {
+    from {
+      scale: 1.6;
+    }
+
+    to {
+      scale: 1.4;
+    }
+  }
+
+  @keyframes note {
+    0% {
+      border-block-start-color: var(--pine);
+      color: var(--ink);
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+
+    30%,
+    80% {
+      border-block-start-color: var(--pine);
+      color: var(--ink);
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    100% {
+      border-block-start-color: var(--line);
+      color: var(--muted);
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  @keyframes card {
+    0% {
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+
+    25%,
+    80% {
+      visibility: visible;
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    100% {
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 -0.5rem;
+    }
+  }
+
+  @keyframes card-last {
+    0% {
+      visibility: hidden;
+      opacity: 0;
+      translate: 0 0.75rem;
+    }
+
+    25%,
+    100% {
+      visibility: visible;
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  @keyframes lead {
+    0% {
+      stroke: var(--pine);
+      stroke-dashoffset: 1;
+    }
+
+    30%,
+    80% {
+      stroke: var(--pine);
+      stroke-dashoffset: 0;
+    }
+
+    100% {
+      stroke: var(--line);
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes dot {
+    0% {
+      scale: 0;
+    }
+
+    15%,
+    100% {
+      scale: 1;
+    }
+  }
+
+  @keyframes halo {
+    0% {
+      opacity: 0;
+      scale: 0.4;
+    }
+
+    20%,
+    80% {
+      opacity: 0.45;
+      scale: 1;
+    }
+
+    100% {
+      opacity: 0;
+      scale: 1;
+    }
+  }
+
+  @keyframes compass {
+    0% {
+      opacity: 0;
+    }
+
+    20%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes needle {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    35%,
+    100% {
+      transform: rotate(157deg);
+    }
+  }
+
+  @keyframes tick {
+    0% {
+      inline-size: 0.875rem;
+      background-color: var(--hairline);
+    }
+
+    20%,
+    80% {
+      inline-size: 1.75rem;
+      background-color: var(--pine);
+    }
+
+    100% {
+      inline-size: 0.875rem;
+      background-color: var(--ink);
+    }
+  }
+</style>
