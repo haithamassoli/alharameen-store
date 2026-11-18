@@ -1,13 +1,13 @@
 ---
 import type { GetStaticPaths } from "astro";
 import { Image, Picture } from "astro:assets";
-import { getCollection, getEntry } from "astro:content";
+import { getCollection } from "astro:content";
 
 import ProductCard from "../../components/ProductCard.astro";
 import VideoGrid from "../../components/VideoGrid.astro";
 import Layout from "../../layouts/Layout.astro";
 import { whatsappUrl } from "../../lib/cart";
-import { formatPrice, toDecimalString } from "../../lib/money";
+import { formatNumber, formatPrice, toDecimalString } from "../../lib/money";
 import { getGuideFor, getShippingZones, getStore } from "../../lib/store";
 
 export const getStaticPaths = (async () => {
@@ -24,17 +24,11 @@ const { id, data } = product;
 const [variant] = data.variants;
 
 const store = await getStore();
-const category = await getEntry(data.category);
-
-if (!category) {
-  throw new Error(`Missing category for product "${id}"`);
-}
-
 const categories = await getCollection("categories");
 
-const categoryNames = new Map(
-  categories.map((entry) => [entry.id, entry.data.name])
-);
+// Astro checks every reference("categories") at build, so the lookup always hits.
+const categoryName = (categoryId: string): string =>
+  categories.find((entry) => entry.id === categoryId)?.data.name ?? "";
 
 const allProducts = await getCollection("products");
 
@@ -56,7 +50,6 @@ const THUMB_SIZE = 120;
 // The rest of the family's videos live on /guides/.
 const GUIDE_PREVIEW = 6;
 
-const digits = new Intl.NumberFormat("ar-JO-u-nu-latn");
 const price = formatPrice(data.price, data.currency);
 const inStock = variant.stock > 0;
 const isLowStock = inStock && variant.stock <= LOW_STOCK;
@@ -70,14 +63,14 @@ const lowStockText = (stock: number): string => {
     return "متوفر، بقيت قطعتان فقط";
   }
 
-  return `متوفر، بقي ${digits.format(stock)} قطع فقط`;
+  return `متوفر، بقي ${formatNumber(stock)} قطع فقط`;
 };
 
 const orderMessage = [
   "السلام عليكم، أرغب بطلب:",
   `${data.name} (${data.model})`,
   `السعر: ${price}`,
-  `الكمية: ${digits.format(1)}`,
+  `الكمية: ${formatNumber(1)}`,
   "",
   "أرجو تأكيد الطلب وتفاصيل التوصيل.",
 ].join("\n");
@@ -92,7 +85,7 @@ const productJsonLd = {
   "@context": "https://schema.org",
   "@type": "Product",
   brand: { "@type": "Brand", name: "Al-Harameen" },
-  category: category.data.name,
+  category: categoryName(data.category.id),
   description: data.description,
   image: data.images.map((image) => new URL(image.src.src, Astro.site).href),
   model: data.model,
@@ -181,7 +174,7 @@ const productJsonLd = {
                   value={index}
                 />
                 <Image
-                  alt={`الصورة ${digits.format(index + 1)}: ${image.alt}`}
+                  alt={`الصورة ${formatNumber(index + 1)}: ${image.alt}`}
                   format="webp"
                   height={THUMB_SIZE}
                   src={image.src}
@@ -194,7 +187,7 @@ const productJsonLd = {
       </div>
 
       <div class="summary">
-        <p class="summary__category">{category.data.name}</p>
+        <p class="summary__category">{categoryName(data.category.id)}</p>
         <h1
           class="summary__name"
           style={`view-transition-name: product-${id}-name`}
@@ -305,7 +298,7 @@ const productJsonLd = {
           </div>
           {guide.data.videos.length > GUIDE_PREVIEW && (
             <a class="btn btn-ghost" href={`/guides/#${guide.id}`}>
-              {`كل شروحات ${guide.data.name} (${digits.format(guide.data.videos.length)} فيديو)`}
+              {`كل شروحات ${guide.data.name} (${formatNumber(guide.data.videos.length)} فيديو)`}
             </a>
           )}
         </div>
@@ -321,7 +314,7 @@ const productJsonLd = {
         {others.map((other) => (
           <li>
             <ProductCard
-              categoryName={categoryNames.get(other.data.category.id) ?? ""}
+              categoryName={categoryName(other.data.category.id)}
               product={other}
             />
           </li>

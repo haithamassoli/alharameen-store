@@ -38,8 +38,10 @@ const stateAt = (progress: number, index: number): NoteState => {
   return progress < quietAt ? "active" : "quiet";
 };
 
+export const hijriToday = (): string => HIJRI.format(new Date());
+
 const showHijriDate = (): void => {
-  const today = HIJRI.format(new Date());
+  const today = hijriToday();
 
   for (const slot of document.querySelectorAll<HTMLElement>("[data-hijri]")) {
     slot.textContent = today;

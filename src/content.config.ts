@@ -9,7 +9,6 @@ const currency = z.literal("JOD");
 const categories = defineCollection({
   loader: file("src/content/categories.json"),
   schema: z.object({
-    description: z.string(),
     name: z.string(),
     order: z.number().int(),
   }),
@@ -20,7 +19,6 @@ const products = defineCollection({
   schema: ({ image }) =>
     z
       .object({
-        audience: z.enum(["men", "women", "unisex"]).optional(),
         category: reference("categories"),
         compareAtPrice: fils.optional(),
         currency,
@@ -98,7 +96,6 @@ const store = defineCollection({
       // E.164 with leading "+"; strip it for https://wa.me/<digits> links.
       whatsapp: z.string().regex(/^\+\d{8,15}$/u),
     }),
-    currency,
     name: z.string(),
     returnDays: z.number().int().nonnegative(),
     tagline: z.string(),

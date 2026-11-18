@@ -9,9 +9,10 @@ import { getCollection } from "astro:content";
 
 import ProductCard from "../components/ProductCard.astro";
 import Layout from "../layouts/Layout.astro";
+import { hijriToday } from "../lib/anatomy";
 import { whatsappUrl } from "../lib/cart";
 import { deliveryTime } from "../lib/delivery";
-import { formatPrice } from "../lib/money";
+import { formatNumber, formatPrice } from "../lib/money";
 import { getShippingZones, getStore } from "../lib/store";
 
 const store = await getStore();
@@ -38,7 +39,6 @@ const categoryName = (id: string): string => categoryById.get(id)?.name ?? "";
 
 const zones = await getShippingZones();
 
-const digits = new Intl.NumberFormat("ar-JO-u-nu-latn");
 const { contact, returnDays, warrantyYears } = store;
 
 const WARRANTY_WORDS = new Map([
@@ -47,40 +47,12 @@ const WARRANTY_WORDS = new Map([
 ]);
 
 const warranty =
-  WARRANTY_WORDS.get(warrantyYears) ?? `${digits.format(warrantyYears)} سنوات`;
+  WARRANTY_WORDS.get(warrantyYears) ?? `${formatNumber(warrantyYears)} سنوات`;
 
 const chatUrl = whatsappUrl(
   contact.whatsapp,
   "السلام عليكم، أرغب بالاستفسار عن ساعات الحرمين."
 );
-
-const features = [
-  {
-    icon: "azan",
-    text: "مواقيت دقيقة لمعظم مدن العالم، ومنبّه لكل صلاة يتغير تلقائيًا مع وقت الأذان.",
-    title: "أوقات الأذان لكل مدن العالم",
-  },
-  {
-    icon: "qibla",
-    text: "بوصلة إلكترونية تدلّك على القبلة أينما كنت، بضغطة زر واحدة.",
-    title: "اتجاه القبلة",
-  },
-  {
-    icon: "calendar",
-    text: "التاريخ الهجري والميلادي وأيام الأسبوع معًا على شاشة واحدة.",
-    title: "تقويم هجري",
-  },
-  {
-    icon: "water",
-    text: "توضّأ وهي في يدك، وزجاجها البلوري مضاد للخدش.",
-    title: "مقاومة للماء",
-  },
-  {
-    icon: "quran",
-    text: "احفظ رقم السورة والآية التي وقفت عندها، وأكمل وردك من حيث توقفت.",
-    title: "موضع التلاوة",
-  },
-] as const;
 
 const steps = [
   { text: "تصفّح التشكيلة واختر الساعة التي تناسبك.", title: "اختر ساعتك" },
@@ -109,10 +81,6 @@ if (!hero) {
 
 const [heroImage] = hero.data.images;
 
-if (!heroImage) {
-  throw new Error(`${hero.id} has no photo.`);
-}
-
 // ---- The drawing ----
 // Coordinates are in the photo's own 1000 × 1000 box, measured on
 // ha-6506bw-1.jpg. The drawing is 1600 wide, so the photo sits between
@@ -123,26 +91,61 @@ const PERCENT_PER_UNIT = 0.1;
 
 type Side = keyof typeof NOTE_EDGE;
 
-interface Callout {
+interface Feature {
   /** The detail the leader points at. */
   anchor: readonly [number, number];
+  /** The calendar note also shows today's Hijri date. */
+  hijri?: true;
   side: Side;
+  text: string;
+  title: string;
   /** Height of the note's top rule. */
   y: number;
 }
 
-const CALLOUTS = new Map<string, Callout>([
-  // The prayer-time row at the foot of the screen.
-  ["azan", { anchor: [442, 551], side: "left", y: 720 }],
-  // The SE letter on the compass bezel.
-  ["qibla", { anchor: [610, 591], side: "right", y: 640 }],
-  // The date at the top of the screen.
-  ["calendar", { anchor: [591, 387], side: "right", y: 387 }],
-  // The sealed case, at its shoulder above the bezel.
-  ["water", { anchor: [343, 251], side: "left", y: 251 }],
-  // The big digits, where the surah and ayah show.
-  ["quran", { anchor: [418, 458], side: "left", y: 470 }],
-]);
+const features: Feature[] = [
+  {
+    // The prayer-time row at the foot of the screen.
+    anchor: [442, 551],
+    side: "left",
+    text: "مواقيت دقيقة لمعظم مدن العالم، ومنبّه لكل صلاة يتغير تلقائيًا مع وقت الأذان.",
+    title: "أوقات الأذان لكل مدن العالم",
+    y: 720,
+  },
+  {
+    // The SE letter on the compass bezel.
+    anchor: [610, 591],
+    side: "right",
+    text: "بوصلة إلكترونية تدلّك على القبلة أينما كنت، بضغطة زر واحدة.",
+    title: "اتجاه القبلة",
+    y: 640,
+  },
+  {
+    // The date at the top of the screen.
+    anchor: [591, 387],
+    hijri: true,
+    side: "right",
+    text: "التاريخ الهجري والميلادي وأيام الأسبوع معًا على شاشة واحدة.",
+    title: "تقويم هجري",
+    y: 387,
+  },
+  {
+    // The sealed case, at its shoulder above the bezel.
+    anchor: [343, 251],
+    side: "left",
+    text: "توضّأ وهي في يدك، وزجاجها البلوري مضاد للخدش.",
+    title: "مقاومة للماء",
+    y: 251,
+  },
+  {
+    // The big digits, where the surah and ayah show.
+    anchor: [418, 458],
+    side: "left",
+    text: "احفظ رقم السورة والآية التي وقفت عندها، وأكمل وردك من حيث توقفت.",
+    title: "موضع التلاوة",
+    y: 470,
+  },
+];
 
 const leaderPath = (
   [x, y]: readonly [number, number],
@@ -155,32 +158,12 @@ const leaderPath = (
   return `M${x} ${y}L${elbow} ${ruleY}H${edge}`;
 };
 
-const notes = features.map((feature, index) => {
-  const callout = CALLOUTS.get(feature.icon);
-
-  if (!callout) {
-    throw new Error(`No callout for the ${feature.icon} feature.`);
-  }
-
-  return {
-    ...feature,
-    ...callout,
-    index: index + 1,
-    path: leaderPath(callout.anchor, callout.side, callout.y),
-    top: `${callout.y * PERCENT_PER_UNIT}%`,
-  };
-});
-
-// Rendered at build so the note is never empty; the page script refreshes it.
-const hijriToday = new Intl.DateTimeFormat(
-  "ar-SA-u-ca-islamic-umalqura-nu-latn",
-  {
-    day: "numeric",
-    month: "long",
-    timeZone: "Asia/Amman",
-    year: "numeric",
-  }
-).format(new Date());
+const notes = features.map((feature, index) => ({
+  ...feature,
+  index: index + 1,
+  path: leaderPath(feature.anchor, feature.side, feature.y),
+  top: `${feature.y * PERCENT_PER_UNIT}%`,
+}));
 
 const categories = [
   ...new Set(products.map((product) => product.data.category.id)),
@@ -331,9 +314,10 @@ const storeJsonLd = {
                   >
                     <h3 class="note__title">{note.title}</h3>
                     <p class="note__text">{note.text}</p>
-                    {note.icon === "calendar" && (
+                    {note.hijri && (
                       <p class="note__extra">
-                        اليوم <span data-hijri>{hijriToday}</span>
+                        {/* Rendered at build so it is never empty; the page script refreshes it. */}
+                        اليوم <span data-hijri>{hijriToday()}</span>
                       </p>
                     )}
                   </li>
@@ -357,7 +341,7 @@ const storeJsonLd = {
           <div>
             <h2 id="watches-title">الساعات</h2>
             <p class="section-note">
-              {digits.format(products.length)} منتجات، كلها أصلية ومكفولة
+              {formatNumber(products.length)} منتجات، كلها أصلية ومكفولة
             </p>
           </div>
 
@@ -419,7 +403,7 @@ const storeJsonLd = {
                 {steps.map((step, index) => (
                   <li class="step">
                     <span aria-hidden="true" class="step__number">
-                      {digits.format(index + 1)}
+                      {formatNumber(index + 1)}
                     </span>
                     <h3 class="step__title">{step.title}</h3>
                     <p class="step__text">{step.text}</p>
@@ -502,7 +486,7 @@ const storeJsonLd = {
             <div class="faq__answer">
               <p>
                 على كل ساعة ضمان {warranty}، ويمكنك إرجاعها خلال{" "}
-                {digits.format(returnDays)} يومًا. راسلنا على واتساب ونرتب معك
+                {formatNumber(returnDays)} يومًا. راسلنا على واتساب ونرتب معك
                 الإرجاع أو الصيانة.
               </p>
             </div>
@@ -1364,6 +1348,8 @@ const storeJsonLd = {
         position: relative;
         grid-area: 1 / 1;
         margin-block-start: 1.75rem;
+        border-block-start-width: 2px;
+        border-block-start-color: var(--pine);
         color: var(--ink);
         font-size: 1.125rem;
       }
@@ -1381,11 +1367,6 @@ const storeJsonLd = {
         block-size: 1.75rem;
         background: var(--pine);
         content: "";
-      }
-
-      :global(.scrolly) .note {
-        border-block-start-width: 2px;
-        border-block-start-color: var(--pine);
       }
 
       :global(.scrolly) .ticks {

@@ -1,6 +1,6 @@
 // Pure cart logic shared by the cart drawer script and its tests. No DOM here.
 // Money is integer fils; prices always come from the catalog, never from storage.
-import { formatPrice } from "./money";
+import { formatNumber, formatPrice } from "./money";
 
 export const CART_STORAGE_KEY = "alharameen-cart-v1";
 export const MAX_QTY = 10;
@@ -57,8 +57,6 @@ const PHONE_SEPARATORS = /[\s\-().]/gu;
 // Jordanian mobiles: 07[789] and seven digits, with or without +962 / 00962.
 const JORDAN_MOBILE = /^(?:\+962|00962|962|0)?7[789]\d{7}$/u;
 const LINE_BREAKS = /\s*[\r\n]+\s*/gu;
-
-const arabicNumber = new Intl.NumberFormat("ar-JO-u-nu-latn");
 
 const clampQty = (qty: number): number =>
   Math.min(MAX_QTY, Math.max(0, Math.trunc(qty)));
@@ -211,9 +209,9 @@ export const buildWhatsAppMessage = ({
 
     if (item) {
       position += 1;
-      const qty = arabicNumber.format(line.qty);
+      const qty = formatNumber(line.qty);
       items.push(
-        `${arabicNumber.format(position)}. ${item.name} (${item.model})`,
+        `${formatNumber(position)}. ${item.name} (${item.model})`,
         `   ${qty} × ${price(item.price)} = ${price(item.price * line.qty)}`
       );
     }

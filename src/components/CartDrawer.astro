@@ -354,7 +354,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     CatalogItem,
     ShippingZone,
   } from "../lib/cart";
-  import { formatPrice } from "../lib/money";
+  import { formatNumber, formatPrice } from "../lib/money";
 
   const TOAST_MS = 3200;
   const CLEAR_CONFIRM_MS = 4000;
@@ -433,16 +433,12 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   const toastText = queryElement(toast, "[data-cart-toast-text]", HTMLElement);
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const arabicNumber = new Intl.NumberFormat("ar-JO-u-nu-latn");
 
   const requiredMessages = new Map([
     [nameInput, "اكتب اسمك الكامل."],
     [phoneInput, "اكتب رقم هاتفك."],
     [addressInput, "اكتب مدينتك وعنوانك."],
   ]);
-
-  const price = (item: CatalogItem, fils: number): string =>
-    formatPrice(fils, item.currency);
 
   const money = (fils: number): string =>
     formatPrice(fils, catalog[0]?.currency ?? "JOD");
@@ -505,14 +501,12 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     const count = cartCount(cart);
 
     const label =
-      count === 0
-        ? "السلة فارغة"
-        : `السلة (عدد القطع: ${arabicNumber.format(count)})`;
+      count === 0 ? "السلة فارغة" : `السلة (عدد القطع: ${formatNumber(count)})`;
 
     for (const badge of document.querySelectorAll<HTMLElement>(
       "[data-cart-count]"
     )) {
-      badge.textContent = arabicNumber.format(count);
+      badge.textContent = formatNumber(count);
       badge.dataset.count = String(count);
     }
 
@@ -548,11 +542,10 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     queryElement(row, "[data-line-model]", HTMLElement).textContent =
       item.model;
     queryElement(row, "[data-line-unit]", HTMLElement).textContent =
-      `${price(item, item.price)} للقطعة`;
+      `${money(item.price)} للقطعة`;
     queryElement(row, "[data-line-qty]", HTMLOutputElement).value =
-      arabicNumber.format(line.qty);
-    queryElement(row, "[data-line-total]", HTMLElement).textContent = price(
-      item,
+      formatNumber(line.qty);
+    queryElement(row, "[data-line-total]", HTMLElement).textContent = money(
       item.price * line.qty
     );
     queryElement(row, "[data-line-stepper]", HTMLElement).setAttribute(
@@ -752,7 +745,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
     if (current >= MAX_QTY) {
       showToast(
-        `وصلت للحد الأقصى (${arabicNumber.format(MAX_QTY)} قطع) من ${item.name}`
+        `وصلت للحد الأقصى (${formatNumber(MAX_QTY)} قطع) من ${item.name}`
       );
 
       return;
@@ -801,7 +794,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
       commit(setQty(cart, line.id, qty));
       announce(
-        `كمية ${name}: ${arabicNumber.format(qty)}. الإجمالي ${totalEl.value}.`
+        `كمية ${name}: ${formatNumber(qty)}. الإجمالي ${totalEl.value}.`
       );
     }
 
@@ -1556,17 +1549,5 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     object-fit: contain;
     pointer-events: none;
     box-shadow: 0 10px 30px var(--shadow);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cart-drawer,
-    .cart-drawer::backdrop,
-    .cart-toast {
-      transition: none;
-    }
-
-    .line {
-      animation: none;
-    }
   }
 </style>
