@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # PWA dev output
 dev-dist/
+
+# test output
+test-results/
+playwright-report/

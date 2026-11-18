@@ -1,15 +1,15 @@
-# https://lefthook.dev — hooks install automatically on `pnpm install`.
+# https://lefthook.dev — hooks install on `pnpm install` (prepare script).
 pre-commit:
   parallel: true
   jobs:
-    - name: biome
+    - name: ultracite
+      # Oxfmt format + Oxlint fix (type-aware, anti-slop) on staged files.
       run: pnpm exec ultracite fix {staged_files}
       glob: "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,css,astro,html,md,mdx,yaml,yml}"
       stage_fixed: true
-    - name: oxlint
-      run: pnpm exec oxlint --fix {staged_files}
-      glob: "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,astro}"
-      stage_fixed: true
+    - name: typos
+      # Native binary (brew install typos-cli / cargo install typos-cli); skipped if missing.
+      run: command -v typos >/dev/null || exit 0; typos --force-exclude {staged_files}
 
 commit-msg:
   jobs:
@@ -23,3 +23,5 @@ pre-push:
       run: pnpm typecheck
     - name: knip
       run: pnpm knip
+    - name: test
+      run: pnpm test

@@ -7,53 +7,39 @@ Astro 7 static storefront. TypeScript strict, pnpm, PWA via `@vite-pwa/astro`.
 | Task | Command |
 | --- | --- |
 | Dev server | `astro dev --background` (manage with `astro dev stop/status/logs`) |
-| Format + lint (Biome) | `pnpm fix` / `pnpm check` |
-| Lint (Oxlint, type-aware + anti-slop) | `pnpm lint` / `pnpm lint:fix` |
+| Format + lint (Oxfmt + Oxlint type-aware + anti-slop) | `pnpm fix` / `pnpm check` |
 | Typecheck | `pnpm typecheck` |
 | Dead code / unused deps | `pnpm knip` |
+| Unit tests (Vitest, `src/**/*.test.ts`) | `pnpm test` |
+| E2E + axe a11y (Playwright, `e2e/`) | `pnpm test:e2e` |
+| Spelling | `typos` (native binary: `brew install typos-cli`) |
 | Everything CI runs | `pnpm validate` |
 | Regenerate PWA icons | `pnpm pwa:assets` (source: `public/favicon.svg`) |
 
 ## Definition of done
 
-Run `pnpm validate` before you call a task finished. It must pass with zero errors.
-Never silence a rule with `biome-ignore`, `oxlint-disable`, `@ts-ignore` or `as any`
-to get green; fix the code. If a rule is truly wrong for this repo, change the
-config in `biome.jsonc` / `oxlint.config.ts` and say why in the commit.
+Run `pnpm validate` (and `pnpm test:e2e` for UI changes) before you call a task finished. It must pass with zero errors. Never silence a rule with `oxlint-disable`, `@ts-ignore` or `as any` to get green; fix the code. If a rule is truly wrong for this repo, change the config in `oxlint.config.ts` / `oxfmt.config.ts` and say why in the commit.
 
 ## Project rules
 
-- **Astro first.** Ship zero JS by default. Add a `<script>` or a client island only when
-  the feature needs interactivity; prefer `client:visible`/`client:idle` over `client:load`.
-- **Files.** Components and layouts are `PascalCase.astro`; everything else is `kebab-case`.
-  Pages in `src/pages`, components in `src/components`, layouts in `src/layouts`,
-  shared logic in `src/lib`. No barrel `index.ts` files.
-- **Content.** Product/catalog data goes in content collections (`src/content.config.ts`)
-  with a Zod schema, not hard-coded arrays in pages.
-- **Money.** Store prices as integers in minor units (fils/halalas) with an explicit
-  ISO currency code. Format with `Intl.NumberFormat` at render time. Never do currency
-  math with floats. Prices and stock shown on the client are display-only; validate
-  them server-side at checkout.
-- **i18n / RTL.** The store targets Arabic. Use logical CSS properties
-  (`margin-inline-start`, `padding-inline`, `inset-inline-end`) instead of left/right,
-  and set `lang`/`dir` on `<html>` per locale.
+- **Astro first.** Ship zero JS by default. Add a `<script>` or a client island only when the feature needs interactivity; prefer `client:visible`/`client:idle` over `client:load`.
+- **Files.** Components and layouts are `PascalCase.astro`; everything else is `kebab-case`. Pages in `src/pages`, components in `src/components`, layouts in `src/layouts`, shared logic in `src/lib`. No barrel `index.ts` files.
+- **Content.** Product/catalog data goes in content collections (`src/content.config.ts`) with a Zod schema, not hard-coded arrays in pages.
+- **Money.** Store prices as integers in minor units (fils/halalas) with an explicit ISO currency code. Format with `Intl.NumberFormat` at render time. Never do currency math with floats. Prices and stock shown on the client are display-only; validate them server-side at checkout.
+- **i18n / RTL.** The store targets Arabic. Use logical CSS properties (`margin-inline-start`, `padding-inline`, `inset-inline-end`) instead of left/right, and set `lang`/`dir` on `<html>` per locale.
 - **Images.** Use `astro:assets` (`<Image>`/`<Picture>`) with `alt`, `width`, `height`.
-- **Secrets.** Read config via `astro:env` / `import.meta.env`. Never commit `.env` files,
-  API keys or tokens. Only `PUBLIC_` vars may reach the client.
-- **PWA.** The service worker is generated at build. Don't hand-edit `dist/` or `sw.js`;
-  change `astro.config.mjs`. Updates ship automatically (`registerType: "autoUpdate"`).
-  Never cache cart, account, checkout or payment responses in the service worker.
-- **Dependencies.** Prefer platform/stdlib and existing deps. Adding a dependency needs a
-  reason in the commit body. Use `pnpm add`, never npm/yarn.
+- **Secrets.** Read config via `astro:env` / `import.meta.env`. Never commit `.env` files, API keys or tokens. Only `PUBLIC_` vars may reach the client.
+- **PWA.** The service worker is generated at build. Don't hand-edit `dist/` or `sw.js`; change `astro.config.mjs`. Updates ship automatically (`registerType: "autoUpdate"`). Never cache cart, account, checkout or payment responses in the service worker.
+- **Dependencies.** Prefer platform/stdlib and existing deps. Adding a dependency needs a reason in the commit body. Use `pnpm add`, never npm/yarn.
+- **Tests.** Logic in `src/lib` (pricing, cart, inventory) gets a colocated `*.test.ts`. Pages get a Playwright smoke test with an axe scan; static lint does not check `.astro` template a11y.
 - **Commits.** Conventional Commits (`feat:`, `fix:`, `chore:` …), enforced by commitlint.
-- **Scope.** Make the smallest change that solves the task. No speculative abstractions,
-  no unrelated refactors, no new files "for later".
+- **Scope.** Make the smallest change that solves the task. No speculative abstractions, no unrelated refactors, no new files "for later".
 
 ## Git hooks (Lefthook)
 
-- pre-commit: Biome fix + Oxlint fix on staged files (auto re-staged)
+- pre-commit: `ultracite fix` (Oxfmt + Oxlint) on staged files (auto re-staged), typos
 - commit-msg: commitlint
-- pre-push: typecheck + knip
+- pre-push: typecheck + knip + unit tests
 
 Agent hooks in `.claude/`, `.codex/` and `.cursor/` run `ultracite fix` after every edit.
 
@@ -79,7 +65,7 @@ This project uses **Ultracite**, a zero-config preset that enforces strict code 
 - **Check for issues**: `pnpm exec ultracite check`
 - **Diagnose setup**: `pnpm exec ultracite doctor`
 
-Biome (the underlying engine) provides robust linting and formatting. Most issues are automatically fixable.
+Oxlint (type-aware via tsgolint, plus the anti-slop plugin) lints and Oxfmt formats. Most issues are automatically fixable.
 
 ---
 
@@ -160,11 +146,11 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive `describe` nesting
 
-### When Biome Can't Help
+### When the Linter Can't Help
 
-Biome will catch most mechanical issues automatically. Focus your attention on:
+Oxlint will catch most mechanical issues automatically. Focus your attention on:
 
-1. **Business logic correctness** - Biome can't validate your algorithms
+1. **Business logic correctness** - the linter can't validate your algorithms
 2. **Meaningful naming** - Use descriptive names for functions, variables, and types
 3. **Architecture decisions** - Component structure, data flow, and API design
 4. **Edge cases** - Handle boundary conditions and error states
@@ -173,4 +159,4 @@ Biome will catch most mechanical issues automatically. Focus your attention on:
 
 ---
 
-Most formatting and common issues are automatically fixed by Biome. Run `pnpm exec ultracite fix` before committing to ensure compliance.
+Most formatting and common issues are automatically fixed by Oxfmt and Oxlint. Run `pnpm exec ultracite fix` before committing to ensure compliance.
