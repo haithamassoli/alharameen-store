@@ -1,6 +1,6 @@
 // Procedural 3D Al-Harameen watch for the home hero. Loaded with import() only
 // when the hero nears the viewport, so three.js never blocks first paint.
-import type { Blending, Texture } from "three";
+import type { Texture } from "three";
 import {
   ACESFilmicToneMapping,
   AdditiveBlending,
@@ -19,7 +19,6 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  NormalBlending,
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
@@ -43,50 +42,18 @@ export interface HeroWatch {
   dispose: () => void;
 }
 
-type Theme = "dark" | "light";
-
-interface SceneLook {
-  bokehBlending: Blending;
-  bokehColor: string;
-  bokehOpacity: number;
-  environment: number;
-  exposure: number;
-  key: number;
-  rim: number;
-  shadowColor: string;
-  shadowOpacity: number;
-}
-
-// Night: additive gold bokeh glowing on the dark ground. Day: additive light
-// vanishes on ivory, so the bokeh turns into soft deeper-gold flecks, the jade
-// rim light eases off and a contact shadow grounds the watch.
-const LOOKS: Record<Theme, SceneLook> = {
-  dark: {
-    bokehBlending: AdditiveBlending,
-    bokehColor: "#d9b56c",
-    bokehOpacity: 0.75,
-    environment: 0.9,
-    exposure: 1.05,
-    key: 1.6,
-    rim: 2.2,
-    shadowColor: "#000000",
-    shadowOpacity: 0.4,
-  },
-  light: {
-    bokehBlending: NormalBlending,
-    bokehColor: "#b8914b",
-    bokehOpacity: 0.42,
-    environment: 1,
-    exposure: 1.12,
-    key: 1.9,
-    rim: 1.1,
-    shadowColor: "#1c3a33",
-    shadowOpacity: 0.3,
-  },
-};
-
-const pageTheme = (): Theme =>
-  document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+// The hero always sits on the lacquer stage, so the scene has one look:
+// additive gold bokeh glowing on the dark ground.
+const LOOK = {
+  bokehColor: "#d9b56c",
+  bokehOpacity: 0.75,
+  environment: 0.9,
+  exposure: 1.05,
+  key: 1.6,
+  rim: 2.2,
+  shadowColor: "#000000",
+  shadowOpacity: 0.4,
+} as const;
 
 const PALETTE = {
   dialCenter: "#123f38",
@@ -721,9 +688,9 @@ export const createHeroWatch = async (
   room.dispose();
   scene.environment = envMap;
 
-  const key = new DirectionalLight("#ffe6b0", LOOKS.dark.key);
+  const key = new DirectionalLight("#ffe6b0", LOOK.key);
   key.position.set(3, 4, 5);
-  const rim = new DirectionalLight(PALETTE.jade, LOOKS.dark.rim);
+  const rim = new DirectionalLight(PALETTE.jade, LOOK.rim);
   rim.position.set(-4, -1, -3);
   scene.add(key, rim);
 
@@ -750,21 +717,12 @@ export const createHeroWatch = async (
   const particles = createParticles(drawBokeh());
   scene.add(particles.points);
 
-  const applyLook = (theme: Theme): void => {
-    const look = LOOKS[theme];
-    renderer.toneMappingExposure = look.exposure;
-    scene.environmentIntensity = look.environment;
-    key.intensity = look.key;
-    rim.intensity = look.rim;
-    particles.material.blending = look.bokehBlending;
-    particles.material.color.set(look.bokehColor);
-    particles.material.opacity = look.bokehOpacity;
-    particles.material.needsUpdate = true;
-    shadowMaterial.color.set(look.shadowColor);
-    shadowMaterial.opacity = look.shadowOpacity;
-  };
-
-  applyLook(pageTheme());
+  renderer.toneMappingExposure = LOOK.exposure;
+  scene.environmentIntensity = LOOK.environment;
+  particles.material.color.set(LOOK.bokehColor);
+  particles.material.opacity = LOOK.bokehOpacity;
+  shadowMaterial.color.set(LOOK.shadowColor);
+  shadowMaterial.opacity = LOOK.shadowOpacity;
 
   // Pointer-follow tilt, eased toward the target each frame.
   const target = { x: 0, y: 0 };
@@ -831,14 +789,6 @@ export const createHeroWatch = async (
   // First frame immediately so the canvas never fades in empty.
   frame(last);
 
-  // The header toggle announces palette switches; repaint even when paused.
-  const onThemeChange = (): void => {
-    applyLook(pageTheme());
-    renderer.render(scene, camera);
-  };
-
-  window.addEventListener("theme:change", onThemeChange);
-
   let running = false;
 
   const start = (): void => {
@@ -859,7 +809,6 @@ export const createHeroWatch = async (
   const dispose = (): void => {
     stop();
     window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("theme:change", onThemeChange);
     resizeObserver.disconnect();
     disposeScene(scene);
     envMap.dispose();
