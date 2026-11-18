@@ -92,6 +92,8 @@ const store = defineCollection({
   schema: z.object({
     contact: z.object({
       address: z.string(),
+      facebook: z.url(),
+      instagram: z.url(),
       phone: z.string(),
       // E.164 with leading "+"; strip it for https://wa.me/<digits> links.
       whatsapp: z.string().regex(/^\+\d{8,15}$/u),
