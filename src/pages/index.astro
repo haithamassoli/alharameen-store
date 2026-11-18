@@ -189,7 +189,7 @@ const storeJsonLd = {
 
     <section
       aria-labelledby="why-title"
-      class="section section--tinted"
+      class="section section--lacquer lacquer"
       id="why"
     >
       <div class="container">
@@ -457,6 +457,14 @@ const storeJsonLd = {
     margin-inline: auto;
   }
 
+  /* Stacked: the watch leads, smaller, so the piece shows before the copy. */
+  @media (max-width: 55.99rem) {
+    .hero__stage {
+      order: -1;
+      max-inline-size: 19rem;
+    }
+  }
+
   @keyframes rise {
     from {
       opacity: 0;
@@ -492,9 +500,12 @@ const storeJsonLd = {
     padding-block: var(--space-8);
   }
 
-  .section--tinted {
-    border-block: 1px solid var(--color-line);
-    background: var(--surface-band);
+  /* A lacquer band between the limestone collection and the steps, with
+     the khatam lattice faint in the ground. */
+  .section--lacquer {
+    background:
+      radial-gradient(60% 80% at 50% 0%, var(--glow-emerald), transparent),
+      var(--pattern-star), var(--color-bg);
   }
 
   .section__head {

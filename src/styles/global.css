@@ -46,11 +46,6 @@
   --halo-emerald: rgb(30 110 89 / 0.12);
   --halo-line: rgb(217 181 108 / 0.3);
   --hero-shadow: rgb(0 0 0 / 0.55);
-  --surface-band: linear-gradient(
-    180deg,
-    rgb(237 229 211 / 0.85),
-    rgb(243 236 221 / 0.5)
-  );
   --gold-leaf: linear-gradient(
     135deg,
     #f6e3ad 0%,
@@ -174,11 +169,6 @@
   --halo-emerald: rgb(30 110 89 / 0.22);
   --halo-line: rgb(212 176 106 / 0.32);
   --hero-shadow: rgb(0 0 0 / 0.6);
-  --surface-band: linear-gradient(
-    180deg,
-    rgb(21 26 23 / 0.8),
-    rgb(7 9 8 / 0.6)
-  );
   --gold-ink: var(--gold-leaf);
   --shadow-glow:
     0 0 0 1px var(--color-line), 0 28px 60px -28px rgb(0 0 0 / 0.7);
