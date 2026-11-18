@@ -7,6 +7,7 @@ const WATCH_PRICE = 26_000;
 const DEVICE_PRICE = 7000;
 const AMMAN_FEE = 3000;
 const OUTSIDE_AMMAN_FEE = 5000;
+const GIFT_WRAP_FEE = 2000;
 
 // Same formatting as src/lib/money.ts, run in the page so the ICU data matches.
 const formatInPage = async (page: Page, fils: number): Promise<string> =>
@@ -83,10 +84,17 @@ test("checkout opens WhatsApp with the order and the right total", async ({
   await dialog.getByLabel("المدينة والعنوان").fill("إربد، شارع الجامعة");
 
   // The card message only shows once the order is marked as a gift.
-  const giftMessage = dialog.getByLabel(/رسالة الإهداء/u);
-  await expect(giftMessage).toBeHidden();
-  await dialog.getByLabel("هذا الطلب هدية").check();
-  await giftMessage.fill("كل عام وأنت بخير");
+  const cardText = dialog.getByLabel(/نص البطاقة/u);
+  await expect(cardText).toBeHidden();
+  await dialog.getByLabel(/تغليف هدية مع بطاقة/u).check();
+  await cardText.fill("كل عام وأنت بخير");
+
+  const wrappedTotal = await formatInPage(
+    page,
+    subtotal + OUTSIDE_AMMAN_FEE + GIFT_WRAP_FEE
+  );
+
+  await expect(total).toHaveText(wrappedTotal);
 
   const popupPromise = context.waitForEvent("page");
   await dialog.getByRole("button", { name: "إتمام الطلب عبر واتساب" }).click();
@@ -100,10 +108,10 @@ test("checkout opens WhatsApp with the order and the right total", async ({
   expect(text).toContain("HA-6506BW");
   expect(text).toContain("HA-1013");
   expect(text).toContain("خارج عمّان");
-  expect(text).toContain(`الإجمالي: ${grandTotal}`);
+  expect(text).toContain(`الإجمالي: ${wrappedTotal}`);
   expect(text).toContain("محمد أحمد");
-  expect(text).toContain("هذا الطلب هدية");
-  expect(text).toContain("رسالة الإهداء: كل عام وأنت بخير");
+  expect(text).toContain("تغليف هدية مع بطاقة مطبوعة");
+  expect(text).toContain("نص البطاقة: كل عام وأنت بخير");
 });
 
 test("open cart has no accessibility violations", async ({ page }) => {

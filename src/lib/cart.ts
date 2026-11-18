@@ -29,20 +29,20 @@ export interface ShippingZone {
 }
 
 export interface CartConfig {
+  giftWrapFee: number;
   whatsapp: string;
   zones: ShippingZone[];
 }
 
 interface Customer {
   address: string;
-  /** Present when the order is a gift; `message` is the optional card text. */
-  gift?: { message: string };
   name: string;
   notes?: string;
   phone: string;
 }
 
 export interface CartTotals {
+  giftWrap: number;
   shipping: number;
   subtotal: number;
   total: number;
@@ -160,7 +160,8 @@ export const cartCount = (lines: readonly CartLine[]): number =>
 export const cartTotals = (
   lines: readonly CartLine[],
   catalog: readonly CatalogItem[],
-  zone?: ShippingZone
+  zone?: ShippingZone,
+  giftWrapFee = 0
 ): CartTotals => {
   const known = indexCatalog(catalog);
   let subtotal = 0;
@@ -174,11 +175,14 @@ export const cartTotals = (
   }
 
   const shipping = lines.length > 0 && zone ? zone.fee : 0;
+  // One wrap and printed card per order, not per item.
+  const giftWrap = lines.length > 0 ? giftWrapFee : 0;
 
   return {
+    giftWrap,
     shipping,
     subtotal,
-    total: subtotal + shipping,
+    total: subtotal + shipping + giftWrap,
   };
 };
 
@@ -188,6 +192,8 @@ const singleLine = (text: string): string =>
 interface OrderMessageInput {
   catalog: readonly CatalogItem[];
   customer: Customer;
+  /** Present when the customer asked for gift wrap; `message` is the card text. */
+  giftWrap?: { fee: number; message: string };
   lines: readonly CartLine[];
   zone: ShippingZone;
 }
@@ -196,6 +202,7 @@ interface OrderMessageInput {
 export const buildWhatsAppMessage = ({
   catalog,
   customer,
+  giftWrap,
   lines,
   zone,
 }: OrderMessageInput): string => {
@@ -219,17 +226,17 @@ export const buildWhatsAppMessage = ({
     }
   }
 
-  const totals = cartTotals(lines, catalog, zone);
+  const totals = cartTotals(lines, catalog, zone, giftWrap?.fee);
   const notes = customer.notes?.trim();
-  const giftMessage = customer.gift?.message.trim() ?? "";
+  const cardText = giftWrap?.message.trim() ?? "";
 
   const giftLines =
-    customer.gift === undefined
+    giftWrap === undefined
       ? []
       : [
           "",
-          "هذا الطلب هدية 🎁",
-          ...(giftMessage === "" ? [] : [`رسالة الإهداء: ${giftMessage}`]),
+          "تغليف هدية مع بطاقة مطبوعة 🎁",
+          ...(cardText === "" ? [] : [`نص البطاقة: ${cardText}`]),
         ];
 
   return [
@@ -240,6 +247,9 @@ export const buildWhatsAppMessage = ({
     "",
     `المجموع الفرعي: ${price(totals.subtotal)}`,
     `التوصيل (${zone.name}): ${price(totals.shipping)}`,
+    ...(giftWrap === undefined
+      ? []
+      : [`تغليف الهدية والبطاقة: ${price(totals.giftWrap)}`]),
     `الإجمالي: ${price(totals.total)}`,
     "",
     "بيانات التوصيل:",

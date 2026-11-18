@@ -40,11 +40,14 @@ const zones = await getShippingZones();
 const store = await getStore();
 
 const config: CartConfig = {
+  giftWrapFee: store.giftWrap.fee,
   whatsapp: store.contact.whatsapp,
   zones: zones.map(({ data, id }) => ({ fee: data.fee, id, name: data.name })),
 };
 
 // "<" is escaped so catalog text can never close the script element early.
+const giftWrapFee = formatPrice(store.giftWrap.fee, store.giftWrap.currency);
+
 const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   JSON.stringify(value).replaceAll("<", "\\u003c");
 ---
@@ -226,7 +229,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
         </fieldset>
 
         <fieldset class="cart-drawer__fieldset gift">
-          <legend class="visually-hidden">الإهداء</legend>
+          <legend class="visually-hidden">تغليف الهدية</legend>
           <label class="gift__toggle">
             <input
               aria-describedby="cart-gift-hint"
@@ -235,15 +238,15 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
               name="gift"
               type="checkbox"
             />
-            <span class="gift__title">هذا الطلب هدية</span>
+            <span class="gift__title">تغليف هدية مع بطاقة</span>
+            <span class="gift__fee">+ {giftWrapFee}</span>
             <small class="field__hint" id="cart-gift-hint">
-              اكتب عنوان من ستُهديه في خانة العنوان، ونتفق معك على تفاصيل التسليم
-              عبر واتساب.
+              نغلّف الطلب ونطبع رسالتك على بطاقة مرفقة.
             </small>
           </label>
           <div class="field gift__message">
             <label class="field__label" for="cart-gift-message">
-              رسالة الإهداء <span class="field__optional">(اختياري)</span>
+              نص البطاقة <span class="field__optional">(اختياري)</span>
             </label>
             <textarea
               class="field__input"
@@ -264,6 +267,10 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
           <div class="totals__row">
             <dt>التوصيل</dt>
             <dd data-cart-shipping>اختر المنطقة</dd>
+          </div>
+          <div class="totals__row totals__gift">
+            <dt>تغليف الهدية</dt>
+            <dd>{giftWrapFee}</dd>
           </div>
         </dl>
         <p class="cart-drawer__payment">
@@ -558,7 +565,8 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   const renderTotals = (): void => {
     const zone = selectedZone();
-    const totals = cartTotals(cart, catalog, zone);
+    const wrapFee = giftInput.checked ? config.giftWrapFee : 0;
+    const totals = cartTotals(cart, catalog, zone, wrapFee);
     subtotalEl.textContent = money(totals.subtotal);
     shippingEl.textContent = zone ? money(totals.shipping) : "اختر المنطقة";
     totalEl.value = money(totals.total);
@@ -934,15 +942,9 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   form.addEventListener("input", validateForm);
 
-  form.addEventListener("change", (event) => {
+  form.addEventListener("change", () => {
     validateForm();
-
-    if (
-      event.target instanceof HTMLInputElement &&
-      event.target.name === "zone"
-    ) {
-      renderTotals();
-    }
+    renderTotals();
   });
 
   // Native validation runs first; submit only fires once every field is valid.
@@ -958,13 +960,13 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
       catalog,
       customer: {
         address: addressInput.value,
-        gift: giftInput.checked
-          ? { message: giftMessageInput.value }
-          : undefined,
         name: nameInput.value,
         notes: notesInput.value,
         phone: normalizePhone(phoneInput.value),
       },
+      giftWrap: giftInput.checked
+        ? { fee: config.giftWrapFee, message: giftMessageInput.value }
+        : undefined,
       lines: cart,
       zone,
     });
@@ -1436,7 +1438,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   .gift__toggle {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: var(--space-1) var(--space-2);
     padding: var(--space-3);
@@ -1470,11 +1472,18 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     font-weight: 600;
   }
 
-  .gift__toggle .field__hint {
-    grid-column: 2;
+  .gift__fee {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
   }
 
-  .gift:not(:has(.gift__input:checked)) .gift__message {
+  .gift__toggle .field__hint {
+    grid-column: 2 / -1;
+  }
+
+  /* The card text and the totals row only show once wrapping is ticked. */
+  .gift:not(:has(.gift__input:checked)) .gift__message,
+  .cart-drawer__form:not(:has(.gift__input:checked)) .totals__gift {
     display: none;
   }
 
