@@ -8,22 +8,19 @@ import { z } from "astro/zod";
 import { getCollection, getEntry } from "astro:content";
 import sharp from "sharp";
 
-import { formatPrice } from "../../lib/money";
-
 const WIDTH = 1200;
 const HEIGHT = 630;
 const EDGE = 72;
 const RIGHT = WIDTH - EDGE;
 const PHOTO_BOX = 460;
-const PHOTO_CENTER_X = 330;
-const TEXT_WIDTH = 580;
+const PHOTO_CENTER_X = 316;
+const TEXT_WIDTH = 540;
 const LOGO_SIZE = 48;
 const LOGO_GAP = 14;
 const BLOCK_GAP = 22;
 
 const INK = "#19251f";
 const MUTED = "#56625b";
-const PINE = "#285a47";
 
 // Read from the source tree: this endpoint only runs during `astro build`.
 const asset = (file: string): string =>
@@ -42,12 +39,20 @@ const escapeMarkup = (value: string): string =>
 
 interface Line {
   color: string;
+  /** Thmanyah's stylistic alternates, as on the site's headings. */
+  heading?: boolean;
   size: number;
   text: string;
   weight: keyof typeof FONTS;
 }
 
-const renderText = async ({ color, size, text, weight }: Line) =>
+const renderText = async ({
+  color,
+  heading = false,
+  size,
+  text,
+  weight,
+}: Line) =>
   await sharp({
     text: {
       // Pango mirrors alignment for right-to-left paragraphs: "left" here
@@ -57,7 +62,7 @@ const renderText = async ({ color, size, text, weight }: Line) =>
       fontfile: FONTS[weight],
       rgba: true,
       spacing: Math.round(size * 0.15),
-      text: `<span foreground="${color}">${escapeMarkup(text)}</span>`,
+      text: `<span${heading ? ' font_features="salt=1"' : ""} foreground="${color}">${escapeMarkup(text)}</span>`,
       width: TEXT_WIDTH,
       wrap: "word",
     },
@@ -97,13 +102,8 @@ export const GET: APIRoute<
   const lines: Line[] = [
     { color: INK, size: 32, text: "ساعات الحرمين", weight: "bold" },
     { color: MUTED, size: 26, text: category.data.name, weight: "medium" },
-    { color: INK, size: 54, text: data.name, weight: "bold" },
-    {
-      color: PINE,
-      size: 40,
-      text: formatPrice(data.price, data.currency),
-      weight: "bold",
-    },
+    { color: INK, heading: true, size: 54, text: data.name, weight: "bold" },
+    { color: MUTED, size: 24, text: data.model, weight: "medium" },
   ];
 
   const [wordmark, ...block] = await Promise.all(lines.map(renderText));
