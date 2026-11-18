@@ -1,2 +1,7 @@
 [files]
 extend-exclude = ["pnpm-lock.yaml"]
+
+# Jordanian dinar (ISO 4217) and its minor unit.
+[default.extend-words]
+JOD = "JOD"
+fils = "fils"

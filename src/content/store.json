@@ -1,0 +1,21 @@
+{
+  "main": {
+    "name": "متجر ساعات الحرمين",
+    "tagline": "ساعات الأذان الأصلية من الحرمين، بالتوصيل لجميع محافظات المملكة",
+    "currency": "JOD",
+    "freeShippingThreshold": 50000,
+    "returnDays": 14,
+    "warrantyYears": 1,
+    "paymentMethods": [
+      { "id": "cod", "name": "الدفع عند الاستلام" },
+      { "id": "cliq", "name": "تحويل CliQ" },
+      { "id": "card", "name": "بطاقة ائتمان أو خصم" }
+    ],
+    "contact": {
+      "phone": "+962790000000",
+      "whatsapp": "+962790000000",
+      "email": "info@example.com",
+      "address": "عمّان، الأردن"
+    }
+  }
+}

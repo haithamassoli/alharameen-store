@@ -1,8 +1,8 @@
-// Prices are stored as integers in the currency's minor unit (e.g. halalas).
+// Prices are stored as integers in the currency's minor unit (e.g. fils for JOD).
 export const formatPrice = (
   minorUnits: number,
-  currency = "SAR",
-  locale = "ar-SA"
+  currency = "JOD",
+  locale = "ar-JO"
 ): string => {
   if (!Number.isInteger(minorUnits)) {
     throw new TypeError(
