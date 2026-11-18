@@ -27,7 +27,7 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@playwright/test": "1.65.1",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "@vite-pwa/assets-generator": "^2.0.0",
     "@vite-pwa/astro": "^2.0.2",
     "knip": "^6.45.1",
