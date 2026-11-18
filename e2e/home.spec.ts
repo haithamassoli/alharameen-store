@@ -47,6 +47,22 @@ test("phone menu opens and closes on a link", async ({ page, isMobile }) => {
   await expect(nav).toBeHidden();
 });
 
+test("phone feature picker shows one note at a time", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "The picker only shows on phones.");
+  await page.goto("/");
+  const features = page.locator("#features");
+  const prayer = features.getByRole("heading", { name: "أوقات الأذان" });
+  const qibla = features.getByRole("heading", { name: "اتجاه القبلة" });
+  await expect(prayer).toBeVisible();
+  await expect(qibla).toBeHidden();
+  await features.getByText("القبلة", { exact: true }).click();
+  await expect(qibla).toBeVisible();
+  await expect(prayer).toBeHidden();
+});
+
 test("FAQ answers delivery and ordering questions", async ({ page }) => {
   await page.goto("/");
 
