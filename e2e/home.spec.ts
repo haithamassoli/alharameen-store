@@ -19,6 +19,13 @@ test("home page is Arabic RTL and installable", async ({ page }) => {
   expect(swReady).toBe(true);
 });
 
+test("home page lists all eight products", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#watches article")).toHaveCount(8);
+  await expect(page.locator("#watches [data-add-to-cart]")).toHaveCount(8);
+  await expect(page.locator("#why")).toBeVisible();
+});
+
 // Covers template a11y (alt text, labels, contrast) that static linting can't see in .astro.
 test("home page has no accessibility violations", async ({ page }) => {
   await page.goto("/");

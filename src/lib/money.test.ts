@@ -11,6 +11,11 @@ describe("formatPrice", () => {
     expect(formatPrice(1500, "KWD", "en-US")).toBe("KWD\u00A01.500");
   });
 
+  it("drops the fraction for whole amounts", () => {
+    expect(formatPrice(31_000, "JOD", "en-US")).toBe("JOD\u00A031");
+    expect(formatPrice(12_300, "SAR", "en-US")).toBe("SAR\u00A0123");
+  });
+
   it("defaults to Jordanian dinars", () => {
     expect(formatPrice(25_500)).toBe(formatPrice(25_500, "JOD", "ar-JO"));
     expect(formatPrice(25_500, "JOD", "en-US")).toBe("JOD\u00A025.500");

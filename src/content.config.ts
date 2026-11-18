@@ -28,7 +28,8 @@ const products = defineCollection({
         featured: z.boolean(),
         features: z.array(z.string()).min(1),
         images: z.array(z.object({ alt: z.string(), src: image() })).min(1),
-        model: z.string().regex(/^HA-\d{4}$/u),
+        // Full SKU, e.g. "HA-6506BW" or "HA-1013".
+        model: z.string().regex(/^HA-\d{4}[A-Z]*$/u),
         name: z.string(),
         price: fils.positive(),
         // Where the specs and photos came from, for re-checking before launch.
@@ -71,14 +72,12 @@ const store = defineCollection({
   schema: z.object({
     contact: z.object({
       address: z.string(),
-      email: z.email(),
       phone: z.string(),
-      whatsapp: z.string(),
+      // E.164 with leading "+"; strip it for https://wa.me/<digits> links.
+      whatsapp: z.string().regex(/^\+\d{8,15}$/u),
     }),
     currency,
-    freeShippingThreshold: fils,
     name: z.string(),
-    paymentMethods: z.array(z.object({ id: z.string(), name: z.string() })),
     returnDays: z.number().int().nonnegative(),
     tagline: z.string(),
     warrantyYears: z.number().int().nonnegative(),

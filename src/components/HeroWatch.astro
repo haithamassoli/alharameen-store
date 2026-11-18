@@ -1,0 +1,481 @@
+---
+// The hero showpiece: a live 3D watch (three.js, loaded on demand) over a
+// static SVG watch that is the no-JS, reduced-motion and no-WebGL view.
+const digits = new Intl.NumberFormat("ar-JO");
+const CENTER = 200;
+const NUMERAL_RADIUS = 76;
+
+const numerals = Array.from({ length: 12 }, (_, index) => {
+  const hour = index + 1;
+  const angle = (hour / 12) * Math.PI * 2;
+
+  return {
+    label: digits.format(hour),
+    x: CENTER + Math.sin(angle) * NUMERAL_RADIUS,
+    y: CENTER - Math.cos(angle) * NUMERAL_RADIUS,
+  };
+});
+
+const minuteTicks = Array.from({ length: 60 }, (_, index) => ({
+  angle: index * 6,
+  isHour: index % 5 === 0,
+}));
+
+const bezelStuds = Array.from({ length: 12 }, (_, index) => index * 30);
+
+const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقمية تعرض الوقت الآن";
+---
+
+<div class="hero-watch" data-hero-watch>
+  <div aria-hidden="true" class="hero-watch__halo"></div>
+
+  <svg
+    aria-label={label}
+    class="hero-watch__fallback"
+    role="img"
+    viewBox="0 0 400 400"
+  >
+    <defs>
+      <radialGradient cx="50%" cy="42%" id="hw-dial" r="60%">
+        <stop offset="0" stop-color="#164a42"></stop>
+        <stop offset="1" stop-color="#061716"></stop>
+      </radialGradient>
+      <linearGradient id="hw-gold" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0" stop-color="#f3dc9f"></stop>
+        <stop offset="0.45" stop-color="#d9b56c"></stop>
+        <stop offset="0.7" stop-color="#9c7a3c"></stop>
+        <stop offset="1" stop-color="#e8cb85"></stop>
+      </linearGradient>
+      <linearGradient id="hw-strap-top" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#0b2622" stop-opacity="0"></stop>
+        <stop offset="1" stop-color="#0b2622"></stop>
+      </linearGradient>
+      <linearGradient id="hw-strap-bottom" x1="0" x2="0" y1="1" y2="0">
+        <stop offset="0" stop-color="#0b2622" stop-opacity="0"></stop>
+        <stop offset="1" stop-color="#0b2622"></stop>
+      </linearGradient>
+    </defs>
+
+    <!-- Straps -->
+    <rect fill="url(#hw-strap-top)" height="96" width="88" x="156" y="0"></rect>
+    <rect
+      fill="url(#hw-strap-bottom)"
+      height="96"
+      width="88"
+      x="156"
+      y="304"
+    ></rect>
+    <g opacity="0.7" stroke="#d9b56c" stroke-dasharray="5 4" stroke-width="1">
+      <path d="M163 20v70M237 20v70M163 310v70M237 310v70"></path>
+    </g>
+
+    <!-- Lugs, crown and pushers -->
+    <g fill="url(#hw-gold)">
+      <rect height="40" rx="4" width="18" x="146" y="64"></rect>
+      <rect height="40" rx="4" width="18" x="236" y="64"></rect>
+      <rect height="40" rx="4" width="18" x="146" y="296"></rect>
+      <rect height="40" rx="4" width="18" x="236" y="296"></rect>
+      <rect height="22" rx="4" width="20" x="326" y="189"></rect>
+      <g transform="rotate(-30 200 200)">
+        <rect height="14" rx="3" width="14" x="326" y="193"></rect>
+      </g>
+      <g transform="rotate(30 200 200)">
+        <rect height="14" rx="3" width="14" x="326" y="193"></rect>
+      </g>
+      <g transform="rotate(150 200 200)">
+        <rect height="14" rx="3" width="14" x="326" y="193"></rect>
+      </g>
+      <g transform="rotate(210 200 200)">
+        <rect height="14" rx="3" width="14" x="326" y="193"></rect>
+      </g>
+    </g>
+
+    <!-- Case, bezel, dial -->
+    <circle cx="200" cy="200" fill="url(#hw-gold)" r="132"></circle>
+    <circle cx="200" cy="200" fill="#0d3a33" r="121"></circle>
+    <g fill="#d9b56c">
+      {bezelStuds.map((angle) => (
+        <rect
+          height={angle === 0 ? 11 : 7}
+          transform={`rotate(${angle} 200 200)`}
+          width="4"
+          x="198"
+          y="86"
+        />
+      ))}
+    </g>
+    <circle
+      cx="200"
+      cy="200"
+      fill="url(#hw-dial)"
+      r="101"
+      stroke="#9c7a3c"
+      stroke-width="1.5"
+    ></circle>
+
+    <g fill="#d9b56c">
+      {minuteTicks.map((tick) => (
+        <rect
+          height={tick.isHour ? 5 : 3}
+          opacity={tick.isHour ? 1 : 0.55}
+          transform={`rotate(${tick.angle} 200 200)`}
+          width={tick.isHour ? 1.4 : 0.6}
+          x={tick.isHour ? 199.3 : 199.7}
+          y="102"
+        />
+      ))}
+    </g>
+
+    <g fill="none" opacity="0.3" stroke="#d9b56c" stroke-width="0.6">
+      <rect height="32" width="32" x="184" y="184"></rect>
+      <rect
+        height="32"
+        transform="rotate(45 200 200)"
+        width="32"
+        x="184"
+        y="184"
+      ></rect>
+    </g>
+
+    <g class="hero-watch__numerals" fill="#f3dc9f">
+      {numerals.map((numeral) => (
+        <text
+          dominant-baseline="central"
+          text-anchor="middle"
+          x={numeral.x}
+          y={numeral.y}
+        >
+          {numeral.label}
+        </text>
+      ))}
+    </g>
+    <text
+      class="hero-watch__brand"
+      dominant-baseline="central"
+      fill="#d9b56c"
+      text-anchor="middle"
+      x="200"
+      y="144"
+    >
+      الحرمين
+    </text>
+
+    <rect
+      fill="rgb(0 0 0 / 0.45)"
+      height="27"
+      rx="3.5"
+      stroke="#d9b56c"
+      stroke-opacity="0.6"
+      width="59"
+      x="170.7"
+      y="223.6"
+    ></rect>
+    <rect fill="#c9cfae" height="24" rx="2" width="55" x="172.7" y="225"></rect>
+    <text
+      class="hero-watch__lcd"
+      data-lcd-time
+      dominant-baseline="central"
+      fill="#14231d"
+      text-anchor="middle"
+      x="200"
+      y="237.5"
+    >
+      ١٠:٠٨
+    </text>
+
+    <!-- Hands, defaulting to 10:08 until the script sets the real time -->
+    <g
+      class="hero-watch__hand"
+      data-hand="hour"
+      style="transform: rotate(304deg)"
+    >
+      <path
+        d="M200 208 204 200 202.5 154 200 146 197.5 154 196 200z"
+        fill="url(#hw-gold)"
+      ></path>
+    </g>
+    <g
+      class="hero-watch__hand"
+      data-hand="minute"
+      style="transform: rotate(48deg)"
+    >
+      <path
+        d="M200 210 203 200 201.8 126 200 117 198.2 126 197 200z"
+        fill="url(#hw-gold)"
+      ></path>
+    </g>
+    <circle cx="200" cy="200" fill="url(#hw-gold)" r="3.6"></circle>
+
+    <!-- Glass glint -->
+    <path
+      d="M120 160a88 88 0 0 1 70-62"
+      fill="none"
+      opacity="0.18"
+      stroke="#fff"
+      stroke-linecap="round"
+      stroke-width="6"
+    ></path>
+  </svg>
+
+  <canvas
+    aria-hidden="true"
+    aria-label="ساعة الحرمين ثلاثية الأبعاد، عقاربها وشاشتها تعرض الوقت الآن"
+    class="hero-watch__canvas"
+    role="img"
+  ></canvas>
+</div>
+
+<style>
+  .hero-watch {
+    position: relative;
+    isolation: isolate;
+    inline-size: 100%;
+    aspect-ratio: 1;
+  }
+
+  .hero-watch__halo {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      rgb(217 181 108 / 0.22),
+      rgb(95 179 155 / 0.08) 55%,
+      transparent 100%
+    );
+  }
+
+  /* A large eight-point star traced behind the watch, turning very slowly. */
+  .hero-watch__halo::before,
+  .hero-watch__halo::after {
+    position: absolute;
+    /* Side 68% keeps the 45° square's diagonal inside the stage at any turn. */
+    inset: 16%;
+    border: 1px solid rgb(217 181 108 / 0.12);
+    content: "";
+  }
+
+  .hero-watch__halo::after {
+    rotate: 45deg;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-watch__halo {
+      animation: hero-watch-turn 180s linear infinite;
+    }
+  }
+
+  @keyframes hero-watch-turn {
+    to {
+      rotate: 1turn;
+    }
+  }
+
+  .hero-watch__fallback,
+  .hero-watch__canvas {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    transition: opacity 900ms var(--ease-out, ease-out);
+  }
+
+  .hero-watch__fallback {
+    padding: 4%;
+    filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.5));
+  }
+
+  /* Straps run past the square stage; fade them out instead of clipping. */
+  .hero-watch__canvas {
+    opacity: 0;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      #000 14%,
+      #000 86%,
+      transparent
+    );
+  }
+
+  /* Hand-over: the SVG leaves quickly, then the 3D watch rises in, so the two
+     poses never ghost over each other. */
+  .hero-watch[data-state="live"] .hero-watch__canvas {
+    opacity: 1;
+    transition-delay: 200ms;
+  }
+
+  .hero-watch[data-state="live"] .hero-watch__fallback {
+    opacity: 0;
+    transition-duration: 250ms;
+  }
+
+  .hero-watch__numerals,
+  .hero-watch__brand,
+  .hero-watch__lcd {
+    font-family: var(--font-display, serif);
+  }
+
+  .hero-watch__numerals {
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .hero-watch__brand {
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+
+  .hero-watch__lcd {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .hero-watch__hand {
+    transform-box: view-box;
+    transform-origin: 200px 200px;
+  }
+</style>
+
+<script>
+  import { formatLcdTime, handAngles, toDegrees } from "../lib/hero-time";
+  import type { HeroWatch } from "../lib/hero-watch";
+
+  const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+  const FALLBACK_REFRESH_MS = 15_000;
+
+  // Start fetching three.js a little before the hero scrolls into view.
+  const PRELOAD_MARGIN = "200px";
+
+  const hasWebGL2 = (): boolean => {
+    try {
+      const probe = document.createElement("canvas").getContext("webgl2");
+      probe?.getExtension("WEBGL_lose_context")?.loseContext();
+
+      return probe !== null;
+    } catch {
+      return false;
+    }
+  };
+
+  const rotateHand = (root: HTMLElement, hand: string, radians: number) => {
+    const element = root.querySelector<SVGGElement>(`[data-hand="${hand}"]`);
+
+    if (element) {
+      element.style.transform = `rotate(${toDegrees(radians)}deg)`;
+    }
+  };
+
+  const paintFallback = (root: HTMLElement): void => {
+    const now = new Date();
+    const { hour, minute } = handAngles(now);
+    rotateHand(root, "hour", hour);
+    rotateHand(root, "minute", minute);
+    const lcd = root.querySelector("[data-lcd-time]");
+
+    if (lcd) {
+      lcd.textContent = formatLcdTime(now);
+    }
+  };
+
+  const loadWatch = async (
+    root: HTMLElement,
+    canvas: HTMLCanvasElement,
+    fallback: SVGSVGElement
+  ): Promise<HeroWatch | null> => {
+    try {
+      const { createHeroWatch } = await import("../lib/hero-watch");
+      const watch = await createHeroWatch(canvas, root);
+      root.dataset.state = "live";
+      canvas.removeAttribute("aria-hidden");
+      fallback.setAttribute("aria-hidden", "true");
+
+      return watch;
+    } catch {
+      // Keep the SVG watch if three.js fails to load or WebGL init fails.
+      root.dataset.state = "static";
+
+      return null;
+    }
+  };
+
+  const setup = (root: HTMLElement): void => {
+    const canvas = root.querySelector("canvas");
+    const fallback = root.querySelector<SVGSVGElement>(".hero-watch__fallback");
+
+    if (!canvas || !fallback) {
+      return;
+    }
+
+    paintFallback(root);
+
+    const fallbackTimer = window.setInterval(
+      () => paintFallback(root),
+      FALLBACK_REFRESH_MS
+    );
+
+    if (window.matchMedia(REDUCED_MOTION).matches || !hasWebGL2()) {
+      return;
+    }
+
+    let watch: HeroWatch | null = null;
+    let requested = false;
+    let inView = false;
+
+    const sync = (): void => {
+      if (!watch) {
+        return;
+      }
+
+      if (inView && document.visibilityState === "visible") {
+        watch.start();
+      } else {
+        watch.stop();
+      }
+    };
+
+    const load = async (): Promise<void> => {
+      requested = true;
+      watch = await loadWatch(root, canvas, fallback);
+
+      if (watch) {
+        window.clearInterval(fallbackTimer);
+      }
+
+      sync();
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        inView = entries.some((entry) => entry.isIntersecting);
+
+        if (inView && !requested) {
+          load();
+
+          return;
+        }
+
+        sync();
+      },
+      { rootMargin: PRELOAD_MARGIN }
+    );
+
+    observer.observe(root);
+
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("pagehide", (event) => {
+      if (event.persisted) {
+        return;
+      }
+
+      observer.disconnect();
+      watch?.dispose();
+    });
+  };
+
+  for (const root of document.querySelectorAll<HTMLElement>(
+    "[data-hero-watch]"
+  )) {
+    setup(root);
+  }
+</script>

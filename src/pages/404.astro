@@ -1,0 +1,42 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="الصفحة غير موجودة">
+  <main class="not-found container" id="main">
+    <p aria-hidden="true" class="not-found__code">
+      ٤٠٤
+    </p>
+    <h1>لم نجد هذه الصفحة</h1>
+    <p class="not-found__text">
+      ربما تغيّر الرابط أو لم يعد المنتج متوفرًا. تصفّح تشكيلتنا من جديد.
+    </p>
+    <a class="btn btn-primary" href="/#watches">
+      تصفّح الساعات
+    </a>
+  </main>
+</Layout>
+
+<style>
+  .not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4, 1rem);
+    padding-block: var(--space-9, 7rem);
+    text-align: center;
+  }
+
+  .not-found__code {
+    background: var(--gold-leaf, #d9b56c);
+    background-clip: text;
+    color: transparent;
+    font-family: var(--font-display, serif);
+    font-size: clamp(4rem, 3rem + 6vw, 8rem);
+    line-height: 1;
+  }
+
+  .not-found__text {
+    color: var(--color-muted, #a8b8b0);
+  }
+</style>

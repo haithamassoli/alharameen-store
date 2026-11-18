@@ -1,9 +1,617 @@
 ---
+import { getCollection, getEntry } from "astro:content";
+
+import HeroWatch from "../components/HeroWatch.astro";
+import ProductCard from "../components/ProductCard.astro";
 import Layout from "../layouts/Layout.astro";
+import { whatsappUrl } from "../lib/cart";
+import { deliveryTime } from "../lib/delivery";
+import { formatPrice } from "../lib/money";
+
+const store = await getEntry("store", "main");
+
+if (!store) {
+  throw new Error('Missing "main" entry in the store collection');
+}
+
+const categories = await getCollection("categories");
+const categoryById = new Map(categories.map((entry) => [entry.id, entry.data]));
+const categoryOrder = (id: string): number => categoryById.get(id)?.order ?? 0;
+
+// Category order first, then featured pieces, then cheapest first.
+const allProducts = await getCollection("products");
+
+const products = allProducts.toSorted(
+  (a, b) =>
+    categoryOrder(a.data.category.id) - categoryOrder(b.data.category.id) ||
+    Number(b.data.featured) - Number(a.data.featured) ||
+    a.data.price - b.data.price
+);
+
+const zoneEntries = await getCollection("shippingZones");
+
+const zones = zoneEntries.toSorted((a, b) => a.data.fee - b.data.fee);
+
+const [cheapestZone] = zones;
+
+const digits = new Intl.NumberFormat("ar-JO");
+const { contact, returnDays, warrantyYears } = store.data;
+
+const WARRANTY_WORDS = new Map([
+  [1, "سنة كاملة"],
+  [2, "سنتين"],
+]);
+
+const warranty =
+  WARRANTY_WORDS.get(warrantyYears) ?? `${digits.format(warrantyYears)} سنوات`;
+
+const chatUrl = whatsappUrl(
+  contact.whatsapp,
+  "السلام عليكم، أرغب بالاستفسار عن ساعات الحرمين."
+);
+
+const features = [
+  {
+    icon: "azan",
+    text: "مواقيت دقيقة لمعظم مدن العالم، ومنبّه لكل صلاة يتغير تلقائيًا مع وقت الأذان.",
+    title: "أوقات الأذان لكل مدن العالم",
+  },
+  {
+    icon: "qibla",
+    text: "بوصلة إلكترونية تدلّك على القبلة أينما كنت، بضغطة زر واحدة.",
+    title: "اتجاه القبلة",
+  },
+  {
+    icon: "calendar",
+    text: "التاريخ الهجري والميلادي وأيام الأسبوع معًا على شاشة واحدة.",
+    title: "تقويم هجري",
+  },
+  {
+    icon: "shield",
+    text: `ضمان ${warranty} على كل ساعة، وإرجاع خلال ${digits.format(returnDays)} يومًا.`,
+    title: "ضمان",
+  },
+  {
+    icon: "truck",
+    text: "نوصل لجميع محافظات الأردن، وتدفع نقدًا عند الاستلام.",
+    title: "توصيل لكل المملكة",
+  },
+] as const;
+
+const steps = [
+  { text: "تصفّح التشكيلة واختر الساعة التي تناسبك.", title: "اختر ساعتك" },
+  { text: "أضف ما تريد إلى السلة واختر منطقة التوصيل.", title: "أضفها للسلة" },
+  {
+    text: "نجهّز لك رسالة الطلب، أرسلها ونؤكد معك موعد التوصيل.",
+    title: "أرسل الطلب عبر واتساب",
+  },
+] as const;
 ---
 
 <Layout>
-  <main>
-    <h1>متجر الحرمين</h1>
+  <main id="main">
+    <section aria-labelledby="hero-title" class="hero">
+      <div class="hero__inner container">
+        <div class="hero__copy">
+          <p class="eyebrow hero__rise">ساعات الأذان الأصلية من الحرمين</p>
+          <h1 class="hero__title hero__rise" id="hero-title">
+            لا يفوتك أذان،
+            <span class="hero__title-gold">أينما كنت</span>
+          </h1>
+          <p class="hero__lead hero__rise">
+            ساعة تنبّهك لكل صلاة، وتدلّك على القبلة، وتعرض لك التاريخ الهجري. اختر
+            ساعتك وأرسل طلبك عبر واتساب، ونوصلها إلى باب بيتك.
+          </p>
+          <div class="hero__actions hero__rise">
+            <a class="btn btn-primary" href="#watches">
+              تسوّق الآن
+            </a>
+            <a
+              class="btn btn-ghost"
+              href={chatUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2m0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2m4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.5-.3"></path>
+              </svg>
+              اطلب عبر واتساب
+              <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+            </a>
+          </div>
+          <ul class="hero__trust hero__rise">
+            <li>الدفع عند الاستلام</li>
+            <li>
+              توصيل {cheapestZone ? cheapestZone.data.name : ""} بـ
+              {cheapestZone
+                ? formatPrice(cheapestZone.data.fee, cheapestZone.data.currency)
+                : ""}
+            </li>
+            <li>ضمان {warranty}</li>
+          </ul>
+        </div>
+        <div class="hero__stage">
+          <HeroWatch />
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="watches-title" class="section" id="watches">
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="eyebrow">التشكيلة</p>
+          <h2 id="watches-title">ساعات مختارة بعناية</h2>
+          <p class="section__lead">
+            {digits.format(products.length)} قطع فقط، كل واحدة منها أصلية
+            ومجرّبة. اضغط على أي ساعة لترى تفاصيلها ومواصفاتها.
+          </p>
+        </header>
+
+        <div class="product-grid">
+          {products.map((product, index) => (
+            <ProductCard
+              categoryName={
+                categoryById.get(product.data.category.id)?.name ?? ""
+              }
+              eager={index < 3}
+              index={index}
+              product={product}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section
+      aria-labelledby="why-title"
+      class="section section--tinted"
+      id="why"
+    >
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="eyebrow">لماذا الحرمين</p>
+          <h2 id="why-title">رفيقك في مواعيد الصلاة</h2>
+        </header>
+
+        <ul class="features">
+          {features.map((feature) => (
+            <li class="feature reveal">
+              <span aria-hidden="true" class="feature__icon">
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.6"
+                  viewBox="0 0 24 24"
+                >
+                  {feature.icon === "azan" && (
+                    <>
+                      <circle cx="12" cy="13" r="8" />
+                      <path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" />
+                    </>
+                  )}
+                  {feature.icon === "qibla" && (
+                    <>
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="m15.5 8.5-2 5-5 2 2-5z" />
+                    </>
+                  )}
+                  {feature.icon === "calendar" && (
+                    <>
+                      <rect height="16" rx="2" width="18" x="3" y="5" />
+                      <path d="M3 10h18M8 3v4M16 3v4" />
+                      <path d="M14.5 13.2a2.6 2.6 0 1 0 0 4.6 3 3 0 0 1 0-4.6" />
+                    </>
+                  )}
+                  {feature.icon === "shield" && (
+                    <>
+                      <path d="M12 3 5 6v5c0 4.4 3 8.3 7 10 4-1.7 7-5.6 7-10V6z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </>
+                  )}
+                  {feature.icon === "truck" && (
+                    <>
+                      <path d="M14 17V6H3v11h2M14 9h4l3 4v4h-2M9 17h6" />
+                      <circle cx="7" cy="17" r="2" />
+                      <circle cx="17" cy="17" r="2" />
+                    </>
+                  )}
+                </svg>
+              </span>
+              <h3 class="feature__title">{feature.title}</h3>
+              <p class="feature__text">{feature.text}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="how-title" class="section">
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="eyebrow">طريقة الطلب</p>
+          <h2 id="how-title">ثلاث خطوات وتصلك ساعتك</h2>
+        </header>
+
+        <ol class="steps">
+          {steps.map((step, index) => (
+            <li class="step reveal">
+              <span aria-hidden="true" class="step__number">
+                {digits.format(index + 1)}
+              </span>
+              <h3 class="step__title">{step.title}</h3>
+              <p class="step__text">{step.text}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div class="delivery reveal">
+          <h3 class="delivery__title">رسوم التوصيل</h3>
+          <ul class="delivery__zones">
+            {zones.map(({ data }) => (
+              <li class="delivery__zone">
+                <span class="delivery__name">{data.name}</span>
+                <span class="delivery__fee">
+                  {formatPrice(data.fee, data.currency)}
+                </span>
+                <span class="delivery__days">
+                  يصلك {deliveryTime(data.minDays, data.maxDays)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p class="delivery__note">الدفع نقدًا عند الاستلام.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="order-title" class="section">
+      <div class="container">
+        <div class="order-cta reveal">
+          <h2 id="order-title">جاهز تطلب ساعتك؟</h2>
+          <p>
+            راسلنا على واتساب لأي سؤال عن الساعات أو التوصيل، ونرد عليك بأسرع
+            وقت.
+          </p>
+          <a
+            class="btn btn-primary"
+            href={chatUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            تواصل معنا عبر واتساب
+            <span class="visually-hidden">(يفتح في نافذة جديدة)</span>
+          </a>
+          <p class="order-cta__phone">
+            أو اتصل بنا:{" "}
+            <a dir="ltr" href={`tel:${contact.phone}`}>
+              {contact.phone}
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
   </main>
 </Layout>
+
+<style>
+  .eyebrow {
+    color: var(--color-accent, #5fb39b);
+    font-family: var(--font-display, serif);
+    font-size: var(--text-sm, 0.875rem);
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Hero ---------- */
+
+  .hero {
+    padding-block: var(--space-7, 3rem) var(--space-8, 4.5rem);
+    overflow: clip;
+  }
+
+  .hero__inner {
+    display: grid;
+    align-items: center;
+    gap: var(--space-6, 2rem);
+  }
+
+  @media (min-width: 56rem) {
+    .hero__inner {
+      grid-template-columns: 1.05fr 1fr;
+    }
+  }
+
+  .hero__copy {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 1rem);
+  }
+
+  .hero__title {
+    font-size: clamp(2.5rem, 1.6rem + 4vw, 4.75rem);
+    line-height: 1.15;
+  }
+
+  .hero__title-gold {
+    display: block;
+    background: var(--gold-leaf, #d9b56c);
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero__lead {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3, 0.75rem);
+    margin-block-start: var(--space-2, 0.5rem);
+  }
+
+  .hero__trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem) var(--space-5, 1.5rem);
+    padding: 0;
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+    list-style: none;
+  }
+
+  .hero__trust li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  .hero__trust li::before {
+    inline-size: 0.45rem;
+    block-size: 0.45rem;
+    background: var(--color-gold, #d9b56c);
+    content: "";
+    rotate: 45deg;
+  }
+
+  .hero__stage {
+    inline-size: 100%;
+    max-inline-size: 34rem;
+    margin-inline: auto;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 1.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__rise {
+      animation: rise 900ms var(--ease-out, ease-out) both;
+    }
+
+    .hero__rise:nth-child(2) {
+      animation-delay: 80ms;
+    }
+
+    .hero__rise:nth-child(3) {
+      animation-delay: 160ms;
+    }
+
+    .hero__rise:nth-child(4) {
+      animation-delay: 240ms;
+    }
+
+    .hero__rise:nth-child(5) {
+      animation-delay: 320ms;
+    }
+  }
+
+  /* ---------- Sections ---------- */
+
+  .section {
+    padding-block: var(--space-8, 4.5rem);
+  }
+
+  .section--tinted {
+    border-block: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    background: linear-gradient(
+      180deg,
+      rgb(15 38 36 / 0.7),
+      rgb(5 17 18 / 0.6)
+    );
+  }
+
+  .section__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    margin-block-end: var(--space-7, 3rem);
+    text-align: center;
+  }
+
+  .section__head::after {
+    inline-size: 4.5rem;
+    block-size: 2px;
+    margin-block-start: var(--space-2, 0.5rem);
+    background: var(--gold-leaf, #d9b56c);
+    content: "";
+  }
+
+  .section__lead {
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: var(--space-5, 1.5rem);
+  }
+
+  /* ---------- Features ---------- */
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--space-5, 1.5rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .feature {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-5, 1.5rem);
+    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: var(--radius, 14px);
+    background: var(--color-surface, #0f2624);
+  }
+
+  .feature__icon {
+    display: grid;
+    place-items: center;
+    inline-size: 3rem;
+    block-size: 3rem;
+    margin-block-end: var(--space-2, 0.5rem);
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: var(--radius-sm, 8px);
+    color: var(--color-gold, #d9b56c);
+    rotate: 45deg;
+  }
+
+  .feature__icon svg {
+    inline-size: 1.6rem;
+    block-size: 1.6rem;
+    rotate: -45deg;
+  }
+
+  .feature__title {
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .feature__text {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  /* ---------- How to order ---------- */
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-5, 1.5rem);
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+  }
+
+  .step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    padding-block: var(--space-5, 1.5rem);
+    padding-inline: var(--space-5, 1.5rem);
+    border-block-start: 2px solid
+      var(--color-line-strong, rgb(217 181 108 / 0.4));
+  }
+
+  .step__number {
+    color: var(--color-gold, #d9b56c);
+    font-family: var(--font-display, serif);
+    font-size: var(--text-3xl, 3rem);
+    line-height: 1;
+  }
+
+  .step__title {
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .step__text {
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .delivery {
+    display: grid;
+    gap: var(--space-4, 1rem);
+    margin-block-start: var(--space-6, 2rem);
+    padding: var(--space-5, 1.5rem);
+    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-radius: var(--radius, 14px);
+    background: var(--color-surface, #0f2624);
+  }
+
+  .delivery__title {
+    font-size: var(--text-lg, 1.25rem);
+  }
+
+  .delivery__zones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-3, 0.75rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .delivery__zone {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 var(--space-3, 0.75rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-radius: var(--radius-sm, 8px);
+    background: var(--color-surface-2, #153330);
+  }
+
+  .delivery__name {
+    font-family: var(--font-display, serif);
+  }
+
+  .delivery__fee {
+    color: var(--color-gold-strong, #ecd08f);
+    font-family: var(--font-display, serif);
+    font-weight: 600;
+  }
+
+  .delivery__days,
+  .delivery__note {
+    color: var(--color-muted, #a8b8b0);
+    font-size: var(--text-sm, 0.875rem);
+  }
+
+  /* ---------- Order CTA ---------- */
+
+  .order-cta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4, 1rem);
+    padding-block: var(--space-7, 3rem);
+    padding-inline: var(--space-5, 1.5rem);
+    overflow: hidden;
+    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-radius: calc(var(--radius, 14px) * 2);
+    background:
+      radial-gradient(
+        60% 120% at 50% 0%,
+        rgb(217 181 108 / 0.16),
+        transparent 70%
+      ),
+      var(--color-surface, #0f2624);
+    text-align: center;
+  }
+
+  .order-cta p {
+    color: var(--color-muted, #a8b8b0);
+  }
+
+  .order-cta__phone a {
+    unicode-bidi: isolate;
+  }
+</style>
