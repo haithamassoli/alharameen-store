@@ -1,6 +1,6 @@
 # Alharameen Store — Agent Guide
 
-Astro 7 static storefront. TypeScript strict, pnpm, PWA via `@vite-pwa/astro`.
+Astro 7 static storefront. Node 26 (`.node-version`), TypeScript strict, pnpm, PWA via `@vite-pwa/astro`.
 
 ## Commands
 
