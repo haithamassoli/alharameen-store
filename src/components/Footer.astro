@@ -1,10 +1,7 @@
 ---
 import Logo from "../assets/logo.svg";
-import { deliveryTime } from "../lib/delivery";
-import { formatPrice } from "../lib/money";
-import { getShippingZones, getStore } from "../lib/store";
+import { getStore } from "../lib/store";
 
-const zones = await getShippingZones();
 const { name, tagline, contact } = await getStore();
 const whatsappDigits = contact.whatsapp.replace("+", "");
 
@@ -41,25 +38,6 @@ const year = new Intl.NumberFormat("ar-JO-u-nu-latn", {
       <p class="site-footer__note">
         الدفع نقدًا عند الاستلام، أو نتفق عليه في المحادثة.
       </p>
-    </section>
-
-    <section aria-labelledby="footer-delivery" class="site-footer__block">
-      <h2 id="footer-delivery">التوصيل</h2>
-      <dl class="delivery-list">
-        {zones.map((zone) => (
-          <div>
-            <dt>{zone.data.name}</dt>
-            <dd>
-              <span class="price">
-                {formatPrice(zone.data.fee, zone.data.currency)}
-              </span>
-              <span class="delivery-list__days">
-                يصلك {deliveryTime(zone.data.minDays, zone.data.maxDays)}
-              </span>
-            </dd>
-          </div>
-        ))}
-      </dl>
     </section>
   </div>
 
@@ -132,37 +110,6 @@ const year = new Intl.NumberFormat("ar-JO-u-nu-latn", {
     inline-size: 1.25rem;
     block-size: 1.25rem;
     fill: var(--pine);
-  }
-
-  .delivery-list div {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: var(--space-2);
-    padding-block: var(--space-3);
-    border-block-end: 1px solid var(--hairline);
-  }
-
-  .delivery-list div:first-child {
-    padding-block-start: 0;
-  }
-
-  .delivery-list dt {
-    color: var(--ink);
-  }
-
-  .delivery-list dd {
-    margin: 0;
-    color: var(--ink);
-    font-weight: 500;
-    text-align: end;
-  }
-
-  .delivery-list__days {
-    display: block;
-    color: var(--muted);
-    font-size: var(--text-sm);
-    font-weight: 400;
   }
 
   .site-footer__legal {
