@@ -1,10 +1,15 @@
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 
-// ponytail: hand-rolled for two page types; switch to @astrojs/sitemap if pages multiply.
+// ponytail: hand-rolled for three page types; switch to @astrojs/sitemap if pages multiply.
 export const GET: APIRoute = async ({ site }) => {
   const products = await getCollection("products");
-  const paths = ["/", ...products.map(({ id }) => `/watches/${id}/`)];
+
+  const paths = [
+    "/",
+    "/guides/",
+    ...products.map(({ id }) => `/watches/${id}/`),
+  ];
 
   const urls = paths
     .map((path) => `  <url><loc>${new URL(path, site)}</loc></url>`)

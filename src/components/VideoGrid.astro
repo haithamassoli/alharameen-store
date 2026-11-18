@@ -1,0 +1,68 @@
+---
+interface Props {
+  videos: { title: string; youtubeId: string }[];
+}
+
+const { videos } = Astro.props;
+
+// Zero-JS YouTube facade: each iframe starts as a tiny srcdoc page (thumbnail
+// + play link) and only loads the YouTube player after a tap. The play button
+// sits in a corner so it doesn't cover the title baked into each thumbnail.
+const facade = ({ title, youtubeId }: Props["videos"][number]): string => {
+  const label = `تشغيل فيديو: ${title}`.replaceAll('"', "&quot;");
+
+  return `<!doctype html><html lang="ar" dir="rtl"><title>${label}</title><style>
+*{margin:0}html,body,a{block-size:100%}
+a{display:grid;place-items:end start;padding:10px;text-decoration:none;background:#000 center/cover url(https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg)}
+span{display:grid;place-items:center;inline-size:56px;block-size:40px;border-radius:10px;background:rgb(0 0 0/.72);color:#fff;font:24px/1 sans-serif}
+a:hover span,a:focus-visible span{background:#c00}
+a:focus-visible{outline:3px solid #ecd08f;outline-offset:-3px}
+</style><a aria-label="${label}" href="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0"><span aria-hidden="true">&#9654;</span></a></html>`;
+};
+---
+
+<ul class="video-grid">
+  {videos.map((video) => (
+    <li>
+      <figure>
+        <iframe
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          srcdoc={facade(video)}
+          title={video.title}
+        />
+        <figcaption>{video.title}</figcaption>
+      </figure>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: var(--space-5);
+    padding: 0;
+    list-style: none;
+  }
+
+  figure {
+    margin: 0;
+  }
+
+  iframe {
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius);
+    background: #000;
+  }
+
+  figcaption {
+    margin-block-start: var(--space-2);
+    font-size: var(--text-sm);
+  }
+</style>

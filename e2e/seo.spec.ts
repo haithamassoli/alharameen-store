@@ -43,8 +43,9 @@ test("sitemap lists every product and robots points to it", async ({
 }) => {
   const sitemapResponse = await request.get("/sitemap.xml");
   const sitemap = await sitemapResponse.text();
-  expect(sitemap.match(/<loc>/gu)).toHaveLength(9);
+  expect(sitemap.match(/<loc>/gu)).toHaveLength(10);
   expect(sitemap).toContain(`${SITE}/watches/ha-1013/`);
+  expect(sitemap).toContain(`${SITE}/guides/`);
 
   const robotsResponse = await request.get("/robots.txt");
   const robots = await robotsResponse.text();

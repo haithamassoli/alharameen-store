@@ -1,0 +1,66 @@
+---
+import { getCollection } from "astro:content";
+
+import VideoGrid from "../components/VideoGrid.astro";
+import Layout from "../layouts/Layout.astro";
+
+const entries = await getCollection("guides");
+const guides = entries.toSorted((a, b) => a.data.order - b.data.order);
+---
+
+<Layout
+  description="فيديوهات رسمية من الحرمين تشرح ضبط الوقت والمدينة والأذان والإقامة وباقي مزايا ساعتك."
+  title="شروحات الاستعمال"
+>
+  <main class="guides container" id="main">
+    <h1>شروحات الاستعمال</h1>
+    <p class="guides__lead">
+      فيديوهات رسمية من الحرمين تشرح كل خطوة في ضبط ساعتك. ابدأ بضبط الوقت
+      والتاريخ والمدينة، ثم اضبط الأذان والإقامة.
+    </p>
+
+    {guides.map(({ id, data }) => (
+      <section aria-labelledby={`${id}-title`} class="guides__family" id={id}>
+        <h2 id={`${id}-title`}>{data.name}</h2>
+        <p class="guides__models">
+          الموديلات: <span dir="ltr">{data.models.join(" · ")}</span>
+        </p>
+        <VideoGrid videos={data.videos} />
+      </section>
+    ))}
+  </main>
+</Layout>
+
+<style>
+  .guides {
+    padding-block: var(--space-6) var(--space-8);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+  }
+
+  .guides__lead {
+    max-inline-size: var(--measure);
+    margin-block: var(--space-3) var(--space-6);
+    color: var(--color-muted);
+  }
+
+  .guides__family + .guides__family {
+    margin-block-start: var(--space-8);
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+  }
+
+  .guides__models {
+    margin-block-end: var(--space-5);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+  }
+
+  .guides__models span {
+    unicode-bidi: isolate;
+  }
+</style>

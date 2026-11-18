@@ -1,0 +1,162 @@
+[
+  {
+    "id": "wrist-watches",
+    "name": "ساعات اليد",
+    "models": ["HA-6208", "HA-6314", "HA-6502", "HA-6506"],
+    "videos": [
+      {
+        "youtubeId": "dLz9qitpJlk",
+        "title": "ضبط الوقت والتاريخ والمدينة"
+      },
+      {
+        "youtubeId": "2rhUvGA6xhs",
+        "title": "ضبط الوقت والتاريخ"
+      },
+      {
+        "youtubeId": "dTsKNq3uLRU",
+        "title": "اختيار المدينة"
+      },
+      {
+        "youtubeId": "URxGvNovITA",
+        "title": "إضافة مدينة جديدة"
+      },
+      {
+        "youtubeId": "3pNAa8tHnMI",
+        "title": "التوقيت الصيفي"
+      },
+      {
+        "youtubeId": "-UNARtZOrmI",
+        "title": "اختيار التقويم"
+      },
+      {
+        "youtubeId": "vDsJ-L4r3pM",
+        "title": "تعديل وقت الأذان"
+      },
+      {
+        "youtubeId": "9PUVAk8CbTA",
+        "title": "ضبط الإقامة"
+      },
+      {
+        "youtubeId": "bK6dLHHPh2w",
+        "title": "منبه الأذان"
+      },
+      {
+        "youtubeId": "OT9QgDQlGtE",
+        "title": "مستوى الصوت"
+      },
+      {
+        "youtubeId": "AMQ9c5UeqNg",
+        "title": "إعداد عرض الأذان"
+      },
+      {
+        "youtubeId": "T1_wSHabkb8",
+        "title": "اتجاه القبلة"
+      },
+      {
+        "youtubeId": "3Tf0YiY9Xdk",
+        "title": "فاصلة القرآن"
+      },
+      {
+        "youtubeId": "TNI-BD0pjAY",
+        "title": "الثلث الأخير ومنتصف الليل"
+      },
+      {
+        "youtubeId": "L5j74KtiCG4",
+        "title": "إعداد عرض التقويم"
+      },
+      {
+        "youtubeId": "jSinH-1mWks",
+        "title": "إعداد عرض الوقت"
+      },
+      {
+        "youtubeId": "AmE3x8USel8",
+        "title": "عمر القمر"
+      },
+      {
+        "youtubeId": "dPJCGEIeoF0",
+        "title": "ضبط المنبه"
+      },
+      {
+        "youtubeId": "JE9Q4o5BNlc",
+        "title": "ساعة الإيقاف"
+      },
+      {
+        "youtubeId": "4sjYK5L5Nd0",
+        "title": "وضع السكون"
+      },
+      {
+        "youtubeId": "8ZR2TLf9Ih8",
+        "title": "الاختصارات"
+      },
+      {
+        "youtubeId": "Nd90qqq6Wz8",
+        "title": "اختيار اللغة"
+      },
+      {
+        "youtubeId": "9gAHAj0Cnas",
+        "title": "اسم المالك"
+      },
+      {
+        "youtubeId": "HRS-10t4IRs",
+        "title": "إعادة ضبط الساعة"
+      }
+    ],
+    "order": 1
+  },
+  {
+    "id": "desk-clocks",
+    "name": "ساعة المكتب والحائط",
+    "models": ["HA-4010"],
+    "videos": [
+      {
+        "youtubeId": "Q0Hf_ZUf_DE",
+        "title": "نظرة عامة على الأزرار"
+      },
+      {
+        "youtubeId": "9FWfW5JiDKY",
+        "title": "ضبط الوقت والتاريخ"
+      },
+      {
+        "youtubeId": "wJ94zk1nfeY",
+        "title": "اختيار المدينة"
+      },
+      {
+        "youtubeId": "loHO0W8cnMg",
+        "title": "إضافة مدينة جديدة"
+      },
+      {
+        "youtubeId": "YxgWTsLcVa8",
+        "title": "التوقيت الصيفي"
+      },
+      {
+        "youtubeId": "0U8s-i7RPRQ",
+        "title": "اختيار التقويم"
+      },
+      {
+        "youtubeId": "PqcljMIKuFY",
+        "title": "تعديل وقت الأذان"
+      },
+      {
+        "youtubeId": "NWuHyAs4vAI",
+        "title": "ضبط الإقامة"
+      },
+      {
+        "youtubeId": "rmDKZBA2eYo",
+        "title": "منبه الصلاة"
+      },
+      {
+        "youtubeId": "kTUrWjoGpDI",
+        "title": "التحكم بصوت الأذان"
+      },
+      {
+        "youtubeId": "miXVSXZFQK4",
+        "title": "المنبه اليومي"
+      },
+      {
+        "youtubeId": "1jrjaYvsXbI",
+        "title": "منبه خاص"
+      }
+    ],
+    "order": 2
+  }
+]
