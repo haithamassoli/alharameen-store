@@ -710,10 +710,18 @@ const storeJsonLd = {
     inline-size: 62.5%;
   }
 
+  /* Dark: the photo sits on a light plate, faded at the edges into a
+     spotlight so the headline beside it stays on the dark page. */
   .figure__zoom {
     position: relative;
     inline-size: 100%;
     block-size: 100%;
+    background: light-dark(transparent, var(--plate));
+    mask-image: radial-gradient(
+      closest-side,
+      #000 48%,
+      light-dark(#000, transparent) 72%
+    );
   }
 
   /* The studio backdrop is 254 white in places; lift it to the page. */
@@ -722,6 +730,7 @@ const storeJsonLd = {
     block-size: 100%;
     object-fit: contain;
     filter: brightness(1.02);
+    mix-blend-mode: multiply;
   }
 
   .marks {
@@ -855,7 +864,7 @@ const storeJsonLd = {
   .chip:has(input:checked) {
     border-color: var(--pine);
     background: var(--pine);
-    color: var(--white);
+    color: var(--on-pine);
   }
 
   .chip:has(input:focus-visible) {

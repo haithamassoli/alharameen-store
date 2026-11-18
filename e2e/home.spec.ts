@@ -63,3 +63,21 @@ test("FAQ answers delivery and ordering questions", async ({ page }) => {
   await expect(fees).toBeHidden();
   await expect(faq.getByText("أرسل الطلب عبر واتساب")).toBeVisible();
 });
+
+test("theme toggle switches to dark, remembers it and stays accessible", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: "الوضع الليلي" });
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+  await toggle.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});

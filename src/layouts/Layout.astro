@@ -54,6 +54,18 @@ const jsonLdText = jsonLd && JSON.stringify(jsonLd).replaceAll("<", "\\u003c");
     <link href="/apple-touch-icon-180x180.png" rel="apple-touch-icon" />
     <link href="/manifest.webmanifest" rel="manifest" />
     <meta content="#ffffff" name="theme-color" />
+    <!-- Apply a pinned theme before first paint so the page never flashes. -->
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem("theme");
+
+        if (theme) {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch {
+        // Storage blocked: fall back to the OS theme.
+      }
+    </script>
     <meta content={description} name="description" />
     {noindex && <meta content="noindex" name="robots" />}
     {!noindex && <link href={canonical} rel="canonical" />}
