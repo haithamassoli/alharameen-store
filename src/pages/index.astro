@@ -49,6 +49,8 @@ const WARRANTY_WORDS = new Map([
 const warranty =
   WARRANTY_WORDS.get(warrantyYears) ?? `${formatNumber(warrantyYears)} سنوات`;
 
+const giftWrapFee = formatPrice(store.giftWrap.fee, store.giftWrap.currency);
+
 const chatUrl = whatsappUrl(
   contact.whatsapp,
   "السلام عليكم، أرغب بالاستفسار عن ساعات الحرمين."
@@ -428,8 +430,15 @@ const storeJsonLd = {
           <h2 id="gifts-title">هدية يبقى أجرها</h2>
           <p class="section-note">
             ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره في
-            كل صلاة يدركها على وقتها.
+            كل صلاة يدركها على وقتها. ونغلّفها لك مع بطاقة مطبوعة برسالتك مقابل{" "}
+            {giftWrapFee} للطلب كله.
           </p>
+          <figure class="gifts__quote">
+            <blockquote>
+              <p>«تَهادَوا تَحابُّوا»</p>
+            </blockquote>
+            <figcaption>رواه البخاري في الأدب المفرد</figcaption>
+          </figure>
           <figure class="gifts__quote">
             <blockquote>
               <p>«مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله»</p>
@@ -541,9 +550,9 @@ const storeJsonLd = {
             <summary class="faq__question">هل أستطيع إرسالها هدية؟</summary>
             <div class="faq__answer">
               <p>
-                نعم. اختر «هذا الطلب هدية» في السلة واكتب رسالة الإهداء إن أردت،
-                وضع عنوان من ستُهديه في خانة العنوان، ونتفق معك على تفاصيل
-                التسليم عبر واتساب.
+                نعم. اختر «تغليف هدية» في السلة واكتب نص البطاقة، فنغلّف الطلب
+                ونطبع رسالتك على بطاقة مرفقة مقابل {giftWrapFee} للطلب كله.
+                ولإرسالها مباشرة لمن تُهديه، اكتب عنوانه في خانة العنوان.
               </p>
             </div>
           </details>
@@ -994,7 +1003,7 @@ const storeJsonLd = {
   }
 
   .gifts__quote {
-    margin-block-start: var(--space-6);
+    margin-block-start: var(--space-5);
     padding-inline-start: var(--space-4);
     border-inline-start: 2px solid var(--pine);
   }

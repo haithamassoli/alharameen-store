@@ -37,6 +37,8 @@ const catalog: CatalogItem[] = [
   },
 ];
 
+const GIFT_WRAP_FEE = 2000;
+
 const amman: ShippingZone = { fee: 3000, id: "amman", name: "داخل عمّان" };
 
 const outside: ShippingZone = {
@@ -118,6 +120,7 @@ describe("cartTotals", () => {
 
   it("adds the Amman delivery fee", () => {
     expect(cartTotals(lines, catalog, amman)).toEqual({
+      giftWrap: 0,
       shipping: 3000,
       subtotal: 59_000,
       total: 62_000,
@@ -128,9 +131,19 @@ describe("cartTotals", () => {
     expect(cartTotals(lines, catalog, outside).total).toBe(64_000);
   });
 
+  it("adds the gift wrap fee once per order", () => {
+    expect(cartTotals(lines, catalog, amman, GIFT_WRAP_FEE)).toEqual({
+      giftWrap: 2000,
+      shipping: 3000,
+      subtotal: 59_000,
+      total: 64_000,
+    });
+  });
+
   it("charges no delivery before a zone is chosen or for an empty cart", () => {
     expect(cartTotals(lines, catalog).total).toBe(59_000);
-    expect(cartTotals([], catalog, amman)).toEqual({
+    expect(cartTotals([], catalog, amman, GIFT_WRAP_FEE)).toEqual({
+      giftWrap: 0,
       shipping: 0,
       subtotal: 0,
       total: 0,
@@ -141,7 +154,8 @@ describe("cartTotals", () => {
 const giftOrder = (cardText: string): string =>
   buildWhatsAppMessage({
     catalog,
-    customer: { ...customer, gift: { message: cardText } },
+    customer,
+    giftWrap: { fee: GIFT_WRAP_FEE, message: cardText },
     lines: [{ id: "ha-1013", qty: 1 }],
     zone: amman,
   });
@@ -190,16 +204,20 @@ describe("buildWhatsAppMessage", () => {
     });
 
     expect(withoutNotes).not.toContain("ملاحظات");
-    expect(withoutNotes).not.toContain("هدية");
+    expect(withoutNotes).not.toContain("تغليف");
     expect(withoutNotes).toContain(`الإجمالي: ${formatPrice(10_000)}`);
   });
 
-  it("marks gift orders and adds the card message when given", () => {
-    expect(giftOrder(" كل عام وأنت بخير ")).toContain(
-      "هذا الطلب هدية 🎁\nرسالة الإهداء: كل عام وأنت بخير"
+  it("charges gift wrap and adds the card text when given", () => {
+    const wrapped = giftOrder(" كل عام وأنت بخير ");
+
+    expect(wrapped).toContain(`تغليف الهدية والبطاقة: ${formatPrice(2000)}`);
+    expect(wrapped).toContain(`الإجمالي: ${formatPrice(12_000)}`);
+    expect(wrapped).toContain(
+      "تغليف هدية مع بطاقة مطبوعة 🎁\nنص البطاقة: كل عام وأنت بخير"
     );
-    expect(giftOrder("  ")).toContain("هذا الطلب هدية");
-    expect(giftOrder("  ")).not.toContain("رسالة الإهداء");
+    expect(giftOrder("  ")).toContain("تغليف هدية مع بطاقة مطبوعة");
+    expect(giftOrder("  ")).not.toContain("نص البطاقة");
   });
 });
 

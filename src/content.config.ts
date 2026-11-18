@@ -88,6 +88,8 @@ const guides = defineCollection({
 const store = defineCollection({
   loader: file("src/content/store.json"),
   schema: z.object({
+    // One wrap and printed card per order, added on top of delivery.
+    giftWrap: z.object({ currency, fee: fils.positive() }),
     contact: z.object({
       address: z.string(),
       facebook: z.url(),
