@@ -1,0 +1,98 @@
+[
+  {
+    "id": "amman",
+    "name": "عمّان",
+    "fee": 2000,
+    "currency": "JOD",
+    "minDays": 1,
+    "maxDays": 2
+  },
+  {
+    "id": "zarqa",
+    "name": "الزرقاء",
+    "fee": 3000,
+    "currency": "JOD",
+    "minDays": 1,
+    "maxDays": 2
+  },
+  {
+    "id": "balqa",
+    "name": "البلقاء",
+    "fee": 3000,
+    "currency": "JOD",
+    "minDays": 1,
+    "maxDays": 3
+  },
+  {
+    "id": "madaba",
+    "name": "مادبا",
+    "fee": 3000,
+    "currency": "JOD",
+    "minDays": 1,
+    "maxDays": 3
+  },
+  {
+    "id": "irbid",
+    "name": "إربد",
+    "fee": 3500,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 3
+  },
+  {
+    "id": "jerash",
+    "name": "جرش",
+    "fee": 3500,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 3
+  },
+  {
+    "id": "ajloun",
+    "name": "عجلون",
+    "fee": 3500,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 3
+  },
+  {
+    "id": "mafraq",
+    "name": "المفرق",
+    "fee": 3500,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 3
+  },
+  {
+    "id": "karak",
+    "name": "الكرك",
+    "fee": 4000,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 4
+  },
+  {
+    "id": "tafilah",
+    "name": "الطفيلة",
+    "fee": 4000,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 4
+  },
+  {
+    "id": "maan",
+    "name": "معان",
+    "fee": 4000,
+    "currency": "JOD",
+    "minDays": 2,
+    "maxDays": 4
+  },
+  {
+    "id": "aqaba",
+    "name": "العقبة",
+    "fee": 4500,
+    "currency": "JOD",
+    "minDays": 3,
+    "maxDays": 5
+  }
+]
