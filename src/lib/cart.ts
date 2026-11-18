@@ -58,7 +58,7 @@ const PHONE_SEPARATORS = /[\s\-().]/gu;
 const JORDAN_MOBILE = /^(?:\+962|00962|962|0)?7[789]\d{7}$/u;
 const LINE_BREAKS = /\s*[\r\n]+\s*/gu;
 
-const arabicNumber = new Intl.NumberFormat("ar-JO");
+const arabicNumber = new Intl.NumberFormat("ar-JO-u-nu-latn");
 
 const clampQty = (qty: number): number =>
   Math.min(MAX_QTY, Math.max(0, Math.trunc(qty)));

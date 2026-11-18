@@ -67,7 +67,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
       <h2 class="cart-drawer__title" id="cart-title">
         سلة المشتريات
         <span class="cart-drawer__count" data-cart-count>
-          ٠
+          0
         </span>
       </h2>
       <button
@@ -433,7 +433,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   const toastText = queryElement(toast, "[data-cart-toast-text]", HTMLElement);
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const arabicNumber = new Intl.NumberFormat("ar-JO");
+  const arabicNumber = new Intl.NumberFormat("ar-JO-u-nu-latn");
 
   const requiredMessages = new Map([
     [nameInput, "اكتب اسمك الكامل."],

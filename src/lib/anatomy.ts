@@ -2,7 +2,7 @@
 // calendar annotation, and a scroll fallback that steps through the
 // annotations where CSS scroll-driven animations are not supported.
 
-const HIJRI = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+const HIJRI = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-latn", {
   day: "numeric",
   month: "long",
   timeZone: "Asia/Amman",

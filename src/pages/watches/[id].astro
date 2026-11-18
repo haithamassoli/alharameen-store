@@ -56,7 +56,7 @@ const THUMB_SIZE = 120;
 // The rest of the family's videos live on /guides/.
 const GUIDE_PREVIEW = 6;
 
-const digits = new Intl.NumberFormat("ar-JO");
+const digits = new Intl.NumberFormat("ar-JO-u-nu-latn");
 const price = formatPrice(data.price, data.currency);
 const inStock = variant.stock > 0;
 const isLowStock = inStock && variant.stock <= LOW_STOCK;

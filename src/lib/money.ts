@@ -8,7 +8,7 @@ const minorDigits = (currency: string): number =>
 export const formatPrice = (
   minorUnits: number,
   currency = "JOD",
-  locale = "ar-JO"
+  locale = "ar-JO-u-nu-latn"
 ): string => {
   if (!Number.isInteger(minorUnits)) {
     throw new TypeError(
@@ -18,8 +18,8 @@ export const formatPrice = (
 
   const minorPerMajor = 10 ** minorDigits(currency);
 
-  // Whole amounts drop the trailing zeros: "٣١ د.أ." reads better than
-  // "٣١٫٠٠٠ د.أ.", which looks like thirty-one thousand.
+  // Whole amounts drop the trailing zeros: "31 د.أ." reads better than
+  // "31.000 د.أ.", which looks like thirty-one thousand.
   const isWhole = minorUnits % minorPerMajor === 0;
 
   return new Intl.NumberFormat(locale, {
