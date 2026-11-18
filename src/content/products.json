@@ -27,7 +27,6 @@
       "مقاومة الماء": "مقاومة للماء",
       "الفئة": "رجالي"
     },
-    "audience": "men",
     "currency": "JOD",
     "price": 26000,
     "featured": true,
@@ -77,7 +76,6 @@
       "مقاومة الماء": "مقاومة للماء",
       "الفئة": "للجنسين"
     },
-    "audience": "unisex",
     "currency": "JOD",
     "price": 26000,
     "featured": false,
@@ -127,7 +125,6 @@
       "مقاومة الماء": "مقاومة للماء",
       "الفئة": "نسائي"
     },
-    "audience": "women",
     "currency": "JOD",
     "price": 26000,
     "featured": false,
@@ -172,7 +169,6 @@
       "مقاومة الماء": "مقاومة للماء",
       "الفئة": "للجنسين"
     },
-    "audience": "unisex",
     "currency": "JOD",
     "price": 28000,
     "featured": false,
@@ -219,7 +215,6 @@
       "مقاومة الماء": "مقاومة للماء",
       "الفئة": "نسائي"
     },
-    "audience": "women",
     "currency": "JOD",
     "price": 49000,
     "featured": true,
@@ -271,7 +266,6 @@
       "مقاومة الماء": "50 متر",
       "الفئة": "رجالي"
     },
-    "audience": "men",
     "currency": "JOD",
     "price": 43000,
     "featured": true,

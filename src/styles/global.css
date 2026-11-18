@@ -308,8 +308,7 @@ a {
     color var(--duration) var(--ease);
 }
 
-.btn:disabled,
-.btn[aria-disabled="true"] {
+.btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

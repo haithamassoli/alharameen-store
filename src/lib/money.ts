@@ -1,5 +1,11 @@
 // Prices are stored as integers in the currency's minor unit (e.g. fils for JOD).
 
+const LOCALE = "ar-JO-u-nu-latn";
+const NUMBER = new Intl.NumberFormat(LOCALE);
+
+/** A plain count in the store's locale (Latin digits). */
+export const formatNumber = (value: number): string => NUMBER.format(value);
+
 // Respects currencies with 0 or 3 minor digits (JPY, KWD), not just 2.
 const minorDigits = (currency: string): number =>
   new Intl.NumberFormat("en", { currency, style: "currency" }).resolvedOptions()
@@ -8,7 +14,7 @@ const minorDigits = (currency: string): number =>
 export const formatPrice = (
   minorUnits: number,
   currency = "JOD",
-  locale = "ar-JO-u-nu-latn"
+  locale = LOCALE
 ): string => {
   if (!Number.isInteger(minorUnits)) {
     throw new TypeError(

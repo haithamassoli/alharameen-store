@@ -22,9 +22,7 @@ const socials = [
   },
 ];
 
-const year = new Intl.NumberFormat("ar-JO-u-nu-latn", {
-  useGrouping: false,
-}).format(new Date().getFullYear());
+const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
