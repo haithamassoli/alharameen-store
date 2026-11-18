@@ -4,10 +4,11 @@ import { Image, Picture } from "astro:assets";
 import { getCollection, getEntry } from "astro:content";
 
 import ProductCard from "../../components/ProductCard.astro";
+import VideoGrid from "../../components/VideoGrid.astro";
 import Layout from "../../layouts/Layout.astro";
 import { whatsappUrl } from "../../lib/cart";
 import { formatPrice, toDecimalString } from "../../lib/money";
-import { getShippingZones, getStore } from "../../lib/store";
+import { getGuideFor, getShippingZones, getStore } from "../../lib/store";
 
 export const getStaticPaths = (async () => {
   const products = await getCollection("products");
@@ -46,10 +47,14 @@ const others = allProducts
   );
 
 const zones = await getShippingZones();
+const guide = await getGuideFor(data.model);
 
 const LOW_STOCK = 5;
 const MAIN_SIZE = 720;
 const THUMB_SIZE = 120;
+
+// The rest of the family's videos live on /guides/.
+const GUIDE_PREVIEW = 6;
 
 const digits = new Intl.NumberFormat("ar-JO");
 const price = formatPrice(data.price, data.currency);
@@ -288,6 +293,18 @@ const productJsonLd = {
         </table>
       </section>
     </div>
+
+    {guide && (
+      <section aria-labelledby="guide-title" class="guide">
+        <h2 id="guide-title">طريقة الاستعمال</h2>
+        <VideoGrid videos={guide.data.videos.slice(0, GUIDE_PREVIEW)} />
+        {guide.data.videos.length > GUIDE_PREVIEW && (
+          <a class="btn btn-ghost guide__all" href={`/guides/#${guide.id}`}>
+            {`كل شروحات ${guide.data.name} (${digits.format(guide.data.videos.length)} فيديو)`}
+          </a>
+        )}
+      </section>
+    )}
 
     <section aria-labelledby="more-title" class="more">
       <h2 id="more-title">ساعات أخرى قد تعجبك</h2>
@@ -612,6 +629,21 @@ const productJsonLd = {
     inline-size: 40%;
     color: var(--color-muted);
     font-weight: 400;
+  }
+
+  /* ---------- How-to videos ---------- */
+
+  .guide {
+    margin-block-start: var(--space-8);
+  }
+
+  .guide h2 {
+    margin-block-end: var(--space-5);
+    font-size: var(--text-xl);
+  }
+
+  .guide__all {
+    margin-block-start: var(--space-5);
   }
 
   /* ---------- More watches ---------- */

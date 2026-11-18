@@ -1,6 +1,10 @@
 [files]
 extend-exclude = ["pnpm-lock.yaml"]
 
+[default]
+# YouTube video IDs are random strings, not words.
+extend-ignore-re = ['"youtubeId": "[\w-]{11}"']
+
 # Jordanian dinar (ISO 4217) and its minor unit.
 [default.extend-words]
 JOD = "JOD"

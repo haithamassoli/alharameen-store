@@ -21,3 +21,14 @@ export const getShippingZones = async (): Promise<
 
   return zones.toSorted((a, b) => a.data.fee - b.data.fee);
 };
+
+/** How-to videos for a full SKU such as "HA-6506BW", if the family has any. */
+export const getGuideFor = async (
+  model: string
+): Promise<CollectionEntry<"guides"> | undefined> => {
+  const guides = await getCollection("guides");
+
+  return guides.find(({ data }) =>
+    data.models.some((base) => model.startsWith(base))
+  );
+};

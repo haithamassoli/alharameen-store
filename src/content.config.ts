@@ -67,6 +67,26 @@ const shippingZones = defineCollection({
     }),
 });
 
+// Official Al-Harameen how-to videos (YouTube, Arabic), one entry per watch
+// family. Source: https://www.al-harameen.com/data/support-index.json
+const guides = defineCollection({
+  loader: file("src/content/guides.json"),
+  schema: z.object({
+    // Base models without the colour suffix, matched by prefix: "HA-6506".
+    models: z.array(z.string().regex(/^HA-\d{4}$/u)).min(1),
+    name: z.string(),
+    order: z.number().int(),
+    videos: z
+      .array(
+        z.object({
+          title: z.string(),
+          youtubeId: z.string().regex(/^[\w-]{11}$/u),
+        })
+      )
+      .min(1),
+  }),
+});
+
 const store = defineCollection({
   loader: file("src/content/store.json"),
   schema: z.object({
@@ -84,4 +104,10 @@ const store = defineCollection({
   }),
 });
 
-export const collections = { categories, products, shippingZones, store };
+export const collections = {
+  categories,
+  guides,
+  products,
+  shippingZones,
+  store,
+};
