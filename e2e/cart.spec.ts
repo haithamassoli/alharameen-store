@@ -82,6 +82,12 @@ test("checkout opens WhatsApp with the order and the right total", async ({
   await dialog.getByLabel("رقم الهاتف").fill("0791234567");
   await dialog.getByLabel("المدينة والعنوان").fill("إربد، شارع الجامعة");
 
+  // The card message only shows once the order is marked as a gift.
+  const giftMessage = dialog.getByLabel(/رسالة الإهداء/u);
+  await expect(giftMessage).toBeHidden();
+  await dialog.getByLabel("هذا الطلب هدية").check();
+  await giftMessage.fill("كل عام وأنت بخير");
+
   const popupPromise = context.waitForEvent("page");
   await dialog.getByRole("button", { name: "إتمام الطلب عبر واتساب" }).click();
   const popup = await popupPromise;
@@ -96,6 +102,8 @@ test("checkout opens WhatsApp with the order and the right total", async ({
   expect(text).toContain("خارج عمّان");
   expect(text).toContain(`الإجمالي: ${grandTotal}`);
   expect(text).toContain("محمد أحمد");
+  expect(text).toContain("هذا الطلب هدية");
+  expect(text).toContain("رسالة الإهداء: كل عام وأنت بخير");
 });
 
 test("open cart has no accessibility violations", async ({ page }) => {

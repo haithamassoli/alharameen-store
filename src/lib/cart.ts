@@ -35,6 +35,8 @@ export interface CartConfig {
 
 interface Customer {
   address: string;
+  /** Present when the order is a gift; `message` is the optional card text. */
+  gift?: { message: string };
   name: string;
   notes?: string;
   phone: string;
@@ -219,6 +221,16 @@ export const buildWhatsAppMessage = ({
 
   const totals = cartTotals(lines, catalog, zone);
   const notes = customer.notes?.trim();
+  const giftMessage = customer.gift?.message.trim() ?? "";
+
+  const giftLines =
+    customer.gift === undefined
+      ? []
+      : [
+          "",
+          "هذا الطلب هدية 🎁",
+          ...(giftMessage === "" ? [] : [`رسالة الإهداء: ${giftMessage}`]),
+        ];
 
   return [
     "السلام عليكم ورحمة الله وبركاته،",
@@ -235,6 +247,7 @@ export const buildWhatsAppMessage = ({
     `الهاتف: ${singleLine(customer.phone)}`,
     `العنوان: ${singleLine(customer.address)}`,
     ...(notes !== undefined && notes !== "" ? [`ملاحظات: ${notes}`] : []),
+    ...giftLines,
     "",
     "الدفع عند الاستلام. أرجو تأكيد الطلب، وجزاكم الله خيرًا.",
   ].join("\n");

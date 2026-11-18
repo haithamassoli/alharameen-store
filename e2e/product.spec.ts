@@ -42,6 +42,14 @@ test("product page shows details and a direct WhatsApp order", async ({
   expect(href.startsWith("https://wa.me/962776193666?text=")).toBe(true);
   expect(decodeURIComponent(href)).toContain("HA-6506BW");
 
+  const share =
+    (await page
+      .getByRole("link", { name: /دُلّ عليها غيرك/u })
+      .getAttribute("href")) ?? "";
+
+  expect(share.startsWith("https://wa.me/?text=")).toBe(true);
+  expect(decodeURIComponent(share)).toContain("/watches/ha-6506bw/");
+
   await page.getByRole("button", { name: "أضف إلى السلة" }).click();
   await expect(page.locator(".site-header [data-cart-count]")).toHaveAttribute(
     "data-count",

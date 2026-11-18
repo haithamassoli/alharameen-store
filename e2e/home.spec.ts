@@ -24,6 +24,7 @@ test("home page lists all eight products", async ({ page }) => {
   await expect(page.locator("#watches article")).toHaveCount(8);
   await expect(page.locator("#watches [data-add-to-cart]")).toHaveCount(8);
   await expect(page.locator("#features li")).toHaveCount(5);
+  await expect(page.locator("#gifts a[href^='/watches/']")).toHaveCount(5);
 });
 
 // Covers template a11y (alt text, labels, contrast) that static linting can't see in .astro.
