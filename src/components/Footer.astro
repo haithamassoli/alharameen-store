@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry } from "astro:content";
 
+import Logo from "../assets/logo.svg";
 import { deliveryTime } from "../lib/delivery";
 import { formatPrice } from "../lib/money";
 
@@ -22,7 +23,10 @@ const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
 <footer class="site-footer" id="contact">
   <div class="site-footer__grid container">
     <div class="site-footer__brand">
-      <p class="site-footer__name">{name}</p>
+      <p class="site-footer__name">
+        <Logo aria-hidden="true" class="site-footer__logo" />
+        {name}
+      </p>
       <p class="site-footer__tagline">{tagline}</p>
     </div>
 
@@ -95,6 +99,18 @@ const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
     font-size: var(--text-xl, 1.5625rem);
     font-weight: 700;
     line-height: 1.3;
+  }
+
+  .site-footer__name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 0.75rem);
+  }
+
+  .site-footer__logo {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    flex: none;
   }
 
   .site-footer__tagline,
