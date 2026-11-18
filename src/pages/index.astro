@@ -328,7 +328,7 @@ const storeJsonLd = {
                       class: "companion",
                       "data-companion": id,
                     }}
-                    sizes="min(58vh, 35rem)"
+                    sizes="(min-width: 56rem) min(58vh, 35rem), 45vw"
                     src={image.src}
                     width={HERO_SIZE}
                     widths={[480, 720]}
@@ -384,13 +384,15 @@ const storeJsonLd = {
                     style={`--i: ${note.index}; --y: ${note.top}`}
                   >
                     <h3 class="note__title">{note.title}</h3>
-                    <p class="note__text">{note.text}</p>
-                    {note.hijri && (
-                      <p class="note__extra">
-                        {/* Rendered at build so it is never empty; the page script refreshes it. */}
-                        اليوم <span data-hijri>{hijriToday()}</span>
-                      </p>
-                    )}
+                    <div class="note__body">
+                      <p class="note__text">{note.text}</p>
+                      {note.hijri && (
+                        <p class="note__extra">
+                          {/* Rendered at build so it is never empty; the page script refreshes it. */}
+                          اليوم <span data-hijri>{hijriToday()}</span>
+                        </p>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ol>
@@ -1454,10 +1456,11 @@ const storeJsonLd = {
       font-size: clamp(2rem, 3.4vw, 3rem);
     }
 
-    /* Measured in the black watch's own box, as on the share card. Phones
-       have no room beside the watch, so they keep it alone (and, the images
-       being lazy, never fetch these). */
+    /* Measured in the black watch's own box, as on the share card. They
+       slide by --slide as they step away. */
     :global(.scrolly) .companion {
+      --slide: 12%;
+
       position: absolute;
       z-index: -1;
       display: block;
@@ -1502,48 +1505,67 @@ const storeJsonLd = {
       --to: calc(var(--from) + 20%);
     }
 
-    /* Phones: watch on top, one note at a time in the slot below it. */
+    /* Phones: the same drawing on a narrower sheet, 1300 × 1000 units with
+       150 units of margin, so the photo takes 1000 / 1300 of the width.
+       The titles sit on the flanks; the active note's text shows in the
+       slot below the sheet. Every piece is placed against the plate. */
     @media (max-width: 56rem) {
       :global(.scrolly) .anatomy {
         block-size: 420vh;
       }
 
       :global(.scrolly) .stage {
-        grid-template-rows: minmax(0, 1fr) auto;
-        place-items: stretch;
-        gap: 1.5rem;
+        align-content: center;
         padding-block: calc(var(--header-height) + 0.5rem) 1.5rem;
         container-type: normal;
       }
 
-      :global(.scrolly) .companion {
-        display: none;
+      :global(.scrolly) .plate {
+        display: block;
+        inline-size: 100%;
+        aspect-ratio: 13 / 10;
+        margin-block-end: 10rem;
       }
 
       :global(.scrolly) .figure {
-        display: grid;
-        place-items: center;
-        grid-row: 1;
-        inline-size: 100%;
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 11.54%;
+        overflow: visible;
+        inline-size: 76.92%;
         max-inline-size: none;
-        block-size: 100%;
         aspect-ratio: auto;
-        container-type: size;
+        margin: 0;
       }
 
       :global(.scrolly) .figure__zoom {
-        inline-size: min(100cqi, 100cqb);
-        block-size: min(100cqi, 100cqb);
-        scale: 1.5;
+        scale: none;
       }
 
-      :global(.scrolly) .notes {
-        grid-row: 2;
-        grid-column: 1;
+      /* As on the share card: gold on the left, silver on the right, each
+         sliding in behind the black watch as the story starts. */
+      :global(.scrolly) [data-companion="ha-6208fsw"] {
+        --slide: -18%;
+
+        inset-block-start: 20%;
+        inset-inline-start: -12%;
+        inline-size: 62%;
       }
 
-      /* The intro sits over the strap's end instead of sizing the slot,
-         so the slot fits the notes and the watch takes the rest. */
+      :global(.scrolly) [data-companion="ha-6314fgw"] {
+        --slide: 18%;
+
+        inset-block-start: 27%;
+        inset-inline: auto -9%;
+        inline-size: 54%;
+      }
+
+      :global(.scrolly) .leader__line {
+        display: inline;
+        stroke-width: 3;
+      }
+
+      /* The intro sits over the strap's end and the note slot. */
       :global(.scrolly) .intro {
         position: absolute;
         inset-block: auto 1.5rem;
@@ -1569,27 +1591,43 @@ const storeJsonLd = {
         font-size: clamp(1.75rem, 7.5vw, 2.25rem);
       }
 
-      :global(.scrolly) .notes__list {
-        display: grid;
-        align-items: start;
-      }
-
       :global(.scrolly) .note {
-        position: relative;
-        grid-area: 1 / 1;
-        margin-block-start: 1.75rem;
-        border-block-start-width: 2px;
-        border-block-start-color: var(--pine);
-        color: var(--ink);
-        font-size: 1.125rem;
+        padding: 0;
+        border: 0;
       }
 
       :global(.scrolly) .note__title {
-        font-size: 1.5rem;
+        position: absolute;
+        inset-block-start: var(--y);
+        inline-size: 29.23%;
+        padding-block-start: 0.375rem;
+        border-block-start: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.8125rem;
+        line-height: 1.4;
       }
 
-      /* The stub: a short leader rising from the note toward the watch. */
-      :global(.scrolly) .note::before {
+      /* (1300 - 150 - 230) / 1300, as on the wide sheet. */
+      :global(.scrolly) .note[data-side="left"] .note__title {
+        inset-inline-start: 70.77%;
+      }
+
+      :global(.scrolly) .note[data-side="right"] .note__title {
+        inset-inline-end: 70.77%;
+      }
+
+      :global(.scrolly) .note__body {
+        position: absolute;
+        inset-block-start: calc(100% + 1.75rem);
+        inset-inline: 0;
+        padding-block-start: 0.75rem;
+        border-block-start: 2px solid var(--pine);
+        color: var(--ink);
+        font-size: 1.0625rem;
+      }
+
+      /* The stub: a short leader rising from the text toward the watch. */
+      :global(.scrolly) .note__body::before {
         position: absolute;
         inset-block-end: 100%;
         inset-inline-start: 0;
@@ -1670,26 +1708,32 @@ const storeJsonLd = {
         animation-name: tick;
       }
 
+      /* Phones split each note: the title settles on the flank like the
+         wide sheet's notes, the text takes the slot only for its turn. */
       @media (max-width: 56rem) {
-        :global(.scrolly) .plate {
+        :global(.scrolly) .note {
           animation-name: none;
         }
 
-        :global(.scrolly) .figure__zoom {
-          animation-name: zoom;
+        :global(.scrolly) .note__title,
+        :global(.scrolly) .note__body {
           animation-duration: auto;
           animation-timing-function: linear;
           animation-fill-mode: both;
           animation-timeline: --anatomy;
-          animation-range-start: contain 0%;
-          animation-range-end: contain 92%;
+          animation-range-start: contain var(--from);
+          animation-range-end: contain var(--to);
         }
 
-        :global(.scrolly) .note {
+        :global(.scrolly) .note__title {
+          animation-name: note;
+        }
+
+        :global(.scrolly) .note__body {
           animation-name: card;
         }
 
-        :global(.scrolly) .note:last-child {
+        :global(.scrolly) .note:last-child .note__body {
           animation-name: card-last;
         }
       }
@@ -1722,7 +1766,7 @@ const storeJsonLd = {
         visibility: hidden;
         opacity: 0;
         scale: 0.92;
-        translate: 12% 0;
+        translate: var(--slide) 0;
       }
 
       :global(.scrolly) [data-intro="out"] .intro {
@@ -1802,8 +1846,36 @@ const storeJsonLd = {
       }
 
       @media (max-width: 56rem) {
-        :global(.scrolly) .note[data-state="quiet"]:not(:last-child) {
+        :global(.scrolly) .note,
+        :global(.scrolly) .note:not([data-state="hidden"]) {
+          opacity: 1;
+          translate: none;
+        }
+
+        :global(.scrolly) .note__title,
+        :global(.scrolly) .note__body {
           opacity: 0;
+          transition:
+            opacity 500ms var(--ease),
+            color 500ms var(--ease),
+            border-color 500ms var(--ease),
+            visibility 500ms;
+        }
+
+        :global(.scrolly) .note__body {
+          visibility: hidden;
+        }
+
+        :global(.scrolly) .note:not([data-state="hidden"]) .note__title,
+        :global(.scrolly) .note[data-state="active"] .note__body,
+        :global(.scrolly) .note:last-child[data-state="quiet"] .note__body {
+          visibility: visible;
+          opacity: 1;
+        }
+
+        :global(.scrolly) .note[data-state="active"] .note__title {
+          border-block-start-color: var(--pine);
+          color: var(--ink);
         }
       }
     }
@@ -1817,14 +1889,13 @@ const storeJsonLd = {
     }
   }
 
-  /* The two companions slide back behind the black watch, which sits to
-     their right on this right-to-left page. */
+  /* The two companions slide back behind the black watch. */
   @keyframes companion-out {
     to {
       visibility: hidden;
       opacity: 0;
       scale: 0.92;
-      translate: 12% 0;
+      translate: var(--slide) 0;
     }
   }
 
@@ -1837,16 +1908,6 @@ const storeJsonLd = {
     to {
       scale: 0.95;
       translate: 0 -0.5%;
-    }
-  }
-
-  @keyframes zoom {
-    from {
-      scale: 1.6;
-    }
-
-    to {
-      scale: 1.4;
     }
   }
 
