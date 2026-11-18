@@ -4,12 +4,21 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
     groups:
       dev-tooling:
         dependency-type: development
       astro:
         patterns: [ "astro", "@astrojs/*" ]
+    ignore:
+      # astro check (@astrojs/check) does not support TypeScript 7 yet.
+      - dependency-name: typescript
+        update-types: [ "version-update:semver-major" ]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    commit-message:
+      prefix: ci
