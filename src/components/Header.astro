@@ -8,7 +8,7 @@ const links = [
 ] as const;
 ---
 
-<header class="site-header">
+<header class="site-header lacquer">
   <div class="site-header__inner container">
     <a aria-label="ساعات الحرمين، الصفحة الرئيسية" class="wordmark" href="/">
       <Logo aria-hidden="true" class="wordmark__logo" />
@@ -103,8 +103,8 @@ const links = [
     inset-block-start: 0;
     z-index: 50;
     border-block-end: 1px solid var(--color-line);
-    background-color: var(--color-glass);
-    backdrop-filter: blur(14px) saturate(140%);
+    /* Solid: lacquer glass over the limestone page reads as grey. */
+    background-color: var(--color-bg);
     view-transition-name: site-header;
   }
 
@@ -127,7 +127,7 @@ const links = [
     color: var(--color-text);
     font-family: var(--font-display);
     font-size: 1.375rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     text-decoration: none;
   }
@@ -155,14 +155,31 @@ const links = [
   .site-nav a {
     display: inline-block;
     padding-block: var(--space-2);
+    position: relative;
     color: var(--color-muted);
     font-family: var(--font-display);
     font-size: 1rem;
     text-decoration: none;
   }
 
+  /* A gold hairline draws in under the hovered link. */
+  .site-nav a::after {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0.2rem;
+    block-size: 1px;
+    background: var(--gold-leaf);
+    content: "";
+    scale: 0 1;
+    transition: scale var(--duration) var(--ease-out);
+  }
+
   .site-nav a:hover {
     color: var(--color-gold-strong);
+  }
+
+  .site-nav a:hover::after {
+    scale: 1 1;
   }
 
   .icon-button {
@@ -258,9 +275,8 @@ const links = [
   // Day is the default; night is an opt-in stored per device. Layout's inline
   // head script applies the stored choice before first paint.
   const STORAGE_KEY = "alharameen-theme";
-  const THEME_COLORS = { dark: "#08191a", light: "#fbf8f2" } as const;
 
-  type Theme = keyof typeof THEME_COLORS;
+  type Theme = "dark" | "light";
 
   const root = document.documentElement;
 
@@ -287,10 +303,6 @@ const links = [
     } else {
       delete root.dataset.theme;
     }
-
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", THEME_COLORS[theme]);
 
     for (const button of document.querySelectorAll<HTMLButtonElement>(
       "[data-theme-toggle]"

@@ -114,7 +114,7 @@ const storeJsonLd = {
 
 <Layout jsonLd={storeJsonLd}>
   <main id="main">
-    <section aria-labelledby="hero-title" class="hero">
+    <section aria-labelledby="hero-title" class="hero lacquer">
       <div class="hero__inner container">
         <div class="hero__copy">
           <p class="eyebrow hero__rise">ساعات الأذان الأصلية من الحرمين</p>
@@ -131,7 +131,7 @@ const storeJsonLd = {
               تسوّق الآن
             </a>
             <a
-              class="btn btn-ghost"
+              class="hero__chat"
               href={chatUrl}
               rel="noopener noreferrer"
               target="_blank"
@@ -165,6 +165,7 @@ const storeJsonLd = {
         <header class="section__head reveal">
           <p class="eyebrow">التشكيلة</p>
           <h2 id="watches-title">ساعات مختارة بعناية</h2>
+          <span aria-hidden="true" class="flourish"></span>
           <p class="section__lead">
             {digits.format(products.length)} قطع فقط، كل واحدة منها أصلية
             ومجرّبة. اضغط على أي ساعة لترى تفاصيلها ومواصفاتها.
@@ -188,19 +189,20 @@ const storeJsonLd = {
 
     <section
       aria-labelledby="why-title"
-      class="section section--tinted"
+      class="section section--lacquer lacquer"
       id="why"
     >
       <div class="container">
         <header class="section__head reveal">
           <p class="eyebrow">لماذا الحرمين</p>
           <h2 id="why-title">رفيقك في مواعيد الصلاة</h2>
+          <span aria-hidden="true" class="flourish"></span>
         </header>
 
         <ul class="features">
           {features.map((feature) => (
             <li class="feature reveal">
-              <span aria-hidden="true" class="feature__icon">
+              <span aria-hidden="true" class="feature__icon medallion">
                 <svg
                   fill="none"
                   stroke="currentColor"
@@ -256,12 +258,13 @@ const storeJsonLd = {
         <header class="section__head reveal">
           <p class="eyebrow">طريقة الطلب</p>
           <h2 id="how-title">ثلاث خطوات وتصلك ساعتك</h2>
+          <span aria-hidden="true" class="flourish"></span>
         </header>
 
         <ol class="steps">
           {steps.map((step, index) => (
             <li class="step reveal">
-              <span aria-hidden="true" class="step__number">
+              <span aria-hidden="true" class="step__number medallion">
                 {digits.format(index + 1)}
               </span>
               <h3 class="step__title">{step.title}</h3>
@@ -292,7 +295,7 @@ const storeJsonLd = {
 
     <section aria-labelledby="order-title" class="section">
       <div class="container">
-        <div class="order-cta reveal">
+        <div class="order-cta lacquer reveal">
           <h2 id="order-title">جاهز تطلب ساعتك؟</h2>
           <p>
             راسلنا على واتساب لأي سؤال عن الساعات أو التوصيل، ونرد عليك بأسرع
@@ -321,17 +324,33 @@ const storeJsonLd = {
 
 <style>
   .eyebrow {
-    color: var(--color-accent);
+    color: var(--color-gold);
     font-family: var(--font-display);
     font-size: var(--text-sm);
-    letter-spacing: 0.02em;
   }
 
   /* ---------- Hero ---------- */
 
+  /* The vitrine: a lacquer stage in both themes, closed by a gold arcade. */
   .hero {
-    padding-block: var(--space-7) var(--space-8);
+    position: relative;
+    padding-block: var(--space-7) var(--space-9);
     overflow: clip;
+    background:
+      radial-gradient(55% 70% at 22% 45%, var(--glow-emerald), transparent 70%),
+      radial-gradient(40% 50% at 80% 20%, var(--glow-gold), transparent 70%),
+      var(--color-bg);
+  }
+
+  .hero::after {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: var(--space-5);
+    block-size: 0.875rem;
+    background: var(--gold-leaf);
+    mask: var(--mask-arcade) center / auto 100% repeat-x;
+    opacity: 0.55;
+    content: "";
   }
 
   .hero__inner {
@@ -353,8 +372,8 @@ const storeJsonLd = {
   }
 
   .hero__title {
-    font-size: clamp(2.5rem, 1.6rem + 4vw, 4.75rem);
-    line-height: 1.15;
+    font-size: clamp(2.75rem, 1.6rem + 4.6vw, 5.5rem);
+    line-height: 1.3;
   }
 
   .hero__title-gold {
@@ -362,6 +381,8 @@ const storeJsonLd = {
     background: var(--gold-ink);
     background-clip: text;
     color: transparent;
+    /* Amiri's descenders reach past the line box; keep the leaf under them. */
+    padding-block-end: 0.15em;
   }
 
   .hero__lead {
@@ -372,15 +393,45 @@ const storeJsonLd = {
   .hero__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
     margin-block-start: var(--space-2);
+  }
+
+  .hero__actions .btn-primary {
+    padding-inline: var(--space-6);
+  }
+
+  /* WhatsApp is the quiet second voice: an underlined link, not a button. */
+  .hero__chat {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: 2.75rem;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    text-decoration: underline;
+    text-decoration-color: var(--color-line-strong);
+  }
+
+  .hero__chat:hover {
+    color: var(--color-gold-strong);
+    text-decoration-color: currentcolor;
+  }
+
+  .hero__chat svg {
+    inline-size: 1.2em;
+    block-size: 1.2em;
   }
 
   .hero__trust {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2) var(--space-5);
+    margin-block-start: var(--space-3);
     padding: 0;
+    padding-block-start: var(--space-4);
+    border-block-start: 1px solid var(--color-line);
     color: var(--color-muted);
     font-size: var(--text-sm);
     list-style: none;
@@ -393,17 +444,25 @@ const storeJsonLd = {
   }
 
   .hero__trust li::before {
-    inline-size: 0.45rem;
-    block-size: 0.45rem;
-    background: var(--color-gold);
+    inline-size: 0.75rem;
+    block-size: 0.75rem;
+    background: var(--gold-leaf);
+    mask: var(--mask-star) center / contain no-repeat;
     content: "";
-    rotate: 45deg;
   }
 
   .hero__stage {
     inline-size: 100%;
     max-inline-size: 34rem;
     margin-inline: auto;
+  }
+
+  /* Stacked: the watch leads, smaller, so the piece shows before the copy. */
+  @media (max-width: 55.99rem) {
+    .hero__stage {
+      order: -1;
+      max-inline-size: 19rem;
+    }
   }
 
   @keyframes rise {
@@ -441,9 +500,12 @@ const storeJsonLd = {
     padding-block: var(--space-8);
   }
 
-  .section--tinted {
-    border-block: 1px solid var(--color-line);
-    background: var(--surface-band);
+  /* A lacquer band between the limestone collection and the steps, with
+     the khatam lattice faint in the ground. */
+  .section--lacquer {
+    background:
+      radial-gradient(60% 80% at 50% 0%, var(--glow-emerald), transparent),
+      var(--pattern-star), var(--color-bg);
   }
 
   .section__head {
@@ -455,12 +517,8 @@ const storeJsonLd = {
     text-align: center;
   }
 
-  .section__head::after {
-    inline-size: 4.5rem;
-    block-size: 2px;
+  .section__head .flourish {
     margin-block-start: var(--space-2);
-    background: var(--gold-leaf);
-    content: "";
   }
 
   .section__lead {
@@ -477,8 +535,8 @@ const storeJsonLd = {
 
   .features {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
-    gap: var(--space-5);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--space-6) 0;
     padding: 0;
     list-style: none;
   }
@@ -486,29 +544,23 @@ const storeJsonLd = {
   .feature {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: var(--space-2);
-    padding: var(--space-5);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius);
-    background: var(--color-surface);
+    padding-inline: var(--space-5);
+    text-align: center;
+  }
+
+  .feature + .feature {
+    border-inline-start: 1px solid var(--color-line);
   }
 
   .feature__icon {
-    display: grid;
-    place-items: center;
-    inline-size: 3rem;
-    block-size: 3rem;
-    margin-block-end: var(--space-2);
-    border: 1px solid var(--color-line-strong);
-    border-radius: var(--radius-sm);
-    color: var(--color-gold);
-    rotate: 45deg;
+    margin-block-end: var(--space-3);
   }
 
   .feature__icon svg {
-    inline-size: 1.6rem;
-    block-size: 1.6rem;
-    rotate: -45deg;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
   }
 
   .feature__title {
@@ -518,6 +570,15 @@ const storeJsonLd = {
   .feature__text {
     color: var(--color-muted);
     font-size: var(--text-sm);
+  }
+
+  /* Stacked on phones: hairlines between rows instead of columns. */
+  @media (max-width: 40rem) {
+    .feature + .feature {
+      padding-block-start: var(--space-6);
+      border-block-start: 1px solid var(--color-line);
+      border-inline-start: 0;
+    }
   }
 
   /* ---------- How to order ---------- */
@@ -534,15 +595,17 @@ const storeJsonLd = {
     position: relative;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: var(--space-2);
     padding: var(--space-5);
-    border-block-start: 2px solid var(--color-line-strong);
+    text-align: center;
   }
 
   .step__number {
-    color: var(--color-gold);
-    font-family: var(--font-display);
-    font-size: var(--text-3xl);
+    margin-block-end: var(--space-2);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 700;
     line-height: 1;
   }
 
@@ -591,8 +654,9 @@ const storeJsonLd = {
 
   .delivery__fee {
     color: var(--color-gold-strong);
-    font-family: var(--font-display);
-    font-weight: 600;
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: 700;
   }
 
   .delivery__days,
@@ -609,19 +673,29 @@ const storeJsonLd = {
     flex-direction: column;
     align-items: center;
     gap: var(--space-4);
-    padding-block: var(--space-7);
+    max-inline-size: 46rem;
+    margin-inline: auto;
+    padding-block: var(--space-9) var(--space-7);
     padding-inline: var(--space-5);
-    overflow: hidden;
     border: 1px solid var(--color-line-strong);
-    border-radius: calc(var(--radius) * 2);
+    border-start-start-radius: 50% 12rem;
+    border-start-end-radius: 50% 12rem;
     background:
-      radial-gradient(
-        60% 120% at 50% 0%,
-        var(--glow-gold-strong),
-        transparent 70%
-      ),
-      var(--color-surface);
+      radial-gradient(70% 60% at 50% 0%, var(--glow-gold-strong), transparent),
+      var(--pattern-star), var(--color-bg);
+    box-shadow: 0 40px 80px -40px var(--color-shadow-strong);
     text-align: center;
+  }
+
+  /* A second, inner arch line: the double frame of a mihrab. */
+  .order-cta::before {
+    position: absolute;
+    inset: var(--space-3);
+    border: 1px solid var(--color-line);
+    border-start-start-radius: 50% 11.25rem;
+    border-start-end-radius: 50% 11.25rem;
+    content: "";
+    pointer-events: none;
   }
 
   .order-cta p {

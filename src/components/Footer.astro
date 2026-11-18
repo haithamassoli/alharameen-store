@@ -13,7 +13,7 @@ const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
 );
 ---
 
-<footer class="site-footer" id="contact">
+<footer class="site-footer lacquer" id="contact">
   <div class="site-footer__grid container">
     <div class="site-footer__brand">
       <p class="site-footer__name">
@@ -69,15 +69,25 @@ const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
 </footer>
 
 <style>
+  /* Lacquer in both themes, crowned by the same gold arcade as the hero. */
   .site-footer {
+    position: relative;
     margin-block-start: var(--space-7);
     padding-block: var(--space-8) var(--space-6);
-    border-block-start: 1px solid var(--color-line);
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--color-bg-deep) 40%
-    );
+    background:
+      radial-gradient(60% 80% at 50% 0%, var(--glow-emerald), transparent),
+      var(--color-bg);
+  }
+
+  .site-footer::before {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: var(--space-4);
+    block-size: 0.875rem;
+    background: var(--gold-leaf);
+    mask: var(--mask-arcade) center / auto 100% repeat-x;
+    opacity: 0.45;
+    content: "";
   }
 
   .site-footer__grid {
@@ -152,10 +162,14 @@ const year = new Intl.NumberFormat("ar-JO", { useGrouping: false }).format(
   .delivery-list dd {
     margin: 0;
     color: var(--color-gold);
+    font-family: var(--font-serif);
+    font-weight: 700;
   }
 
   .delivery-list dd span {
     display: block;
+    font-family: var(--font-body);
+    font-weight: 400;
     color: var(--color-muted);
     font-size: var(--text-sm);
   }

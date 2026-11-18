@@ -29,6 +29,57 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
 <div class="hero-watch" data-hero-watch>
   <div aria-hidden="true" class="hero-watch__halo"></div>
 
+  <!-- The niche: a pointed mihrab arch, double-lined in gold leaf, with a
+       khatam lattice in its vault. -->
+  <svg aria-hidden="true" class="hero-watch__arch" viewBox="0 0 400 400">
+    <defs>
+      <linearGradient id="hw-arch-gold" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0" stop-color="#f6e3ad"></stop>
+        <stop offset="0.5" stop-color="#d4b06a"></stop>
+        <stop offset="1" stop-color="#a9823f"></stop>
+      </linearGradient>
+      <pattern
+        height="32"
+        id="hw-girih"
+        patternUnits="userSpaceOnUse"
+        width="32"
+        x="8"
+      >
+        <g
+          fill="none"
+          stroke="#d4b06a"
+          stroke-opacity="0.16"
+          stroke-width="0.6"
+        >
+          <path d="M10 10h12v12H10z"></path>
+          <path d="M16 7.5 24.5 16 16 24.5 7.5 16z"></path>
+          <path d="M0 7.5 8.5 16 0 24.5M32 7.5 23.5 16 32 24.5M7.5 0 16 8.5 24.5 0M7.5 32 16 23.5 24.5 32"></path>
+        </g>
+      </pattern>
+    </defs>
+    <path
+      d="M78 400V186A170 170 0 0 1 200 38A170 170 0 0 1 322 186V400Z"
+      fill="url(#hw-girih)"
+    ></path>
+    <g fill="none" stroke="url(#hw-arch-gold)">
+      <path
+        d="M60 400V180A190 190 0 0 1 200 18A190 190 0 0 1 340 180V400"
+        stroke-width="1.4"
+      ></path>
+      <path
+        d="M78 400V186A170 170 0 0 1 200 38A170 170 0 0 1 322 186V400"
+        stroke-opacity="0.6"
+        stroke-width="0.8"
+      ></path>
+    </g>
+    <path
+      d="M200 4.5 204.5 9 200 13.5 195.5 9ZM197 6h6v6h-6Z"
+      fill="none"
+      stroke="url(#hw-arch-gold)"
+      stroke-width="0.8"
+    ></path>
+  </svg>
+
   <svg
     aria-label={label}
     class="hero-watch__fallback"
@@ -233,36 +284,25 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
     aspect-ratio: 1;
   }
 
+  /* Guilloché: a fine sunburst of gold rays, fading out from the dial. */
   .hero-watch__halo {
     position: absolute;
-    inset: 0;
+    inset: 4%;
     z-index: -1;
     border-radius: 50%;
-    background: radial-gradient(
-      closest-side,
-      var(--halo-gold),
-      var(--halo-emerald) 55%,
-      transparent 100%
-    );
-  }
-
-  /* A large eight-point star traced behind the watch, turning very slowly. */
-  .hero-watch__halo::before,
-  .hero-watch__halo::after {
-    position: absolute;
-    /* Side 68% keeps the 45° square's diagonal inside the stage at any turn. */
-    inset: 16%;
-    border: 1px solid var(--halo-line);
-    content: "";
-  }
-
-  .hero-watch__halo::after {
-    rotate: 45deg;
+    background:
+      radial-gradient(closest-side, var(--halo-gold), transparent 75%),
+      repeating-conic-gradient(
+        from 0deg,
+        var(--halo-line) 0deg 0.6deg,
+        transparent 0.6deg 3deg
+      );
+    mask-image: radial-gradient(closest-side, #000 35%, transparent 100%);
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .hero-watch__halo {
-      animation: hero-watch-turn 180s linear infinite;
+      animation: hero-watch-turn 240s linear infinite;
     }
   }
 
@@ -270,6 +310,15 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
     to {
       rotate: 1turn;
     }
+  }
+
+  .hero-watch__arch {
+    position: absolute;
+    inset: -6% 0 0;
+    z-index: -2;
+    inline-size: 100%;
+    block-size: 106%;
+    mask-image: linear-gradient(to bottom, #000 70%, transparent);
   }
 
   .hero-watch__fallback,

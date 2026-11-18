@@ -2,8 +2,8 @@ import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-const LIGHT_THEME_COLOR = "#fbf8f2";
-const DARK_THEME_COLOR = "#08191a";
+// The header is lacquer in both themes, so the browser chrome never changes.
+const THEME_COLOR = "#0e110f";
 
 const html = (page: Page) => page.locator("html");
 
@@ -24,7 +24,7 @@ test("day theme is the default, even when the OS prefers dark", async ({
   await page.goto("/");
   await expect(html(page)).not.toHaveAttribute("data-theme", "dark");
   await expect(toggle(page)).toHaveAttribute("aria-pressed", "false");
-  await expect(themeColor(page)).toHaveAttribute("content", LIGHT_THEME_COLOR);
+  await expect(themeColor(page)).toHaveAttribute("content", THEME_COLOR);
 });
 
 test("the toggle switches to night and the choice survives a reload", async ({
@@ -34,12 +34,12 @@ test("the toggle switches to night and the choice survives a reload", async ({
   await toggle(page).click();
   await expect(html(page)).toHaveAttribute("data-theme", "dark");
   await expect(toggle(page)).toHaveAttribute("aria-pressed", "true");
-  await expect(themeColor(page)).toHaveAttribute("content", DARK_THEME_COLOR);
+  await expect(themeColor(page)).toHaveAttribute("content", THEME_COLOR);
 
   await page.reload();
   await expect(html(page)).toHaveAttribute("data-theme", "dark");
   await expect(toggle(page)).toHaveAttribute("aria-pressed", "true");
-  await expect(themeColor(page)).toHaveAttribute("content", DARK_THEME_COLOR);
+  await expect(themeColor(page)).toHaveAttribute("content", THEME_COLOR);
 
   await toggle(page).click();
   await expect(html(page)).not.toHaveAttribute("data-theme", "dark");

@@ -1,82 +1,81 @@
 /*
- * Al-Harameen design tokens and base styles.
- * Day palette (default): warm ivory ground, deep emerald ink, antique gold.
- * Night palette ([data-theme="dark"]): emerald-midnight ground, parchment text,
- * gold leaf accents. Display: Reem Kufi (geometric Kufic). Body: Noto Naskh
- * Arabic (calligraphic Naskh).
+ * Al-Harameen design tokens and base styles: a watch maison in an Islamic
+ * house. Day (default): limestone ground, emerald-black ink, antique gold.
+ * Night ([data-theme="dark"]) and every `.lacquer` stage (header, hero,
+ * footer, closing invitation): warm black lacquer, ivory text, gold leaf.
+ * Headings and prices: Amiri (classical Naskh). Labels, navigation and
+ * buttons: Reem Kufi (geometric Kufic, like an engraving). Body: Noto Naskh.
  */
 
 :root {
   color-scheme: light;
 
-  /* Colour. Gold used as text is darkened to stay AA on white; filled gold
-     (badges, buttons) keeps the bright leaf tone under dark text. */
-  --color-bg: #fbf8f2;
-  --color-bg-deep: #f4efe4;
-  --color-surface: #ffffff;
-  --color-surface-2: #f8f4ec;
-  --color-text: #10302b;
-  --color-muted: #4d635d;
-  --color-gold: #7d5f24;
-  --color-gold-strong: #654a1a;
+  /* Colour. Gold used as text is darkened to stay AA on limestone; filled
+     gold (badges, buttons) keeps the bright leaf tone under dark text. */
+  --color-bg: #f7f2e7;
+  --color-bg-deep: #ede5d3;
+  --color-surface: #fffcf5;
+  --color-surface-2: #f3ecdd;
+  --color-text: #15261f;
+  --color-muted: #4f5e55;
+  --color-gold: #755822;
+  --color-gold-strong: #5e461a;
   --color-gold-deep: #b8914b;
-  --color-gold-fill: #d9b56c;
+  --color-gold-fill: #d4b06a;
   --color-accent: #1e6e59;
   --color-danger: #a8322a;
-  --color-line: rgb(125 95 36 / 0.16);
-  --color-line-strong: rgb(125 95 36 / 0.38);
-  --color-on-gold: #10201c;
+  --color-line: rgb(117 88 34 / 0.18);
+  --color-line-strong: rgb(117 88 34 / 0.42);
+  --color-on-gold: #15130d;
   --color-tint: rgb(176 136 60 / 0.1);
   --color-tint-soft: rgb(176 136 60 / 0.05);
-  --color-glass: rgb(251 248 242 / 0.82);
-  --color-overlay: rgb(16 48 43 / 0.32);
-  --color-toast: rgb(255 255 255 / 0.95);
-  --color-field: #ffffff;
-  --color-badge-bg: #10302b;
+  --color-glass: rgb(247 242 231 / 0.84);
+  --color-overlay: rgb(10 14 12 / 0.45);
+  --color-toast: rgb(255 252 245 / 0.96);
+  --color-field: #fffcf5;
+  --color-badge-bg: #15261f;
   --color-badge-text: #ecd08f;
-  --color-shadow: rgb(31 52 46 / 0.14);
-  --color-shadow-strong: rgb(31 52 46 / 0.24);
+  --color-shadow: rgb(40 32 16 / 0.12);
+  --color-shadow-strong: rgb(40 32 16 / 0.22);
   --color-sheen: transparent;
-  --color-shine: rgb(217 181 108 / 0.18);
-  --glow-gold: rgb(217 181 108 / 0.16);
-  --glow-gold-strong: rgb(217 181 108 / 0.2);
-  --glow-emerald: rgb(30 110 89 / 0.06);
-  --halo-gold: rgb(217 181 108 / 0.3);
-  --halo-emerald: rgb(30 110 89 / 0.07);
-  --halo-line: rgb(125 95 36 / 0.16);
-  --hero-shadow: rgb(16 48 43 / 0.22);
-  --surface-band: linear-gradient(
-    180deg,
-    rgb(244 239 228 / 0.9),
-    rgb(248 244 236 / 0.6)
-  );
+  --color-shine: rgb(217 181 108 / 0.2);
+  --glow-gold: rgb(217 181 108 / 0.14);
+  --glow-gold-strong: rgb(217 181 108 / 0.22);
+  --glow-emerald: rgb(30 110 89 / 0.05);
+  --halo-gold: rgb(217 181 108 / 0.26);
+  --halo-emerald: rgb(30 110 89 / 0.12);
+  --halo-line: rgb(217 181 108 / 0.3);
+  --hero-shadow: rgb(0 0 0 / 0.55);
   --gold-leaf: linear-gradient(
     135deg,
-    #f3dc9f 0%,
-    #d9b56c 38%,
-    #b8914b 62%,
-    #e8cb85 100%
+    #f6e3ad 0%,
+    #d4b06a 34%,
+    #a9823f 58%,
+    #e9cd88 82%,
+    #c39c55 100%
   );
-  /* Gold leaf for text clipped to the gradient: deeper so it reads on ivory. */
+  /* Gold leaf for text clipped to the gradient: deeper so it reads on
+     limestone. */
   --gold-ink: linear-gradient(
     135deg,
     #9c7a3c 0%,
-    #7d5f24 40%,
+    #755822 40%,
     #5c4417 65%,
     #8a6a2c 100%
   );
 
   /* Type */
+  --font-serif: "Amiri", "Noto Naskh Arabic Variable", serif;
   --font-display: "Reem Kufi Variable", "Noto Naskh Arabic Variable", serif;
   --font-body: "Noto Naskh Arabic Variable", "Geeza Pro", "Arial", serif;
   --text-sm: 0.875rem;
   --text-base: 1.0625rem;
   --text-lg: 1.25rem;
-  --text-xl: 1.5625rem;
-  --text-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
-  --text-3xl: clamp(2.25rem, 1.6rem + 3vw, 4rem);
-  --leading-body: 1.9;
-  --leading-tight: 1.3;
+  --text-xl: 1.625rem;
+  --text-2xl: clamp(2rem, 1.5rem + 2vw, 3rem);
+  --text-3xl: clamp(2.75rem, 1.8rem + 4vw, 5.25rem);
+  --leading-body: 1.85;
+  --leading-tight: 1.35;
 
   /* Space */
   --space-1: 0.25rem;
@@ -86,74 +85,99 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --space-8: 4.5rem;
-  --space-9: 7rem;
+  --space-8: 5rem;
+  --space-9: 7.5rem;
   --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
   --container: 74rem;
   --measure: 62ch;
 
-  /* Shape and depth */
-  --radius: 14px;
-  --radius-sm: 8px;
+  /* Shape and depth: horology is hairlines and circles, not pills. */
+  --radius: 6px;
+  --radius-sm: 4px;
   --radius-pill: 999px;
   --shadow-glow:
-    0 0 0 1px var(--color-line), 0 20px 44px -26px var(--color-shadow-strong);
-  --header-height: 4.25rem;
+    0 0 0 1px var(--color-line), 0 24px 48px -30px var(--color-shadow-strong);
+  --header-height: 4.5rem;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration: 260ms;
 
-  /* Eight-point star (khatam) lattice, stroked in gold at very low opacity. */
-  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%237d5f24' stroke-opacity='0.045' stroke-width='1'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+  /* Ornament. Masks are painted with gold leaf, so they follow the theme. */
+  --mask-flourish: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24'%3E%3Cg fill='none' stroke='%23000'%3E%3Cpath d='M0 12h96M144 12h96' stroke-width='1'/%3E%3Cpath d='M113.6 5.6h12.8v12.8h-12.8zM120 2.9l9.1 9.1-9.1 9.1-9.1-9.1z' stroke-width='1.2'/%3E%3C/g%3E%3Cg fill='%23000'%3E%3Ccircle cx='120' cy='12' r='2.2'/%3E%3Cpath d='M101 9l3 3-3 3-3-3zM139 9l3 3-3 3-3-3z'/%3E%3C/g%3E%3C/svg%3E");
+  --mask-arcade: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 14'%3E%3Cpath d='M.5 14V8Q.5 4 8 3Q14 2 16 .5Q18 2 24 3Q31.5 4 31.5 8V14' fill='none' stroke='%23000'/%3E%3Ccircle cx='16' cy='8.5' r='1.3'/%3E%3C/svg%3E");
+  --mask-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.6 5.6h12.8v12.8H5.6zM12 2.9l9.1 9.1-9.1 9.1L2.9 12z'/%3E%3C/svg%3E");
+  /* Eight-point star (khatam) lattice for plates and lacquer panels. */
+  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%237d5f24' stroke-opacity='0.12'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+  /* The khatam outline, for medallions (clip-path). */
+  --shape-star: polygon(
+    50% 0%,
+    64.6% 14.6%,
+    85.4% 14.6%,
+    85.4% 35.4%,
+    100% 50%,
+    85.4% 64.6%,
+    85.4% 85.4%,
+    64.6% 85.4%,
+    50% 100%,
+    35.4% 85.4%,
+    14.6% 85.4%,
+    14.6% 64.6%,
+    0% 50%,
+    14.6% 35.4%,
+    14.6% 14.6%,
+    35.4% 14.6%
+  );
 }
 
-/* Night theme, opted into with the header toggle (stored in localStorage). */
-:root[data-theme="dark"] {
+/* Night theme (header toggle, stored in localStorage) and the lacquer stages,
+   which stay dark in both themes. */
+:root[data-theme="dark"],
+.lacquer {
   color-scheme: dark;
 
-  --color-bg: #08191a;
-  --color-bg-deep: #051112;
-  --color-surface: #0f2624;
-  --color-surface-2: #153330;
-  --color-text: #f1e9d8;
-  --color-muted: #a8b8b0;
-  --color-gold: #d9b56c;
+  --color-bg: #0e110f;
+  --color-bg-deep: #070908;
+  --color-surface: #151a17;
+  --color-surface-2: #1c2420;
+  --color-text: #f3ecdf;
+  --color-muted: #b9b4a6;
+  --color-gold: #d4b06a;
   --color-gold-strong: #ecd08f;
   --color-gold-deep: #9c7a3c;
-  --color-gold-fill: #d9b56c;
-  --color-accent: #5fb39b;
+  --color-gold-fill: #d4b06a;
+  --color-accent: #6dbba3;
   --color-danger: #f0a7a0;
-  --color-line: rgb(217 181 108 / 0.18);
-  --color-line-strong: rgb(217 181 108 / 0.4);
-  --color-tint: rgb(217 181 108 / 0.12);
-  --color-tint-soft: rgb(217 181 108 / 0.06);
-  --color-glass: rgb(8 25 26 / 0.72);
-  --color-overlay: rgb(3 10 11 / 0.62);
-  --color-toast: rgb(5 17 18 / 0.92);
-  --color-field: #051112;
-  --color-badge-bg: #051112;
-  --color-badge-text: #d9b56c;
+  --color-line: rgb(212 176 106 / 0.2);
+  --color-line-strong: rgb(212 176 106 / 0.45);
+  --color-tint: rgb(212 176 106 / 0.12);
+  --color-tint-soft: rgb(212 176 106 / 0.06);
+  --color-glass: rgb(14 17 15 / 0.8);
+  --color-overlay: rgb(3 5 4 / 0.65);
+  --color-toast: rgb(7 9 8 / 0.94);
+  --color-field: #070908;
+  --color-badge-bg: #070908;
+  --color-badge-text: #d4b06a;
   --color-shadow: rgb(0 0 0 / 0.55);
   --color-shadow-strong: rgb(0 0 0 / 0.8);
   --color-sheen: rgb(255 255 255 / 0.03);
-  --color-shine: rgb(236 208 143 / 0.16);
-  --glow-gold: rgb(217 181 108 / 0.1);
-  --glow-gold-strong: rgb(217 181 108 / 0.16);
-  --glow-emerald: rgb(95 179 155 / 0.12);
-  --halo-gold: rgb(217 181 108 / 0.22);
-  --halo-emerald: rgb(95 179 155 / 0.08);
-  --halo-line: rgb(217 181 108 / 0.12);
-  --hero-shadow: rgb(0 0 0 / 0.5);
-  --surface-band: linear-gradient(
-    180deg,
-    rgb(15 38 36 / 0.7),
-    rgb(5 17 18 / 0.6)
-  );
+  --color-shine: rgb(236 208 143 / 0.14);
+  --glow-gold: rgb(212 176 106 / 0.1);
+  --glow-gold-strong: rgb(212 176 106 / 0.16);
+  --glow-emerald: rgb(30 110 89 / 0.18);
+  --halo-gold: rgb(212 176 106 / 0.2);
+  --halo-emerald: rgb(30 110 89 / 0.22);
+  --halo-line: rgb(212 176 106 / 0.32);
+  --hero-shadow: rgb(0 0 0 / 0.6);
   --gold-ink: var(--gold-leaf);
   --shadow-glow:
-    0 0 0 1px var(--color-line), 0 24px 60px -24px rgb(0 0 0 / 0.6);
-  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23d9b56c' stroke-opacity='0.05' stroke-width='1'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+    0 0 0 1px var(--color-line), 0 28px 60px -28px rgb(0 0 0 / 0.7);
+  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23d9b56c' stroke-opacity='0.09'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.lacquer {
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 /* ---------- Reset ---------- */
@@ -187,9 +211,8 @@ body {
   background-color: var(--color-bg);
   background-image:
     radial-gradient(120% 70% at 50% -10%, var(--glow-emerald), transparent 60%),
-    radial-gradient(80% 50% at 50% 110%, var(--glow-gold), transparent),
-    var(--pattern-star);
-  background-attachment: fixed, fixed, scroll;
+    radial-gradient(80% 50% at 50% 110%, var(--glow-gold), transparent);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -243,8 +266,8 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-display);
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-weight: 700;
   line-height: var(--leading-tight);
   text-wrap: balance;
   color: var(--color-text);
@@ -252,7 +275,6 @@ h4 {
 
 h1 {
   font-size: var(--text-3xl);
-  font-weight: 700;
 }
 
 h2 {
@@ -347,7 +369,7 @@ a:hover {
   padding-block: var(--space-2);
   padding-inline: var(--space-5);
   border: 1px solid transparent;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: none;
   font-family: var(--font-display);
   font-size: var(--text-base);
@@ -360,6 +382,7 @@ a:hover {
     border-color var(--duration) var(--ease-out),
     color var(--duration) var(--ease-out),
     box-shadow var(--duration) var(--ease-out),
+    background-position 600ms var(--ease-out),
     scale 120ms var(--ease-out);
 }
 
@@ -379,19 +402,22 @@ a:hover {
   flex: none;
 }
 
+/* Polished gold: the leaf is wider than the button, so hover slides a
+   highlight across it like light over a case. */
 .btn-primary {
   background: var(--gold-leaf);
+  background-size: 220% 100%;
+  background-position: 0% 50%;
   color: var(--color-on-gold);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 10px 30px -12px rgb(217 181 108 / 0.55);
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+    0 12px 28px -14px rgb(169 130 63 / 0.7);
 }
 
 .btn-primary:hover {
+  background-position: 100% 50%;
   color: var(--color-on-gold);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.45),
-    0 14px 36px -10px rgb(217 181 108 / 0.75);
 }
 
 .btn-ghost {
@@ -403,6 +429,43 @@ a:hover {
   border-color: var(--color-gold);
   background-color: var(--color-tint);
   color: var(--color-gold-strong);
+}
+
+/* ---------- Ornament ---------- */
+
+/* Hairline, khatam, hairline: the section divider. */
+.flourish {
+  display: block;
+  inline-size: min(15rem, 70%);
+  block-size: 1.5rem;
+  background: var(--gold-leaf);
+  mask: var(--mask-flourish) center / contain no-repeat;
+}
+
+/* An eight-point star medallion with a gold-leaf rim around an icon or a
+   numeral. */
+.medallion {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+  flex: none;
+  background: var(--gold-leaf);
+  color: var(--color-gold);
+  clip-path: var(--shape-star);
+}
+
+.medallion::before {
+  position: absolute;
+  inset: 1.5px;
+  background:
+    radial-gradient(circle, var(--color-tint), transparent 70%),
+    var(--color-surface);
+  clip-path: var(--shape-star);
+  content: "";
+  z-index: -1;
 }
 
 /* ---------- Reveal on scroll (scroll-driven, CSS only) ---------- */
