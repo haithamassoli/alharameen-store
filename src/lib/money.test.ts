@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatPrice } from "./money";
+import { formatPrice, toDecimalString } from "./money";
 
 describe("formatPrice", () => {
   it("formats SAR halalas", () => {
@@ -23,5 +23,20 @@ describe("formatPrice", () => {
 
   it("rejects fractional minor units", () => {
     expect(() => formatPrice(10.5)).toThrow(TypeError);
+  });
+});
+
+describe("toDecimalString", () => {
+  it("keeps every minor digit", () => {
+    expect(toDecimalString(26_000)).toBe("26.000");
+    expect(toDecimalString(25_500, "JOD")).toBe("25.500");
+    expect(toDecimalString(5, "JOD")).toBe("0.005");
+    expect(toDecimalString(12_345, "SAR")).toBe("123.45");
+    expect(toDecimalString(500, "JPY")).toBe("500");
+  });
+
+  it("rejects fractional or negative minor units", () => {
+    expect(() => toDecimalString(10.5)).toThrow(TypeError);
+    expect(() => toDecimalString(-1)).toThrow(TypeError);
   });
 });

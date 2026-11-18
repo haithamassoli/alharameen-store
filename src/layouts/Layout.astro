@@ -13,6 +13,12 @@ interface Props {
   title?: string;
   /** Meta description; defaults to the store tagline. */
   description?: string;
+  /** Share image (absolute or root-relative); defaults to the store logo. */
+  image?: { alt: string; height: number; src: string; width: number };
+  /** schema.org JSON-LD for rich results. */
+  jsonLd?: object;
+  /** Keep the page out of search results (e.g. the 404). */
+  noindex?: boolean;
 }
 
 const store = await getEntry("store", "main");
@@ -21,8 +27,28 @@ if (!store) {
   throw new Error('Missing "main" entry in the store collection');
 }
 
-const { title, description = store.data.tagline } = Astro.props;
-const pageTitle = title ? `${title} | ${store.data.name}` : store.data.name;
+const {
+  title,
+  description = store.data.tagline,
+  image = {
+    alt: store.data.name,
+    height: 512,
+    src: "/pwa-512x512.png",
+    width: 512,
+  },
+  jsonLd,
+  noindex = false,
+} = Astro.props;
+
+const pageTitle = title
+  ? `${title} | ${store.data.name}`
+  : `${store.data.name} | ساعات الأذان الأصلية في الأردن`;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imageUrl = new URL(image.src, Astro.site);
+
+// Escape "<" so data can never close the <script> element early.
+const jsonLdText = jsonLd && JSON.stringify(jsonLd).replaceAll("<", "\\u003c");
 ---
 
 <!doctype html>
@@ -50,6 +76,22 @@ const pageTitle = title ? `${title} | ${store.data.name}` : store.data.name;
       }
     </script>
     <meta content={description} name="description" />
+    {noindex && <meta content="noindex" name="robots" />}
+    {!noindex && <link href={canonical} rel="canonical" />}
+    <meta content={store.data.name} property="og:site_name" />
+    <meta content="ar_JO" property="og:locale" />
+    <meta content="website" property="og:type" />
+    <meta content={pageTitle} property="og:title" />
+    <meta content={description} property="og:description" />
+    <meta content={canonical} property="og:url" />
+    <meta content={imageUrl} property="og:image" />
+    <meta content={String(image.width)} property="og:image:width" />
+    <meta content={String(image.height)} property="og:image:height" />
+    <meta content={image.alt} property="og:image:alt" />
+    <meta content="summary_large_image" name="twitter:card" />
+    {jsonLdText && (
+      <script is:inline set:html={jsonLdText} type="application/ld+json" />
+    )}
     <meta content={Astro.generator} name="generator" />
     <title>{pageTitle}</title>
     <!-- ponytail: registerSW.js is emitted by @vite-pwa/astro at build; 404 in dev is expected (SW disabled in dev). -->
