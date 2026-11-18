@@ -27,6 +27,17 @@ test("product page has canonical, share tags and Product JSON-LD", async ({
   });
 });
 
+test("home page shares the 1200×630 store card", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    `${SITE}/og-image.jpg`
+  );
+
+  const response = await page.request.get("/og-image.jpg");
+  expect(response.headers()["content-type"]).toBe("image/jpeg");
+});
+
 test("sitemap lists every product and robots points to it", async ({
   request,
 }) => {

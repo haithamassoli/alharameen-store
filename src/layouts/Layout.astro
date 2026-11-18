@@ -13,7 +13,7 @@ interface Props {
   title?: string;
   /** Meta description; defaults to the store tagline. */
   description?: string;
-  /** Share image (absolute or root-relative); defaults to the store logo. */
+  /** Share image (absolute or root-relative); defaults to the 1200×630 store card. */
   image?: { alt: string; height: number; src: string; width: number };
   /** schema.org JSON-LD for rich results. */
   jsonLd?: object;
@@ -31,10 +31,10 @@ const {
   title,
   description = store.data.tagline,
   image = {
-    alt: store.data.name,
-    height: 512,
-    src: "/pwa-512x512.png",
-    width: 512,
+    alt: `${store.data.name}: لا يفوتك أذان، أينما كنت`,
+    height: 630,
+    src: "/og-image.jpg",
+    width: 1200,
   },
   jsonLd,
   noindex = false,
