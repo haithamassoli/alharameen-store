@@ -650,7 +650,12 @@ const productJsonLd = {
     grid-auto-columns: minmax(14rem, 17rem);
     grid-auto-flow: column;
     gap: var(--space-5);
+    /* Bleed into the container gutter so cards scroll edge to edge;
+       the gutter only reappears as padding at either end of the strip. */
+    margin-inline: calc(-1 * var(--gutter));
+    padding-inline: var(--gutter);
     padding-block-end: var(--space-5);
+    scroll-padding-inline: var(--gutter);
     overflow-x: auto;
     overscroll-behavior-inline: contain;
     scroll-snap-type: inline mandatory;
