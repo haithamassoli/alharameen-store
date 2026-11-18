@@ -71,14 +71,14 @@ const features = [
     title: "تقويم هجري",
   },
   {
-    icon: "shield",
-    text: `ضمان ${warranty} على كل ساعة، وإرجاع خلال ${digits.format(returnDays)} يومًا.`,
-    title: "ضمان",
+    icon: "water",
+    text: "توضّأ وهي في يدك، وزجاجها البلوري مضاد للخدش.",
+    title: "مقاومة للماء",
   },
   {
-    icon: "truck",
-    text: "نوصل لجميع محافظات الأردن، وتدفع نقدًا عند الاستلام.",
-    title: "توصيل لكل المملكة",
+    icon: "quran",
+    text: "احفظ رقم السورة والآية التي وقفت عندها، وأكمل وردك من حيث توقفت.",
+    title: "موضع التلاوة",
   },
 ] as const;
 
@@ -117,23 +117,15 @@ if (!heroImage) {
 // Coordinates are in the photo's own 1000 × 1000 box, measured on
 // ha-6506bw-1.jpg. The drawing is 1600 wide, so the photo sits between
 // x = 0 and x = 1000 with 300 units of margin on either side.
-const DIAL = { x: 492, y: 460 };
 const NOTE_EDGE = { left: 230, right: 770 } as const;
 const ELBOW = 50;
-const QIBLA_BEARING = 157;
-const COMPASS_RADIUS = 265;
-const NEEDLE_INNER = 225;
-const NEEDLE_OUTER = 296;
-const LABEL_RADIUS = 328;
-const CARDINAL_TICK = 9;
-const DEGREES_PER_RADIAN = 180 / Math.PI;
 const PERCENT_PER_UNIT = 0.1;
 
 type Side = keyof typeof NOTE_EDGE;
 
 interface Callout {
-  /** The detail the leader points at; delivery has none. */
-  anchor?: readonly [number, number];
+  /** The detail the leader points at. */
+  anchor: readonly [number, number];
   side: Side;
   /** Height of the note's top rule. */
   y: number;
@@ -141,26 +133,16 @@ interface Callout {
 
 const CALLOUTS = new Map<string, Callout>([
   // The prayer-time row at the foot of the screen.
-  ["azan", { anchor: [442, 551], side: "left", y: 470 }],
+  ["azan", { anchor: [442, 551], side: "left", y: 720 }],
   // The SE letter on the compass bezel.
   ["qibla", { anchor: [610, 591], side: "right", y: 640 }],
   // The date at the top of the screen.
   ["calendar", { anchor: [591, 387], side: "right", y: 387 }],
-  // The case shoulder above the bezel.
-  ["shield", { anchor: [343, 251], side: "left", y: 251 }],
-  ["truck", { side: "left", y: 720 }],
+  // The sealed case, at its shoulder above the bezel.
+  ["water", { anchor: [343, 251], side: "left", y: 251 }],
+  // The big digits, where the surah and ayah show.
+  ["quran", { anchor: [418, 458], side: "left", y: 470 }],
 ]);
-
-const round = (value: number): number => Math.round(value * 10) / 10;
-
-const onBearing = (radius: number, bearing: number): [number, number] => {
-  const angle = bearing / DEGREES_PER_RADIAN;
-
-  return [
-    round(DIAL.x + radius * Math.sin(angle)),
-    round(DIAL.y - radius * Math.cos(angle)),
-  ];
-};
 
 const leaderPath = (
   [x, y]: readonly [number, number],
@@ -184,29 +166,10 @@ const notes = features.map((feature, index) => {
     ...feature,
     ...callout,
     index: index + 1,
-    path: callout.anchor && leaderPath(callout.anchor, callout.side, callout.y),
+    path: leaderPath(callout.anchor, callout.side, callout.y),
     top: `${callout.y * PERCENT_PER_UNIT}%`,
   };
 });
-
-const qiblaIndex = notes.find((note) => note.icon === "qibla")?.index ?? 0;
-
-const cardinalTicks = [0, 90, 180, 270]
-  .map((bearing) => {
-    const [x1, y1] = onBearing(COMPASS_RADIUS - CARDINAL_TICK, bearing);
-    const [x2, y2] = onBearing(COMPASS_RADIUS + CARDINAL_TICK, bearing);
-
-    return `M${x1} ${y1}L${x2} ${y2}`;
-  })
-  .join("");
-
-// Drawn pointing north; CSS turns it to the bearing.
-const needle = `M${DIAL.x} ${DIAL.y - NEEDLE_INNER}V${DIAL.y - NEEDLE_OUTER}`;
-
-const needleTip = `M${DIAL.x} ${DIAL.y - NEEDLE_OUTER - 14}l-7 16h14z`;
-
-const [labelX, labelY] = onBearing(LABEL_RADIUS, QIBLA_BEARING);
-const qiblaLabel = `${digits.format(QIBLA_BEARING)}°`;
 
 // Rendered at build so the note is never empty; the page script refreshes it.
 const hijriToday = new Intl.DateTimeFormat(
@@ -334,68 +297,33 @@ const storeJsonLd = {
                 />
 
                 <svg aria-hidden="true" class="marks" viewBox="0 0 1000 1000">
-                  <g
-                    class="compass"
-                    data-note={qiblaIndex}
-                    style={`--i: ${qiblaIndex}`}
-                  >
-                    <circle
-                      class="compass__ring"
-                      cx={DIAL.x}
-                      cy={DIAL.y}
-                      r={COMPASS_RADIUS}
-                    ></circle>
-                    <path class="compass__ticks" d={cardinalTicks}></path>
-                    <g class="compass__needle">
-                      <path class="compass__line" d={needle}></path>
-                      <path class="compass__tip" d={needleTip}></path>
-                    </g>
-                    <text
-                      class="compass__label"
-                      direction="ltr"
-                      text-anchor="middle"
-                      x={labelX}
-                      y={labelY}
+                  {notes.map((note) => (
+                    <g
+                      class="leader"
+                      data-note={note.index}
+                      style={`--i: ${note.index}`}
                     >
-                      {qiblaLabel}
-                    </text>
-                  </g>
-
-                  {notes.map(
-                    (note) =>
-                      note.anchor &&
-                      note.path && (
-                        <g
-                          class="leader"
-                          data-note={note.index}
-                          style={`--i: ${note.index}`}
-                        >
-                          <path
-                            class="leader__line"
-                            d={note.path}
-                            pathLength="1"
-                          />
-                          <circle
-                            class="leader__halo"
-                            cx={note.anchor[0]}
-                            cy={note.anchor[1]}
-                            r="15"
-                          />
-                          <circle
-                            class="leader__dot"
-                            cx={note.anchor[0]}
-                            cy={note.anchor[1]}
-                            r="5.5"
-                          />
-                        </g>
-                      )
-                  )}
+                      <path class="leader__line" d={note.path} pathLength="1" />
+                      <circle
+                        class="leader__halo"
+                        cx={note.anchor[0]}
+                        cy={note.anchor[1]}
+                        r="15"
+                      />
+                      <circle
+                        class="leader__dot"
+                        cx={note.anchor[0]}
+                        cy={note.anchor[1]}
+                        r="5.5"
+                      />
+                    </g>
+                  ))}
                 </svg>
               </div>
             </div>
 
             <div class="notes" id="features">
-              <h2 class="visually-hidden">ما تحصل عليه مع كل ساعة</h2>
+              <h2 class="visually-hidden">مزايا الساعة</h2>
               <ol class="notes__list">
                 {notes.map((note) => (
                   <li
@@ -404,24 +332,11 @@ const storeJsonLd = {
                     data-side={note.side}
                     style={`--i: ${note.index}; --y: ${note.top}`}
                   >
-                    {note.icon === "truck" && (
-                      <span aria-hidden="true" class="route">
-                        <span>إربد</span>
-                        <span>عمّان</span>
-                        <span>العقبة</span>
-                      </span>
-                    )}
                     <h3 class="note__title">{note.title}</h3>
                     <p class="note__text">{note.text}</p>
                     {note.icon === "calendar" && (
                       <p class="note__extra">
                         اليوم <span data-hijri>{hijriToday}</span>
-                      </p>
-                    )}
-                    {note.icon === "qibla" && (
-                      <p class="note__extra">
-                        الإبرة على <bdi dir="ltr">{qiblaLabel}</bdi>، مثال: من
-                        عمّان
                       </p>
                     )}
                   </li>
@@ -800,46 +715,6 @@ const storeJsonLd = {
     transform-origin: center;
   }
 
-  .compass__ring,
-  .compass__ticks {
-    stroke: var(--line-strong);
-    stroke-width: 2;
-  }
-
-  .compass__ring {
-    stroke-dasharray: 3 8;
-  }
-
-  .compass__line {
-    stroke: var(--pine);
-    stroke-width: 3;
-  }
-
-  .compass__tip {
-    fill: var(--pine);
-  }
-
-  .compass__needle {
-    transform-box: view-box;
-    /* DIAL, in the drawing's units. */
-    transform-origin: 492px 460px;
-    transform: rotate(157deg);
-    /* A white edge keeps the needle readable over the black case. */
-    filter: drop-shadow(0 0 1.5px var(--white));
-  }
-
-  .compass__label {
-    fill: var(--pine);
-    font-family: var(--font);
-    font-size: 28px;
-    font-weight: 600;
-    /* White halo: the label can land on the black strap. */
-    paint-order: stroke;
-    stroke: var(--white);
-    stroke-width: 6px;
-    stroke-linejoin: round;
-  }
-
   .notes__list {
     position: absolute;
     inset: 0;
@@ -879,49 +754,6 @@ const storeJsonLd = {
     margin-block-start: 0.375rem;
     color: var(--pine);
     font-weight: 500;
-  }
-
-  /* Delivery has no detail on the watch; its rule is a little Jordan,
-     north to south. */
-  .note:has(.route) {
-    border-block-start-color: transparent;
-    padding-block-start: 0;
-  }
-
-  .route {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    margin-block-end: 0.5rem;
-    padding-block-start: 0.5rem;
-    border-block-start: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 0.75rem;
-    line-height: 1.4;
-  }
-
-  .route span {
-    position: relative;
-  }
-
-  .route span::before {
-    position: absolute;
-    inset-block-start: calc(-0.5rem - 3.5px);
-    inset-inline-start: 0;
-    inline-size: 6px;
-    block-size: 6px;
-    border-radius: 50%;
-    background: var(--pine);
-    content: "";
-  }
-
-  .route span:nth-child(2)::before {
-    inset-inline-start: calc(50% - 3px);
-  }
-
-  .route span:last-child::before {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
   }
 
   .ticks {
@@ -1248,24 +1080,6 @@ const storeJsonLd = {
       stroke-width: 3;
     }
 
-    .compass__ring,
-    .compass__ticks {
-      stroke-width: 3.5;
-    }
-
-    .compass__ring {
-      stroke-dasharray: 5 12;
-    }
-
-    .compass__line {
-      stroke-width: 5;
-    }
-
-    .compass__label {
-      font-size: 40px;
-      stroke-width: 9px;
-    }
-
     .note {
       font-size: var(--text-base);
     }
@@ -1391,10 +1205,6 @@ const storeJsonLd = {
       --to: calc(var(--from) + 20%);
     }
 
-    :global(.scrolly) .compass__needle {
-      transform: rotate(0deg);
-    }
-
     /* Phones: watch on top, one note at a time in the slot below it. */
     @media (max-width: 56rem) {
       :global(.scrolly) .anatomy {
@@ -1486,22 +1296,9 @@ const storeJsonLd = {
         content: "";
       }
 
-      :global(.scrolly) .note:has(.route)::before {
-        inset-inline-start: calc(50% - 1px);
-      }
-
-      :global(.scrolly) .note,
-      :global(.scrolly) .route {
+      :global(.scrolly) .note {
         border-block-start-width: 2px;
         border-block-start-color: var(--pine);
-      }
-
-      :global(.scrolly) .route {
-        font-size: var(--text-sm);
-      }
-
-      :global(.scrolly) .note:has(.route) {
-        border-block-start-color: transparent;
       }
 
       :global(.scrolly) .ticks {
@@ -1536,8 +1333,6 @@ const storeJsonLd = {
       :global(.scrolly) .leader__line,
       :global(.scrolly) .leader__dot,
       :global(.scrolly) .leader__halo,
-      :global(.scrolly) .compass,
-      :global(.scrolly) .compass__needle,
       :global(.scrolly) .ticks li {
         animation-duration: auto;
         animation-timing-function: linear;
@@ -1561,14 +1356,6 @@ const storeJsonLd = {
 
       :global(.scrolly) .leader__halo {
         animation-name: halo;
-      }
-
-      :global(.scrolly) .compass {
-        animation-name: compass;
-      }
-
-      :global(.scrolly) .compass__needle {
-        animation-name: needle;
       }
 
       :global(.scrolly) .ticks li {
@@ -1645,14 +1432,9 @@ const storeJsonLd = {
         transition: scale 400ms var(--ease);
       }
 
-      :global(.scrolly) .leader__halo,
-      :global(.scrolly) .compass {
+      :global(.scrolly) .leader__halo {
         opacity: 0;
         transition: opacity 500ms var(--ease);
-      }
-
-      :global(.scrolly) .compass__needle {
-        transition: transform 900ms var(--ease);
       }
 
       :global(.scrolly) .ticks li {
@@ -1685,14 +1467,6 @@ const storeJsonLd = {
 
       :global(.scrolly) .leader[data-state="active"] .leader__halo {
         opacity: 0.45;
-      }
-
-      :global(.scrolly) .compass:not([data-state="hidden"]) {
-        opacity: 1;
-      }
-
-      :global(.scrolly) .compass:not([data-state="hidden"]) .compass__needle {
-        transform: rotate(157deg);
       }
 
       :global(.scrolly) .ticks li[data-state="active"] {
@@ -1846,28 +1620,6 @@ const storeJsonLd = {
     100% {
       opacity: 0;
       scale: 1;
-    }
-  }
-
-  @keyframes compass {
-    0% {
-      opacity: 0;
-    }
-
-    20%,
-    100% {
-      opacity: 1;
-    }
-  }
-
-  @keyframes needle {
-    0% {
-      transform: rotate(0deg);
-    }
-
-    35%,
-    100% {
-      transform: rotate(157deg);
     }
   }
 
