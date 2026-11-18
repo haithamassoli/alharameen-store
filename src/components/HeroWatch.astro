@@ -240,8 +240,8 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
     border-radius: 50%;
     background: radial-gradient(
       closest-side,
-      rgb(217 181 108 / 0.22),
-      rgb(95 179 155 / 0.08) 55%,
+      var(--halo-gold),
+      var(--halo-emerald) 55%,
       transparent 100%
     );
   }
@@ -252,7 +252,7 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
     position: absolute;
     /* Side 68% keeps the 45° square's diagonal inside the stage at any turn. */
     inset: 16%;
-    border: 1px solid rgb(217 181 108 / 0.12);
+    border: 1px solid var(--halo-line);
     content: "";
   }
 
@@ -283,7 +283,7 @@ const label = "ساعة الحرمين بعقارب ذهبية وشاشة رقم
 
   .hero-watch__fallback {
     padding: 4%;
-    filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.5));
+    filter: drop-shadow(0 30px 40px var(--hero-shadow));
   }
 
   /* Straps run past the square stage; fade them out instead of clipping. */

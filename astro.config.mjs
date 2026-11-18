@@ -15,8 +15,8 @@ export default defineConfig({
         short_name: "ساعات الحرمين",
         description:
           "ساعات الأذان الأصلية من الحرمين، اطلبها عبر واتساب ونوصلها لجميع محافظات الأردن",
-        theme_color: "#08191a",
-        background_color: "#08191a",
+        theme_color: "#fbf8f2",
+        background_color: "#fbf8f2",
         display: "standalone",
         start_url: "/",
         lang: "ar",

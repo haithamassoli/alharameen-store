@@ -34,7 +34,21 @@ const pageTitle = title ? `${title} | ${store.data.name}` : store.data.name;
     <link href="/favicon.ico" rel="icon" />
     <link href="/apple-touch-icon-180x180.png" rel="apple-touch-icon" />
     <link href="/manifest.webmanifest" rel="manifest" />
-    <meta content="#08191a" name="theme-color" />
+    <meta content="#fbf8f2" name="theme-color" />
+    <!-- Apply a stored night theme before first paint (no flash). Day is the
+         default even when the OS prefers dark; Header.astro owns the toggle. -->
+    <script is:inline>
+      try {
+        if (localStorage.getItem("alharameen-theme") === "dark") {
+          document.documentElement.dataset.theme = "dark";
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", "#08191a");
+        }
+      } catch {
+        // Storage blocked: stay on the default day theme.
+      }
+    </script>
     <meta content={description} name="description" />
     <meta content={Astro.generator} name="generator" />
     <title>{pageTitle}</title>

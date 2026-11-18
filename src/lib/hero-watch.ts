@@ -1,6 +1,6 @@
 // Procedural 3D Al-Harameen watch for the home hero. Loaded with import() only
 // when the hero nears the viewport, so three.js never blocks first paint.
-import type { Texture } from "three";
+import type { Blending, Texture } from "three";
 import {
   ACESFilmicToneMapping,
   AdditiveBlending,
@@ -19,6 +19,7 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
+  NormalBlending,
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
@@ -41,6 +42,51 @@ export interface HeroWatch {
   stop: () => void;
   dispose: () => void;
 }
+
+type Theme = "dark" | "light";
+
+interface SceneLook {
+  bokehBlending: Blending;
+  bokehColor: string;
+  bokehOpacity: number;
+  environment: number;
+  exposure: number;
+  key: number;
+  rim: number;
+  shadowColor: string;
+  shadowOpacity: number;
+}
+
+// Night: additive gold bokeh glowing on the dark ground. Day: additive light
+// vanishes on ivory, so the bokeh turns into soft deeper-gold flecks, the jade
+// rim light eases off and a contact shadow grounds the watch.
+const LOOKS: Record<Theme, SceneLook> = {
+  dark: {
+    bokehBlending: AdditiveBlending,
+    bokehColor: "#d9b56c",
+    bokehOpacity: 0.75,
+    environment: 0.9,
+    exposure: 1.05,
+    key: 1.6,
+    rim: 2.2,
+    shadowColor: "#000000",
+    shadowOpacity: 0.4,
+  },
+  light: {
+    bokehBlending: NormalBlending,
+    bokehColor: "#b8914b",
+    bokehOpacity: 0.42,
+    environment: 1,
+    exposure: 1.12,
+    key: 1.9,
+    rim: 1.1,
+    shadowColor: "#1c3a33",
+    shadowOpacity: 0.3,
+  },
+};
+
+const pageTheme = (): Theme =>
+  document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 
 const PALETTE = {
   dialCenter: "#123f38",
@@ -226,6 +272,18 @@ const drawStrapStitch = (): CanvasTexture => {
   return texture;
 };
 
+const drawShadow = (): CanvasTexture => {
+  const [canvas, ctx] = makeCanvas(128, 128);
+  const shade = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  shade.addColorStop(0, "rgb(255 255 255 / 1)");
+  shade.addColorStop(0.45, "rgb(255 255 255 / 0.55)");
+  shade.addColorStop(1, "rgb(255 255 255 / 0)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, 128, 128);
+
+  return toTexture(canvas);
+};
+
 const drawBokeh = (): CanvasTexture => {
   const [canvas, ctx] = makeCanvas(64, 64);
   const glow = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -372,6 +430,7 @@ const strapGeometry = (width: number, length: number): BoxGeometry => {
 };
 
 interface Particles {
+  material: PointsMaterial;
   points: Points;
   update: (delta: number) => void;
 }
@@ -422,7 +481,7 @@ const createParticles = (map: Texture): Particles => {
     points.rotation.y += delta * 0.03;
   };
 
-  return { points, update };
+  return { material, points, update };
 };
 
 interface WatchModel {
@@ -653,7 +712,6 @@ export const createHeroWatch = async (
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   renderer.setClearColor(0x00_00_00, 0);
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = SRGBColorSpace;
 
   const scene = new Scene();
@@ -662,13 +720,24 @@ export const createHeroWatch = async (
   const envMap = pmrem.fromScene(room, 0.04).texture;
   room.dispose();
   scene.environment = envMap;
-  scene.environmentIntensity = 0.9;
 
-  const key = new DirectionalLight("#ffe6b0", 1.6);
+  const key = new DirectionalLight("#ffe6b0", LOOKS.dark.key);
   key.position.set(3, 4, 5);
-  const rim = new DirectionalLight(PALETTE.jade, 2.2);
+  const rim = new DirectionalLight(PALETTE.jade, LOOKS.dark.rim);
   rim.position.set(-4, -1, -3);
   scene.add(key, rim);
+
+  // Soft shadow on an imaginary backdrop behind the case, offset downward.
+  const shadowMaterial = new MeshBasicMaterial({
+    depthWrite: false,
+    map: drawShadow(),
+    toneMapped: false,
+    transparent: true,
+  });
+
+  const shadow = new Mesh(new PlaneGeometry(3.4, 3), shadowMaterial);
+  shadow.position.set(0.12, -0.42, -1.9);
+  scene.add(shadow);
 
   const camera = new PerspectiveCamera(30, 1, 0.1, 50);
   camera.position.set(0, 0, 6.4);
@@ -680,6 +749,22 @@ export const createHeroWatch = async (
 
   const particles = createParticles(drawBokeh());
   scene.add(particles.points);
+
+  const applyLook = (theme: Theme): void => {
+    const look = LOOKS[theme];
+    renderer.toneMappingExposure = look.exposure;
+    scene.environmentIntensity = look.environment;
+    key.intensity = look.key;
+    rim.intensity = look.rim;
+    particles.material.blending = look.bokehBlending;
+    particles.material.color.set(look.bokehColor);
+    particles.material.opacity = look.bokehOpacity;
+    particles.material.needsUpdate = true;
+    shadowMaterial.color.set(look.shadowColor);
+    shadowMaterial.opacity = look.shadowOpacity;
+  };
+
+  applyLook(pageTheme());
 
   // Pointer-follow tilt, eased toward the target each frame.
   const target = { x: 0, y: 0 };
@@ -746,6 +831,14 @@ export const createHeroWatch = async (
   // First frame immediately so the canvas never fades in empty.
   frame(last);
 
+  // The header toggle announces palette switches; repaint even when paused.
+  const onThemeChange = (): void => {
+    applyLook(pageTheme());
+    renderer.render(scene, camera);
+  };
+
+  window.addEventListener("theme:change", onThemeChange);
+
   let running = false;
 
   const start = (): void => {
@@ -766,6 +859,7 @@ export const createHeroWatch = async (
   const dispose = (): void => {
     stop();
     window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("theme:change", onThemeChange);
     resizeObserver.disconnect();
     disposeScene(scene);
     envMap.dispose();

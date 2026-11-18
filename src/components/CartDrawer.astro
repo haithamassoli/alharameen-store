@@ -987,17 +987,13 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     margin-inline: auto 0;
     padding: 0;
     border: 0;
-    border-inline-start: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-inline-start: 1px solid var(--color-line);
     background:
-      radial-gradient(
-        120% 40% at 50% 0%,
-        rgb(217 181 108 / 0.1),
-        transparent 70%
-      ),
-      var(--color-surface, #0f2624);
-    color: var(--color-text, #f1e9d8);
+      radial-gradient(120% 40% at 50% 0%, var(--glow-gold), transparent 70%),
+      var(--color-surface);
+    color: var(--color-text);
     font-family: var(--font-body, serif);
-    box-shadow: 0 0 80px rgb(0 0 0 / 0.55);
+    box-shadow: 0 0 80px var(--color-shadow);
     translate: var(--slide-from) 0;
     transition:
       translate var(--drawer-duration) var(--drawer-ease),
@@ -1021,7 +1017,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .cart-drawer::backdrop {
-    background-color: rgb(3 10 11 / 0);
+    background-color: transparent;
     backdrop-filter: blur(0);
     transition:
       background-color var(--drawer-duration) var(--drawer-ease),
@@ -1031,13 +1027,13 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .cart-drawer[open]::backdrop {
-    background-color: rgb(3 10 11 / 0.62);
+    background-color: var(--color-overlay);
     backdrop-filter: blur(6px);
   }
 
   @starting-style {
     .cart-drawer[open]::backdrop {
-      background-color: rgb(3 10 11 / 0);
+      background-color: transparent;
       backdrop-filter: blur(0);
     }
   }
@@ -1059,7 +1055,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     gap: var(--space-3, 0.75rem);
     padding-block: var(--space-4, 1rem);
     padding-inline: var(--space-5, 1.5rem);
-    border-block-end: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-block-end: 1px solid var(--color-line);
   }
 
   .cart-drawer__title {
@@ -1076,8 +1072,8 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     block-size: 1.75rem;
     padding-inline: 0.4rem;
     border-radius: var(--radius-pill, 999px);
-    background: var(--color-gold, #d9b56c);
-    color: var(--color-on-gold, #10201c);
+    background: var(--color-gold-fill);
+    color: var(--color-on-gold);
     font-size: var(--text-sm, 0.875rem);
     line-height: 1;
   }
@@ -1088,7 +1084,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     inline-size: 2.75rem;
     block-size: 2.75rem;
     padding: 0;
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: var(--radius-pill, 999px);
     background: none;
     transition:
@@ -1097,7 +1093,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .cart-drawer__icon-button:hover {
-    border-color: var(--color-gold, #d9b56c);
+    border-color: var(--color-gold);
     rotate: 90deg;
   }
 
@@ -1127,7 +1123,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     inline-size: 5rem;
     block-size: 5rem;
     margin-block-end: var(--space-2, 0.5rem);
-    color: var(--color-gold, #d9b56c);
+    color: var(--color-gold);
   }
 
   .cart-drawer__empty-title {
@@ -1137,7 +1133,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   .cart-drawer__empty-text {
     margin-block-end: var(--space-3, 0.75rem);
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   /* ---------- Form layout ---------- */
@@ -1184,7 +1180,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     padding: 0;
     font-family: var(--font-display, serif);
     font-size: var(--text-lg, 1.25rem);
-    color: var(--color-gold, #d9b56c);
+    color: var(--color-gold);
   }
 
   /* ---------- Line items ---------- */
@@ -1194,9 +1190,9 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     grid-template-columns: 4.5rem 1fr;
     gap: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
     padding: var(--space-3, 0.75rem);
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: var(--radius, 14px);
-    background: var(--color-surface-2, #153330);
+    background: var(--color-surface-2);
     animation: line-in 360ms var(--drawer-ease) both;
   }
 
@@ -1224,19 +1220,19 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .line__name {
-    color: var(--color-text, #f1e9d8);
+    color: var(--color-text);
     font-weight: 600;
     text-decoration: none;
   }
 
   .line__name:hover {
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
     text-decoration: underline;
   }
 
   .line__model,
   .line__unit {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -1257,13 +1253,13 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     margin-inline-start: auto;
     font-family: var(--font-display, serif);
     font-weight: 600;
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
   }
 
   .stepper {
     display: inline-flex;
     align-items: center;
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: var(--radius-pill, 999px);
   }
 
@@ -1281,8 +1277,8 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .stepper__button:hover:not(:disabled) {
-    background: rgb(217 181 108 / 0.12);
-    color: var(--color-gold-strong, #ecd08f);
+    background: var(--color-tint);
+    color: var(--color-gold-strong);
   }
 
   .stepper__button:disabled {
@@ -1303,12 +1299,12 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     padding: var(--space-1, 0.25rem);
     border: 0;
     background: none;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
   .line__remove:hover {
-    color: #f0a7a0;
+    color: var(--color-danger);
   }
 
   .line__remove svg {
@@ -1331,9 +1327,9 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     gap: 0 var(--space-2, 0.5rem);
     align-items: center;
     padding: var(--space-3, 0.75rem);
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: var(--radius, 14px);
-    background: var(--color-surface-2, #153330);
+    background: var(--color-surface-2);
     cursor: pointer;
     transition:
       border-color var(--duration, 260ms) var(--drawer-ease),
@@ -1342,17 +1338,17 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .zone:hover {
-    border-color: var(--color-gold, #d9b56c);
+    border-color: var(--color-gold);
   }
 
   .zone:has(:checked) {
-    border-color: var(--color-gold, #d9b56c);
-    background: rgb(217 181 108 / 0.12);
-    box-shadow: 0 0 0 1px var(--color-gold, #d9b56c);
+    border-color: var(--color-gold);
+    background: var(--color-tint);
+    box-shadow: 0 0 0 1px var(--color-gold);
   }
 
   .zone:has(:focus-visible) {
-    outline: 2px solid var(--color-gold-strong, #ecd08f);
+    outline: 2px solid var(--color-gold-strong);
     outline-offset: 3px;
   }
 
@@ -1361,7 +1357,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     inline-size: 1.15rem;
     block-size: 1.15rem;
     margin: 0;
-    accent-color: var(--color-gold, #d9b56c);
+    accent-color: var(--color-gold);
   }
 
   .zone__input:focus-visible {
@@ -1374,11 +1370,11 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   .zone__fee {
     font-family: var(--font-display, serif);
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
   }
 
   .zone__days {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -1395,7 +1391,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   .field__optional,
   .field__hint {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-weight: 400;
   }
 
@@ -1404,24 +1400,25 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     min-block-size: 2.875rem;
     padding-block: var(--space-2, 0.5rem);
     padding-inline: var(--space-3, 0.75rem);
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: var(--radius-sm, 8px);
-    background: var(--color-bg-deep, #051112);
-    color: var(--color-text, #f1e9d8);
+    background: var(--color-field);
+    color: var(--color-text);
     transition: border-color var(--duration, 260ms) var(--drawer-ease);
   }
 
   .field__input::placeholder {
-    color: rgb(168 184 176 / 0.7);
+    color: var(--color-muted);
+    opacity: 0.75;
   }
 
   .field__input:focus-visible {
-    border-color: var(--color-gold, #d9b56c);
+    border-color: var(--color-gold);
     outline-offset: 1px;
   }
 
   .field__input:user-invalid {
-    border-color: #e58a80;
+    border-color: var(--color-danger);
   }
 
   textarea.field__input {
@@ -1430,9 +1427,9 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   .cart-drawer__sent {
     padding: var(--space-3, 0.75rem);
-    border: 1px solid rgb(95 179 155 / 0.45);
+    border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
     border-radius: var(--radius, 14px);
-    background: rgb(95 179 155 / 0.12);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 
   /* ---------- Footer ---------- */
@@ -1442,8 +1439,8 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     gap: var(--space-2, 0.5rem);
     padding-block: var(--space-4, 1rem);
     padding-inline: var(--space-5, 1.5rem);
-    border-block-start: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
-    background: var(--color-bg-deep, #051112);
+    border-block-start: 1px solid var(--color-line);
+    background: var(--color-bg-deep);
   }
 
   .totals {
@@ -1456,12 +1453,12 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     display: flex;
     justify-content: space-between;
     gap: var(--space-3, 0.75rem);
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .totals__row dd {
     margin: 0;
-    color: var(--color-text, #f1e9d8);
+    color: var(--color-text);
   }
 
   .cart-drawer__grand {
@@ -1475,13 +1472,13 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   }
 
   .cart-drawer__grand output {
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
     font-weight: 700;
   }
 
   .cart-drawer__payment {
     margin-block-end: var(--space-4, 1rem);
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -1496,18 +1493,18 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     padding: var(--space-1, 0.25rem) var(--space-3, 0.75rem);
     border: 0;
     background: none;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
     text-decoration: underline;
     text-underline-offset: 0.3em;
   }
 
   .cart-drawer__clear:hover {
-    color: var(--color-text, #f1e9d8);
+    color: var(--color-text);
   }
 
   .cart-drawer__clear[data-confirm] {
-    color: #f0a7a0;
+    color: var(--color-danger);
   }
 
   /* ---------- Toast ---------- */
@@ -1525,11 +1522,11 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     margin-inline: auto;
     padding-block: var(--space-2, 0.5rem);
     padding-inline: var(--space-4, 1rem) var(--space-2, 0.5rem);
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: var(--radius-pill, 999px);
-    background: rgb(5 17 18 / 0.92);
+    background: var(--color-toast);
     backdrop-filter: blur(12px);
-    box-shadow: 0 18px 50px -18px rgb(0 0 0 / 0.8);
+    box-shadow: 0 18px 50px -18px var(--color-shadow-strong);
     opacity: 0;
     translate: 0 1.5rem;
     visibility: hidden;
@@ -1556,8 +1553,8 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     padding-inline: var(--space-3, 0.75rem);
     border: 0;
     border-radius: var(--radius-pill, 999px);
-    background: var(--color-gold, #d9b56c);
-    color: var(--color-on-gold, #10201c);
+    background: var(--color-gold-fill);
+    color: var(--color-on-gold);
     font-family: var(--font-display, serif);
     font-size: var(--text-sm, 0.875rem);
     font-weight: 600;
@@ -1571,12 +1568,12 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     inline-size: 3.5rem;
     block-size: 3.5rem;
     margin: auto;
-    border: 2px solid var(--color-gold, #d9b56c);
+    border: 2px solid var(--color-gold);
     border-radius: 50%;
     background: #fff;
     object-fit: contain;
     pointer-events: none;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+    box-shadow: 0 10px 30px var(--color-shadow);
   }
 
   @media (prefers-reduced-motion: reduce) {

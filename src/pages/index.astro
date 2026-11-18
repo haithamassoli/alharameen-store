@@ -297,7 +297,7 @@ const steps = [
 
 <style>
   .eyebrow {
-    color: var(--color-accent, #5fb39b);
+    color: var(--color-accent);
     font-family: var(--font-display, serif);
     font-size: var(--text-sm, 0.875rem);
     letter-spacing: 0.02em;
@@ -335,13 +335,13 @@ const steps = [
 
   .hero__title-gold {
     display: block;
-    background: var(--gold-leaf, #d9b56c);
+    background: var(--gold-ink);
     background-clip: text;
     color: transparent;
   }
 
   .hero__lead {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-lg, 1.25rem);
   }
 
@@ -357,7 +357,7 @@ const steps = [
     flex-wrap: wrap;
     gap: var(--space-2, 0.5rem) var(--space-5, 1.5rem);
     padding: 0;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
     list-style: none;
   }
@@ -371,7 +371,7 @@ const steps = [
   .hero__trust li::before {
     inline-size: 0.45rem;
     block-size: 0.45rem;
-    background: var(--color-gold, #d9b56c);
+    background: var(--color-gold);
     content: "";
     rotate: 45deg;
   }
@@ -418,12 +418,8 @@ const steps = [
   }
 
   .section--tinted {
-    border-block: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
-    background: linear-gradient(
-      180deg,
-      rgb(15 38 36 / 0.7),
-      rgb(5 17 18 / 0.6)
-    );
+    border-block: 1px solid var(--color-line);
+    background: var(--surface-band);
   }
 
   .section__head {
@@ -439,12 +435,12 @@ const steps = [
     inline-size: 4.5rem;
     block-size: 2px;
     margin-block-start: var(--space-2, 0.5rem);
-    background: var(--gold-leaf, #d9b56c);
+    background: var(--gold-leaf);
     content: "";
   }
 
   .section__lead {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .product-grid {
@@ -468,9 +464,9 @@ const steps = [
     flex-direction: column;
     gap: var(--space-2, 0.5rem);
     padding: var(--space-5, 1.5rem);
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: var(--radius, 14px);
-    background: var(--color-surface, #0f2624);
+    background: var(--color-surface);
   }
 
   .feature__icon {
@@ -479,9 +475,9 @@ const steps = [
     inline-size: 3rem;
     block-size: 3rem;
     margin-block-end: var(--space-2, 0.5rem);
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: var(--radius-sm, 8px);
-    color: var(--color-gold, #d9b56c);
+    color: var(--color-gold);
     rotate: 45deg;
   }
 
@@ -496,7 +492,7 @@ const steps = [
   }
 
   .feature__text {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -518,12 +514,11 @@ const steps = [
     gap: var(--space-2, 0.5rem);
     padding-block: var(--space-5, 1.5rem);
     padding-inline: var(--space-5, 1.5rem);
-    border-block-start: 2px solid
-      var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-block-start: 2px solid var(--color-line-strong);
   }
 
   .step__number {
-    color: var(--color-gold, #d9b56c);
+    color: var(--color-gold);
     font-family: var(--font-display, serif);
     font-size: var(--text-3xl, 3rem);
     line-height: 1;
@@ -534,7 +529,7 @@ const steps = [
   }
 
   .step__text {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .delivery {
@@ -542,9 +537,9 @@ const steps = [
     gap: var(--space-4, 1rem);
     margin-block-start: var(--space-6, 2rem);
     padding: var(--space-5, 1.5rem);
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: var(--radius, 14px);
-    background: var(--color-surface, #0f2624);
+    background: var(--color-surface);
   }
 
   .delivery__title {
@@ -565,7 +560,7 @@ const steps = [
     gap: 0 var(--space-3, 0.75rem);
     padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
     border-radius: var(--radius-sm, 8px);
-    background: var(--color-surface-2, #153330);
+    background: var(--color-surface-2);
   }
 
   .delivery__name {
@@ -573,14 +568,14 @@ const steps = [
   }
 
   .delivery__fee {
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
     font-family: var(--font-display, serif);
     font-weight: 600;
   }
 
   .delivery__days,
   .delivery__note {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -595,20 +590,20 @@ const steps = [
     padding-block: var(--space-7, 3rem);
     padding-inline: var(--space-5, 1.5rem);
     overflow: hidden;
-    border: 1px solid var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border: 1px solid var(--color-line-strong);
     border-radius: calc(var(--radius, 14px) * 2);
     background:
       radial-gradient(
         60% 120% at 50% 0%,
-        rgb(217 181 108 / 0.16),
+        var(--glow-gold-strong),
         transparent 70%
       ),
-      var(--color-surface, #0f2624);
+      var(--color-surface);
     text-align: center;
   }
 
   .order-cta p {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .order-cta__phone a {
