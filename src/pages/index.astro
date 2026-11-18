@@ -120,6 +120,21 @@ if (!hero) {
 
 const [heroImage] = hero.data.images;
 
+// The gold and silver pieces from the share card flank the black watch on
+// its inline-end side (the intro owns the other), then step away on scroll.
+const COMPANIONS = ["ha-6314fgw", "ha-6208fsw"] as const;
+
+const companions = COMPANIONS.map((id) => {
+  const image = allProducts.find((product) => product.id === id)?.data
+    .images[0];
+
+  if (!image) {
+    throw new Error(`Hero companion points at a missing product: ${id}`);
+  }
+
+  return { id, image };
+});
+
 // ---- The drawing ----
 // Coordinates are in the photo's own 1000 × 1000 box, measured on
 // ha-6506bw-1.webp. The drawing is 1600 wide, so the photo sits between
@@ -303,6 +318,22 @@ const storeJsonLd = {
           <div class="plate">
             <div class="figure">
               <div class="figure__zoom">
+                {companions.map(({ id, image }) => (
+                  <Picture
+                    alt=""
+                    fallbackFormat="webp"
+                    formats={["avif"]}
+                    height={HERO_SIZE}
+                    pictureAttributes={{
+                      class: "companion",
+                      "data-companion": id,
+                    }}
+                    sizes="min(58vh, 35rem)"
+                    src={image.src}
+                    width={HERO_SIZE}
+                    widths={[480, 720]}
+                  />
+                ))}
                 <Picture
                   alt={heroImage.alt}
                   fetchpriority="high"
@@ -784,8 +815,15 @@ const storeJsonLd = {
 
   .figure__zoom {
     position: relative;
+    isolation: isolate;
     inline-size: 100%;
     block-size: 100%;
+  }
+
+  /* Only the scroll story has room for them: the static drawing's notes
+     fill both flanks. */
+  .companion {
+    display: none;
   }
 
   .figure__zoom :global(img) {
@@ -1416,6 +1454,28 @@ const storeJsonLd = {
       font-size: clamp(2rem, 3.4vw, 3rem);
     }
 
+    /* Measured in the black watch's own box, as on the share card. Phones
+       have no room beside the watch, so they keep it alone (and, the images
+       being lazy, never fetch these). */
+    :global(.scrolly) .companion {
+      position: absolute;
+      z-index: -1;
+      display: block;
+      aspect-ratio: 1;
+    }
+
+    :global(.scrolly) [data-companion="ha-6208fsw"] {
+      inset-block-start: 20%;
+      inset-inline-start: 50%;
+      inline-size: 70%;
+    }
+
+    :global(.scrolly) [data-companion="ha-6314fgw"] {
+      inset-block-start: 30%;
+      inset-inline-start: 80%;
+      inline-size: 56%;
+    }
+
     :global(.scrolly) .intro__actions {
       justify-content: start;
     }
@@ -1454,6 +1514,10 @@ const storeJsonLd = {
         gap: 1.5rem;
         padding-block: calc(var(--header-height) + 0.5rem) 1.5rem;
         container-type: normal;
+      }
+
+      :global(.scrolly) .companion {
+        display: none;
       }
 
       :global(.scrolly) .figure {
@@ -1553,6 +1617,16 @@ const storeJsonLd = {
         animation-range-end: contain 6%;
       }
 
+      :global(.scrolly) .companion {
+        animation-name: companion-out;
+        animation-duration: auto;
+        animation-timing-function: var(--ease);
+        animation-fill-mode: both;
+        animation-timeline: --anatomy;
+        animation-range-start: contain 0%;
+        animation-range-end: contain 7%;
+      }
+
       :global(.scrolly) .plate {
         animation-name: plate;
         animation-duration: auto;
@@ -1634,6 +1708,21 @@ const storeJsonLd = {
           opacity 400ms var(--ease),
           translate 400ms var(--ease),
           visibility 400ms;
+      }
+
+      :global(.scrolly) .companion {
+        transition:
+          opacity 600ms var(--ease),
+          translate 600ms var(--ease),
+          scale 600ms var(--ease),
+          visibility 600ms;
+      }
+
+      :global(.scrolly) [data-intro="out"] .companion {
+        visibility: hidden;
+        opacity: 0;
+        scale: 0.92;
+        translate: 12% 0;
       }
 
       :global(.scrolly) [data-intro="out"] .intro {
@@ -1725,6 +1814,17 @@ const storeJsonLd = {
       visibility: hidden;
       opacity: 0;
       translate: 0 -54%;
+    }
+  }
+
+  /* The two companions slide back behind the black watch, which sits to
+     their right on this right-to-left page. */
+  @keyframes companion-out {
+    to {
+      visibility: hidden;
+      opacity: 0;
+      scale: 0.92;
+      translate: 12% 0;
     }
   }
 
