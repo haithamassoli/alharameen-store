@@ -1,23 +1,29 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
+  <head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml">
+    <link href="/favicon.ico" rel="icon">
+    <link href="/apple-touch-icon-180x180.png" rel="apple-touch-icon">
+    <link href="/manifest.webmanifest" rel="manifest">
+    <meta content="#ffffff" name="theme-color">
+    <meta content="Alharameen online store" name="description">
+    <meta content={Astro.generator} name="generator">
+    <title>Alharameen Store</title>
+    <!-- ponytail: registerSW.js is emitted by @vite-pwa/astro at build; 404 in dev is expected (SW disabled in dev). -->
+    <script defer src="/registerSW.js" is:inline></script>
+  </head>
+  <body>
+    <slot />
+  </body>
 </html>
 
 <style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
 </style>

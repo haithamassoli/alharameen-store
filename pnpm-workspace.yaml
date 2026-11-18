@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - ultracite@8.3.0
