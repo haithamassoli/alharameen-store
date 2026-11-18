@@ -1,8 +1,7 @@
 ---
-import "@fontsource/amiri/400.css";
-import "@fontsource/amiri/700.css";
-import "@fontsource-variable/reem-kufi";
-import "@fontsource-variable/noto-naskh-arabic";
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
 import "../styles/global.css";
 import CartDrawer from "../components/CartDrawer.astro";
 import Footer from "../components/Footer.astro";
@@ -57,19 +56,7 @@ const jsonLdText = jsonLd && JSON.stringify(jsonLd).replaceAll("<", "\\u003c");
     <link href="/favicon.ico" rel="icon" />
     <link href="/apple-touch-icon-180x180.png" rel="apple-touch-icon" />
     <link href="/manifest.webmanifest" rel="manifest" />
-    <!-- The header is lacquer in both themes, so the browser chrome matches it. -->
-    <meta content="#0e110f" name="theme-color" />
-    <!-- Apply a stored night theme before first paint (no flash). Day is the
-         default even when the OS prefers dark; Header.astro owns the toggle. -->
-    <script is:inline>
-      try {
-        if (localStorage.getItem("alharameen-theme") === "dark") {
-          document.documentElement.dataset.theme = "dark";
-        }
-      } catch {
-        // Storage blocked: stay on the default day theme.
-      }
-    </script>
+    <meta content="#ffffff" name="theme-color" />
     <meta content={description} name="description" />
     {noindex && <meta content="noindex" name="robots" />}
     {!noindex && <link href={canonical} rel="canonical" />}
@@ -91,6 +78,7 @@ const jsonLdText = jsonLd && JSON.stringify(jsonLd).replaceAll("<", "\\u003c");
     <title>{pageTitle}</title>
     <!-- ponytail: registerSW.js is emitted by @vite-pwa/astro at build; 404 in dev is expected (SW disabled in dev). -->
     <script defer src="/registerSW.js" is:inline></script>
+    <slot name="head" />
   </head>
   <body>
     <a class="skip-link" href="#main">

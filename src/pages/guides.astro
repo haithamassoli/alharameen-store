@@ -13,18 +13,22 @@ const guides = entries.toSorted((a, b) => a.data.order - b.data.order);
   title="شروحات الاستعمال"
 >
   <main class="guides container" id="main">
-    <h1>شروحات الاستعمال</h1>
-    <p class="guides__lead">
-      فيديوهات رسمية من الحرمين تشرح كل خطوة في ضبط ساعتك. ابدأ بضبط الوقت
-      والتاريخ والمدينة، ثم اضبط الأذان والإقامة.
-    </p>
+    <header class="guides__intro">
+      <h1>شروحات الاستعمال</h1>
+      <p class="guides__lead">
+        فيديوهات رسمية من الحرمين تشرح كل خطوة في ضبط ساعتك. ابدأ بضبط الوقت
+        والتاريخ والمدينة، ثم اضبط الأذان والإقامة.
+      </p>
+    </header>
 
     {guides.map(({ id, data }) => (
       <section aria-labelledby={`${id}-title`} class="guides__family" id={id}>
-        <h2 id={`${id}-title`}>{data.name}</h2>
-        <p class="guides__models">
-          الموديلات: <span dir="ltr">{data.models.join(" · ")}</span>
-        </p>
+        <div class="section-head">
+          <h2 id={`${id}-title`}>{data.name}</h2>
+          <p class="guides__models">
+            الموديلات: <span dir="ltr">{data.models.join(" · ")}</span>
+          </p>
+        </div>
         <VideoGrid videos={data.videos} />
       </section>
     ))}
@@ -33,30 +37,31 @@ const guides = entries.toSorted((a, b) => a.data.order - b.data.order);
 
 <style>
   .guides {
-    padding-block: var(--space-6) var(--space-8);
+    padding-block: clamp(2.5rem, 6vw, 4.5rem) var(--section);
   }
 
-  h1 {
-    font-size: var(--text-2xl);
+  .guides__intro {
+    margin-block-end: clamp(2.5rem, 6vw, 4rem);
   }
 
   .guides__lead {
-    max-inline-size: var(--measure);
-    margin-block: var(--space-3) var(--space-6);
-    color: var(--color-muted);
+    max-inline-size: 36rem;
+    margin-block-start: var(--space-3);
+    color: var(--muted);
+    font-size: clamp(1rem, 1.3vw, 1.125rem);
+  }
+
+  .guides__family {
+    padding-block-start: var(--space-5);
+    border-block-start: 1px solid var(--ink);
   }
 
   .guides__family + .guides__family {
-    margin-block-start: var(--space-8);
-  }
-
-  h2 {
-    font-size: var(--text-xl);
+    margin-block-start: var(--section);
   }
 
   .guides__models {
-    margin-block-end: var(--space-5);
-    color: var(--color-muted);
+    color: var(--muted);
     font-size: var(--text-sm);
   }
 

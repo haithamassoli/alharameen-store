@@ -9,5 +9,3 @@ extend-ignore-re = ['"youtubeId": "[\w-]{11}"']
 [default.extend-words]
 JOD = "JOD"
 fils = "fils"
-# three.js material property (MeshStandardMaterial.metalness).
-metalness = "metalness"

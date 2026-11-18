@@ -15,8 +15,8 @@ const facade = ({ title, youtubeId }: Props["videos"][number]): string => {
 *{margin:0}html,body,a{block-size:100%}
 a{display:grid;place-items:end start;padding:10px;text-decoration:none;background:#000 center/cover url(https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg)}
 span{display:grid;place-items:center;inline-size:56px;block-size:40px;border-radius:10px;background:rgb(0 0 0/.72);color:#fff;font:24px/1 sans-serif}
-a:hover span,a:focus-visible span{background:#c00}
-a:focus-visible{outline:3px solid #ecd08f;outline-offset:-3px}
+a:hover span,a:focus-visible span{background:#285a47}
+a:focus-visible{outline:3px solid #fff;outline-offset:-3px}
 </style><a aria-label="${label}" href="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0"><span aria-hidden="true">&#9654;</span></a></html>`;
 };
 ---
@@ -43,9 +43,7 @@ a:focus-visible{outline:3px solid #ecd08f;outline-offset:-3px}
   .video-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    gap: var(--space-5);
-    padding: 0;
-    list-style: none;
+    gap: var(--space-6) var(--space-5);
   }
 
   figure {
@@ -56,13 +54,16 @@ a:focus-visible{outline:3px solid #ecd08f;outline-offset:-3px}
     display: block;
     inline-size: 100%;
     aspect-ratio: 16 / 9;
-    border: 1px solid var(--color-line-strong);
-    border-radius: var(--radius);
-    background: #000;
+    border: 0;
+    background: var(--ink);
   }
 
   figcaption {
-    margin-block-start: var(--space-2);
-    font-size: var(--text-sm);
+    margin-block-start: var(--space-3);
+    padding-block-start: var(--space-2);
+    border-block-start: 1px solid var(--hairline);
+    font-size: var(--text-md);
+    font-weight: 500;
+    line-height: 1.6;
   }
 </style>

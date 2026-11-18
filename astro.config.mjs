@@ -17,8 +17,8 @@ export default defineConfig({
         short_name: "ساعات الحرمين",
         description:
           "ساعات الأذان الأصلية من الحرمين، اطلبها عبر واتساب ونوصلها لجميع محافظات الأردن",
-        theme_color: "#0e110f",
-        background_color: "#0e110f",
+        theme_color: "#ffffff",
+        background_color: "#ffffff",
         display: "standalone",
         start_url: "/",
         lang: "ar",
@@ -42,13 +42,9 @@ export default defineConfig({
         // _astro/ is empty until pages ship CSS/JS bundles.
         globStrict: false,
         globPatterns: ["_astro/**/*.{css,js,woff2}", "*.{svg,png,ico}"],
-        // The lazy three.js hero chunk is only fetched when the 3D watch can
-        // run, and the Arabic pages never request these font subsets; leave
-        // both to the HTTP cache instead of downloading them on install.
-        globIgnores: [
-          "_astro/hero-watch.*.js",
-          "_astro/*-{math,symbols,vietnamese,latin-ext}-*.woff2",
-        ],
+        // The Arabic pages never request these font subsets; leave them to
+        // the HTTP cache instead of downloading them on install.
+        globIgnores: ["_astro/*-latin-ext-*.woff2"],
       },
     }),
   ],
