@@ -259,7 +259,11 @@ const storeJsonLd = {
     <!-- Decide before first paint whether the scroll story runs, so the
          layout never jumps. Without JS the hero is a static drawing. -->
     <script is:inline>
-      if (matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+      if (
+        matchMedia(
+          "(prefers-reduced-motion: no-preference) and (width > 56rem)"
+        ).matches
+      ) {
         document.documentElement.classList.add("scrolly");
       }
     </script>
@@ -343,8 +347,15 @@ const storeJsonLd = {
             </div>
 
             <div class="notes" id="features">
-              <h2 class="visually-hidden">مزايا الساعة</h2>
-              <ol class="notes__list">
+              <h2 class="visually-hidden" id="features-title">
+                مزايا الساعة
+              </h2>
+              {/* Focusable so the swipeable row on phones scrolls from the keyboard. */}
+              <ol
+                aria-labelledby="features-title"
+                class="notes__list"
+                tabindex="0"
+              >
                 {notes.map((note) => (
                   <li
                     class="note"
@@ -1265,7 +1276,7 @@ const storeJsonLd = {
   }
 
   /* Phones and tablets: the watch fills the width, zoomed onto the case,
-     and the notes become a list below it. */
+     and the notes become a swipeable row below it. */
   @media (max-width: 56rem) {
     .drawing,
     .plate {
@@ -1274,6 +1285,7 @@ const storeJsonLd = {
 
     .stage {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
       padding-inline: var(--gutter);
     }
@@ -1325,10 +1337,20 @@ const storeJsonLd = {
       font-size: var(--text-lg);
     }
 
+    /* The next card peeks in so the row reads as swipeable. */
     .notes__list {
       position: static;
       display: grid;
-      gap: 1.5rem;
+      grid-auto-columns: min(80%, 18rem);
+      grid-auto-flow: column;
+      gap: 1.25rem;
+      overflow-x: auto;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-block-end: 0.25rem;
+      padding-inline: var(--gutter);
+      scroll-padding-inline: var(--gutter);
+      scroll-snap-type: inline mandatory;
+      scrollbar-width: none;
     }
 
     .note,
@@ -1336,6 +1358,7 @@ const storeJsonLd = {
       position: static;
       inset: auto;
       inline-size: auto;
+      scroll-snap-align: start;
     }
   }
 
@@ -1367,9 +1390,10 @@ const storeJsonLd = {
      tall, the stage sticks, and the progress through the section drives
      everything. Each annotation owns 16% of the scroll, starting at 8%:
      it draws in over its first 6%, holds, and settles to its quiet look
-     over the 4% after its turn ends. */
+     over the 4% after its turn ends. Phones get the static drawing: a
+     story four screens tall stood between them and the catalog. */
 
-  @media (prefers-reduced-motion: no-preference) {
+  @media (prefers-reduced-motion: no-preference) and (width > 56rem) {
     :global(.scrolly) .anatomy {
       block-size: 480vh;
       view-timeline-name: --anatomy;
@@ -1442,106 +1466,6 @@ const storeJsonLd = {
       --to: calc(var(--from) + 20%);
     }
 
-    /* Phones: watch on top, one note at a time in the slot below it. */
-    @media (max-width: 56rem) {
-      :global(.scrolly) .anatomy {
-        block-size: 420vh;
-      }
-
-      :global(.scrolly) .stage {
-        grid-template-rows: minmax(0, 1fr) auto;
-        place-items: stretch;
-        gap: 1.5rem;
-        padding-block: calc(var(--header-height) + 0.5rem) 1.5rem;
-        container-type: normal;
-      }
-
-      :global(.scrolly) .figure {
-        display: grid;
-        place-items: center;
-        grid-row: 1;
-        inline-size: 100%;
-        max-inline-size: none;
-        block-size: 100%;
-        aspect-ratio: auto;
-        container-type: size;
-      }
-
-      :global(.scrolly) .figure__zoom {
-        inline-size: min(100cqi, 100cqb);
-        block-size: min(100cqi, 100cqb);
-        scale: 1.5;
-      }
-
-      :global(.scrolly) .notes {
-        grid-row: 2;
-        grid-column: 1;
-      }
-
-      /* The intro sits over the strap's end instead of sizing the slot,
-         so the slot fits the notes and the watch takes the rest. */
-      :global(.scrolly) .intro {
-        position: absolute;
-        inset-block: auto 1.5rem;
-        inset-inline: var(--gutter);
-        grid-area: auto;
-        inline-size: auto;
-        padding-block-start: 1rem;
-        background: var(--white);
-        box-shadow: 0 -1.5rem 1.5rem var(--white);
-        translate: none;
-      }
-
-      :global(.scrolly) .intro__lede {
-        display: none;
-      }
-
-      :global(.scrolly) .intro__actions,
-      :global(.scrolly) .intro__product {
-        margin-block-start: 1.25rem;
-      }
-
-      :global(.scrolly) .intro__title {
-        font-size: clamp(1.75rem, 7.5vw, 2.25rem);
-      }
-
-      :global(.scrolly) .notes__list {
-        display: grid;
-        align-items: start;
-      }
-
-      :global(.scrolly) .note {
-        position: relative;
-        grid-area: 1 / 1;
-        margin-block-start: 1.75rem;
-        border-block-start-width: 2px;
-        border-block-start-color: var(--pine);
-        color: var(--ink);
-        font-size: 1.125rem;
-      }
-
-      :global(.scrolly) .note__title {
-        font-size: 1.5rem;
-      }
-
-      /* The stub: a short leader rising from the note toward the watch. */
-      :global(.scrolly) .note::before {
-        position: absolute;
-        inset-block-end: 100%;
-        inset-inline-start: 0;
-        inline-size: 2px;
-        block-size: 1.75rem;
-        background: var(--pine);
-        content: "";
-      }
-
-      :global(.scrolly) .ticks {
-        inset-block-start: calc(var(--header-height) + 1.5rem);
-        inset-inline-end: var(--gutter);
-        translate: none;
-      }
-    }
-
     @supports (animation-timeline: view()) {
       :global(.scrolly) .intro {
         animation-name: intro-out;
@@ -1594,30 +1518,6 @@ const storeJsonLd = {
 
       :global(.scrolly) .ticks li {
         animation-name: tick;
-      }
-
-      @media (max-width: 56rem) {
-        :global(.scrolly) .plate {
-          animation-name: none;
-        }
-
-        :global(.scrolly) .figure__zoom {
-          animation-name: zoom;
-          animation-duration: auto;
-          animation-timing-function: linear;
-          animation-fill-mode: both;
-          animation-timeline: --anatomy;
-          animation-range-start: contain 0%;
-          animation-range-end: contain 92%;
-        }
-
-        :global(.scrolly) .note {
-          animation-name: card;
-        }
-
-        :global(.scrolly) .note:last-child {
-          animation-name: card-last;
-        }
       }
     }
 
@@ -1711,12 +1611,6 @@ const storeJsonLd = {
       :global(.scrolly) .ticks li[data-state="quiet"] {
         background: var(--ink);
       }
-
-      @media (max-width: 56rem) {
-        :global(.scrolly) .note[data-state="quiet"]:not(:last-child) {
-          opacity: 0;
-        }
-      }
     }
   }
 
@@ -1740,16 +1634,6 @@ const storeJsonLd = {
     }
   }
 
-  @keyframes zoom {
-    from {
-      scale: 1.6;
-    }
-
-    to {
-      scale: 1.4;
-    }
-  }
-
   @keyframes note {
     0% {
       border-block-start-color: var(--pine);
@@ -1769,42 +1653,6 @@ const storeJsonLd = {
     100% {
       border-block-start-color: var(--line);
       color: var(--muted);
-      opacity: 1;
-      translate: 0 0;
-    }
-  }
-
-  @keyframes card {
-    0% {
-      visibility: hidden;
-      opacity: 0;
-      translate: 0 0.75rem;
-    }
-
-    25%,
-    80% {
-      visibility: visible;
-      opacity: 1;
-      translate: 0 0;
-    }
-
-    100% {
-      visibility: hidden;
-      opacity: 0;
-      translate: 0 -0.5rem;
-    }
-  }
-
-  @keyframes card-last {
-    0% {
-      visibility: hidden;
-      opacity: 0;
-      translate: 0 0.75rem;
-    }
-
-    25%,
-    100% {
-      visibility: visible;
       opacity: 1;
       translate: 0 0;
     }
