@@ -42,9 +42,6 @@ export default defineConfig({
         // _astro/ is empty until pages ship CSS/JS bundles.
         globStrict: false,
         globPatterns: ["_astro/**/*.{css,js,woff2}", "*.{svg,png,ico}"],
-        // The Arabic pages never request these font subsets; leave them to
-        // the HTTP cache instead of downloading them on install.
-        globIgnores: ["_astro/*-latin-ext-*.woff2"],
       },
     }),
   ],
