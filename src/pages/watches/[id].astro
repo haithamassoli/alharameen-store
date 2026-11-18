@@ -313,7 +313,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
 
   .gallery__main {
     overflow: hidden;
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: calc(var(--radius, 14px) * 1.6);
     background: radial-gradient(
       circle at 50% 40%,
@@ -365,7 +365,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
   .gallery__thumb {
     overflow: hidden;
     inline-size: 5rem;
-    border: 2px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 2px solid var(--color-line);
     border-radius: var(--radius-sm, 8px);
     background: #f4ecdb;
     cursor: pointer;
@@ -377,11 +377,11 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
   }
 
   .gallery__thumb:has(input:checked) {
-    border-color: var(--color-gold, #d9b56c);
+    border-color: var(--color-gold);
   }
 
   .gallery__thumb:has(input:focus-visible) {
-    outline: 2px solid var(--color-gold-strong, #ecd08f);
+    outline: 2px solid var(--color-gold-strong);
     outline-offset: 3px;
   }
 
@@ -394,7 +394,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
   }
 
   .summary__category {
-    color: var(--color-accent, #5fb39b);
+    color: var(--color-accent);
     font-family: var(--font-display, serif);
     font-size: var(--text-sm, 0.875rem);
   }
@@ -405,18 +405,18 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
   }
 
   .summary__model {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
   .summary__model span {
-    color: var(--color-gold, #d9b56c);
+    color: var(--color-gold);
     font-family: ui-monospace, "SF Mono", monospace;
     unicode-bidi: isolate;
   }
 
   .summary__price {
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
     font-family: var(--font-display, serif);
     font-size: var(--text-2xl, 2.25rem);
     font-weight: 700;
@@ -426,7 +426,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
     display: grid;
     gap: var(--space-2, 0.5rem);
     padding-block: var(--space-3, 0.75rem);
-    border-block: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-block: 1px solid var(--color-line);
   }
 
   .summary__facts div {
@@ -436,7 +436,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
 
   .summary__facts dt {
     min-inline-size: 4.5rem;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .summary__facts dd {
@@ -453,20 +453,20 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
     inline-size: 0.55rem;
     block-size: 0.55rem;
     border-radius: 50%;
-    background: var(--color-accent, #5fb39b);
+    background: var(--color-accent);
     content: "";
   }
 
   .stock--low::before {
-    background: var(--color-gold, #d9b56c);
+    background: var(--color-gold);
   }
 
   .stock--out::before {
-    background: var(--color-muted, #a8b8b0);
+    background: var(--color-muted);
   }
 
   .summary__description {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
   }
 
   .summary__actions {
@@ -485,7 +485,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
     flex-wrap: wrap;
     gap: var(--space-1, 0.25rem) var(--space-5, 1.5rem);
     padding: 0;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
     list-style: none;
   }
@@ -528,7 +528,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
     inset-inline-start: 0.2rem;
     inline-size: 0.5rem;
     block-size: 0.5rem;
-    background: var(--color-gold, #d9b56c);
+    background: var(--color-gold);
     content: "";
     rotate: 45deg;
   }
@@ -538,14 +538,15 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
     border-collapse: collapse;
     overflow: hidden;
     border-radius: var(--radius, 14px);
-    background: var(--color-surface, #0f2624);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-glow);
   }
 
   .specs th,
   .specs td {
     padding-block: var(--space-3, 0.75rem);
     padding-inline: var(--space-4, 1rem);
-    border-block-end: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border-block-end: 1px solid var(--color-line);
     text-align: start;
     vertical-align: top;
   }
@@ -557,7 +558,7 @@ const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
 
   .specs th {
     inline-size: 40%;
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-weight: 400;
   }
 

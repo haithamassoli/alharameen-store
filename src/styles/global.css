@@ -1,32 +1,69 @@
 /*
  * Al-Harameen design tokens and base styles.
- * Night palette: deep emerald-midnight ground, parchment text, gold leaf accents.
- * Display: Reem Kufi (geometric Kufic). Body: Noto Naskh Arabic (calligraphic Naskh).
+ * Day palette (default): warm ivory ground, deep emerald ink, antique gold.
+ * Night palette ([data-theme="dark"]): emerald-midnight ground, parchment text,
+ * gold leaf accents. Display: Reem Kufi (geometric Kufic). Body: Noto Naskh
+ * Arabic (calligraphic Naskh).
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Colour */
-  --color-bg: #08191a;
-  --color-bg-deep: #051112;
-  --color-surface: #0f2624;
-  --color-surface-2: #153330;
-  --color-text: #f1e9d8;
-  --color-muted: #a8b8b0;
-  --color-gold: #d9b56c;
-  --color-gold-strong: #ecd08f;
-  --color-gold-deep: #9c7a3c;
-  --color-accent: #5fb39b;
-  --color-line: rgb(217 181 108 / 0.18);
-  --color-line-strong: rgb(217 181 108 / 0.4);
+  /* Colour. Gold used as text is darkened to stay AA on white; filled gold
+     (badges, buttons) keeps the bright leaf tone under dark text. */
+  --color-bg: #fbf8f2;
+  --color-bg-deep: #f4efe4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8f4ec;
+  --color-text: #10302b;
+  --color-muted: #4d635d;
+  --color-gold: #7d5f24;
+  --color-gold-strong: #654a1a;
+  --color-gold-deep: #b8914b;
+  --color-gold-fill: #d9b56c;
+  --color-accent: #1e6e59;
+  --color-danger: #a8322a;
+  --color-line: rgb(125 95 36 / 0.16);
+  --color-line-strong: rgb(125 95 36 / 0.38);
   --color-on-gold: #10201c;
+  --color-tint: rgb(176 136 60 / 0.1);
+  --color-tint-soft: rgb(176 136 60 / 0.05);
+  --color-glass: rgb(251 248 242 / 0.82);
+  --color-overlay: rgb(16 48 43 / 0.32);
+  --color-toast: rgb(255 255 255 / 0.95);
+  --color-field: #ffffff;
+  --color-badge-bg: #10302b;
+  --color-badge-text: #ecd08f;
+  --color-shadow: rgb(31 52 46 / 0.14);
+  --color-shadow-strong: rgb(31 52 46 / 0.24);
+  --color-sheen: transparent;
+  --color-shine: rgb(217 181 108 / 0.18);
+  --glow-gold: rgb(217 181 108 / 0.16);
+  --glow-gold-strong: rgb(217 181 108 / 0.2);
+  --glow-emerald: rgb(30 110 89 / 0.06);
+  --halo-gold: rgb(217 181 108 / 0.3);
+  --halo-emerald: rgb(30 110 89 / 0.07);
+  --halo-line: rgb(125 95 36 / 0.16);
+  --hero-shadow: rgb(16 48 43 / 0.22);
+  --surface-band: linear-gradient(
+    180deg,
+    rgb(244 239 228 / 0.9),
+    rgb(248 244 236 / 0.6)
+  );
   --gold-leaf: linear-gradient(
     135deg,
     #f3dc9f 0%,
     #d9b56c 38%,
     #b8914b 62%,
     #e8cb85 100%
+  );
+  /* Gold leaf for text clipped to the gradient: deeper so it reads on ivory. */
+  --gold-ink: linear-gradient(
+    135deg,
+    #9c7a3c 0%,
+    #7d5f24 40%,
+    #5c4417 65%,
+    #8a6a2c 100%
   );
 
   /* Type */
@@ -60,7 +97,7 @@
   --radius-sm: 8px;
   --radius-pill: 999px;
   --shadow-glow:
-    0 0 0 1px var(--color-line), 0 24px 60px -24px rgb(0 0 0 / 0.6);
+    0 0 0 1px var(--color-line), 0 20px 44px -26px var(--color-shadow-strong);
   --header-height: 4.25rem;
 
   /* Motion */
@@ -68,6 +105,54 @@
   --duration: 260ms;
 
   /* Eight-point star (khatam) lattice, stroked in gold at very low opacity. */
+  --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%237d5f24' stroke-opacity='0.045' stroke-width='1'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Night theme, opted into with the header toggle (stored in localStorage). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #08191a;
+  --color-bg-deep: #051112;
+  --color-surface: #0f2624;
+  --color-surface-2: #153330;
+  --color-text: #f1e9d8;
+  --color-muted: #a8b8b0;
+  --color-gold: #d9b56c;
+  --color-gold-strong: #ecd08f;
+  --color-gold-deep: #9c7a3c;
+  --color-gold-fill: #d9b56c;
+  --color-accent: #5fb39b;
+  --color-danger: #f0a7a0;
+  --color-line: rgb(217 181 108 / 0.18);
+  --color-line-strong: rgb(217 181 108 / 0.4);
+  --color-tint: rgb(217 181 108 / 0.12);
+  --color-tint-soft: rgb(217 181 108 / 0.06);
+  --color-glass: rgb(8 25 26 / 0.72);
+  --color-overlay: rgb(3 10 11 / 0.62);
+  --color-toast: rgb(5 17 18 / 0.92);
+  --color-field: #051112;
+  --color-badge-bg: #051112;
+  --color-badge-text: #d9b56c;
+  --color-shadow: rgb(0 0 0 / 0.55);
+  --color-shadow-strong: rgb(0 0 0 / 0.8);
+  --color-sheen: rgb(255 255 255 / 0.03);
+  --color-shine: rgb(236 208 143 / 0.16);
+  --glow-gold: rgb(217 181 108 / 0.1);
+  --glow-gold-strong: rgb(217 181 108 / 0.16);
+  --glow-emerald: rgb(95 179 155 / 0.12);
+  --halo-gold: rgb(217 181 108 / 0.22);
+  --halo-emerald: rgb(95 179 155 / 0.08);
+  --halo-line: rgb(217 181 108 / 0.12);
+  --hero-shadow: rgb(0 0 0 / 0.5);
+  --surface-band: linear-gradient(
+    180deg,
+    rgb(15 38 36 / 0.7),
+    rgb(5 17 18 / 0.6)
+  );
+  --gold-ink: var(--gold-leaf);
+  --shadow-glow:
+    0 0 0 1px var(--color-line), 0 24px 60px -24px rgb(0 0 0 / 0.6);
   --pattern-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23d9b56c' stroke-opacity='0.05' stroke-width='1'%3E%3Cpath d='M30 30h36v36H30z'/%3E%3Cpath d='M48 22.5 73.5 48 48 73.5 22.5 48z'/%3E%3Cpath d='M0 22.5 25.5 48 0 73.5M96 22.5 70.5 48 96 73.5M22.5 0 48 25.5 73.5 0M22.5 96 48 70.5 73.5 96'/%3E%3Ccircle cx='48' cy='48' r='6'/%3E%3C/g%3E%3C/svg%3E");
 }
 
@@ -101,12 +186,8 @@ body {
   min-block-size: 100dvh;
   background-color: var(--color-bg);
   background-image:
-    radial-gradient(
-      120% 70% at 50% -10%,
-      rgb(95 179 155 / 0.12),
-      transparent 60%
-    ),
-    radial-gradient(80% 50% at 50% 110%, rgb(217 181 108 / 0.08), transparent),
+    radial-gradient(120% 70% at 50% -10%, var(--glow-emerald), transparent 60%),
+    radial-gradient(80% 50% at 50% 110%, var(--glow-gold), transparent),
     var(--pattern-star);
   background-attachment: fixed, fixed, scroll;
   color: var(--color-text);
@@ -207,7 +288,7 @@ a:hover {
 }
 
 ::selection {
-  background-color: var(--color-gold);
+  background-color: var(--color-gold-fill);
   color: var(--color-on-gold);
 }
 
@@ -244,7 +325,7 @@ a:hover {
   z-index: 100;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--color-gold);
+  background: var(--color-gold-fill);
   color: var(--color-on-gold);
   font-family: var(--font-display);
   text-decoration: none;
@@ -320,7 +401,7 @@ a:hover {
 
 .btn-ghost:hover {
   border-color: var(--color-gold);
-  background-color: rgb(217 181 108 / 0.08);
+  background-color: var(--color-tint);
   color: var(--color-gold-strong);
 }
 

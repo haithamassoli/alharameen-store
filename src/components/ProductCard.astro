@@ -143,11 +143,11 @@ const inStock = variant.stock > 0;
     position: relative;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--color-line, rgb(217 181 108 / 0.18));
+    border: 1px solid var(--color-line);
     border-radius: calc(var(--radius, 14px) * 1.4);
     background:
-      linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 40%),
-      var(--color-surface, #0f2624);
+      linear-gradient(180deg, var(--color-sheen), transparent 40%),
+      var(--color-surface);
     box-shadow: var(--shadow-glow, none);
     /* Flat on purpose: with preserve-3d, z-index stops deciding hit testing
        and the stretched name link covers the add button while tilted. */
@@ -159,7 +159,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card:hover {
-    border-color: var(--color-line-strong, rgb(217 181 108 / 0.4));
+    border-color: var(--color-line-strong);
     transition:
       transform 120ms linear,
       border-color var(--duration, 260ms) var(--ease-out, ease-out);
@@ -209,8 +209,8 @@ const inStock = variant.stock > 0;
     padding-block: var(--space-1, 0.25rem);
     padding-inline: var(--space-3, 0.75rem);
     border-radius: var(--radius-pill, 999px);
-    background: var(--color-bg-deep, #051112);
-    color: var(--color-gold, #d9b56c);
+    background: var(--color-badge-bg);
+    color: var(--color-badge-text);
     font-family: ui-monospace, "SF Mono", monospace;
     font-size: var(--text-sm, 0.875rem);
     letter-spacing: 0.04em;
@@ -227,7 +227,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card__category {
-    color: var(--color-accent, #5fb39b);
+    color: var(--color-accent);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -236,7 +236,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card__link {
-    color: var(--color-text, #f1e9d8);
+    color: var(--color-text);
     text-decoration: none;
   }
 
@@ -250,7 +250,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card:has(.product-card__link:focus-visible) {
-    outline: 2px solid var(--color-gold-strong, #ecd08f);
+    outline: 2px solid var(--color-gold-strong);
     outline-offset: 3px;
   }
 
@@ -262,7 +262,7 @@ const inStock = variant.stock > 0;
     display: flex;
     align-items: center;
     gap: var(--space-2, 0.5rem);
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -270,7 +270,7 @@ const inStock = variant.stock > 0;
     inline-size: 0.6rem;
     block-size: 0.6rem;
     border-radius: 50%;
-    background: var(--gold-leaf, #d9b56c);
+    background: var(--gold-leaf);
   }
 
   .product-card__footer {
@@ -284,7 +284,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card__price {
-    color: var(--color-gold-strong, #ecd08f);
+    color: var(--color-gold-strong);
     font-family: var(--font-display, serif);
     font-size: var(--text-xl, 1.5625rem);
     font-weight: 600;
@@ -299,7 +299,7 @@ const inStock = variant.stock > 0;
   }
 
   .product-card__out {
-    color: var(--color-muted, #a8b8b0);
+    color: var(--color-muted);
     font-size: var(--text-sm, 0.875rem);
   }
 
@@ -309,7 +309,7 @@ const inStock = variant.stock > 0;
     border-radius: inherit;
     background: radial-gradient(
       circle at var(--mx, 50%) var(--my, 0%),
-      rgb(236 208 143 / 0.16),
+      var(--color-shine),
       transparent 45%
     );
     opacity: 0;
