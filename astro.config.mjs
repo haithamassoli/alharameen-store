@@ -4,6 +4,8 @@ import { defineConfig } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
+  // Absolute URLs for canonical links, Open Graph and the sitemap.
+  site: "https://alharameen.assoli.site",
   integrations: [
     AstroPWAIntegration({
       registerType: "autoUpdate",

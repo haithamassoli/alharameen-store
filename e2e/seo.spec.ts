@@ -1,0 +1,49 @@
+import { expect, test } from "@playwright/test";
+
+const SITE = "https://alharameen.assoli.site";
+
+test("product page has canonical, share tags and Product JSON-LD", async ({
+  page,
+}) => {
+  await page.goto("/watches/ha-6506bw/");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    `${SITE}/watches/ha-6506bw/`
+  );
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    /^https:\/\/.+\.jpg$/u
+  );
+
+  const raw = await page
+    .locator('script[type="application/ld+json"]')
+    .textContent();
+
+  const jsonLd: unknown = JSON.parse(raw ?? "{}");
+
+  expect(jsonLd).toMatchObject({
+    "@type": "Product",
+    offers: { price: "26.000", priceCurrency: "JOD" },
+  });
+});
+
+test("sitemap lists every product and robots points to it", async ({
+  request,
+}) => {
+  const sitemapResponse = await request.get("/sitemap.xml");
+  const sitemap = await sitemapResponse.text();
+  expect(sitemap.match(/<loc>/gu)).toHaveLength(9);
+  expect(sitemap).toContain(`${SITE}/watches/ha-1013/`);
+
+  const robotsResponse = await request.get("/robots.txt");
+  const robots = await robotsResponse.text();
+  expect(robots).toContain(`Sitemap: ${SITE}/sitemap.xml`);
+});
+
+test("404 page is kept out of the index", async ({ page }) => {
+  await page.goto("/watches/does-not-exist/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex"
+  );
+});

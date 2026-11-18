@@ -86,9 +86,38 @@ const steps = [
     title: "أرسل الطلب عبر واتساب",
   },
 ] as const;
+
+const siteUrl = new URL("/", Astro.site).href;
+
+const storeJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@id": `${siteUrl}#store`,
+      "@type": "OnlineStore",
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "JO",
+        addressLocality: contact.address,
+      },
+      description: store.data.tagline,
+      logo: new URL("/pwa-512x512.png", Astro.site).href,
+      name: store.data.name,
+      telephone: contact.phone,
+      url: siteUrl,
+    },
+    {
+      "@type": "WebSite",
+      inLanguage: "ar",
+      name: store.data.name,
+      publisher: { "@id": `${siteUrl}#store` },
+      url: siteUrl,
+    },
+  ],
+};
 ---
 
-<Layout>
+<Layout jsonLd={storeJsonLd}>
   <main id="main">
     <section aria-labelledby="hero-title" class="hero">
       <div class="hero__inner container">

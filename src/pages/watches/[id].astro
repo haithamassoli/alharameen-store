@@ -6,7 +6,7 @@ import { getCollection, getEntry } from "astro:content";
 import ProductCard from "../../components/ProductCard.astro";
 import Layout from "../../layouts/Layout.astro";
 import { whatsappUrl } from "../../lib/cart";
-import { formatPrice } from "../../lib/money";
+import { formatPrice, toDecimalString } from "../../lib/money";
 
 export const getStaticPaths = (async () => {
   const products = await getCollection("products");
@@ -78,9 +78,53 @@ const orderMessage = [
 ].join("\n");
 
 const orderUrl = whatsappUrl(store.data.contact.whatsapp, orderMessage);
+
+// Source photos are JPEG, which every link-preview bot can read.
+const [mainImage] = data.images;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+
+const productJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  brand: { "@type": "Brand", name: "Al-Harameen" },
+  category: category.data.name,
+  description: data.description,
+  image: data.images.map((image) => new URL(image.src.src, Astro.site).href),
+  model: data.model,
+  name: data.name,
+  offers: {
+    "@type": "Offer",
+    availability: inStock
+      ? "https://schema.org/InStock"
+      : "https://schema.org/OutOfStock",
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "JO",
+      merchantReturnDays: store.data.returnDays,
+      returnPolicyCategory:
+        "https://schema.org/MerchantReturnFiniteReturnWindow",
+    },
+    itemCondition: "https://schema.org/NewCondition",
+    price: toDecimalString(data.price, data.currency),
+    priceCurrency: data.currency,
+    seller: { "@type": "Organization", name: store.data.name },
+    url: pageUrl,
+  },
+  sku: variant.sku,
+};
 ---
 
-<Layout description={data.description} title={data.name}>
+<Layout
+  description={data.description}
+  image={{
+    alt: mainImage.alt,
+    height: mainImage.src.height,
+    src: mainImage.src.src,
+    width: mainImage.src.width,
+  }}
+  jsonLd={productJsonLd}
+  title={data.name}
+>
   <main class="product container" id="main">
     <a class="back-link" href="/#watches">
       <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
