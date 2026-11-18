@@ -1,46 +1,90 @@
-# Astro Starter Kit: Basics
+<div dir="rtl">
+
+# متجر ساعات الحرمين
+
+![متجر ساعات الحرمين](public/og-image.jpg)
+
+متجر إلكتروني لبيع ساعات الأذان الأصلية من الحرمين في الأردن. يتصفح الزبون الساعات، ويضيفها إلى السلة، ثم يرسل طلبه عبر واتساب برسالة جاهزة. الدفع عند الاستلام، والتوصيل لجميع محافظات الأردن.
+
+🔗 **الموقع:** [alharameen.assoli.site](https://alharameen.assoli.site)
+
+## لقطات من المتجر
+
+| الوضع النهاري | الوضع الليلي |
+| --- | --- |
+| ![الصفحة الرئيسية في الوضع النهاري](docs/screenshots/home-light.jpg) | ![الصفحة الرئيسية في الوضع الليلي](docs/screenshots/home-dark.jpg) |
+
+<p align="center">
+  <img src="docs/screenshots/product-mobile.jpg" alt="صفحة منتج على الجوال" width="320">
+</p>
+
+## المزايا
+
+- **ساعة ثلاثية الأبعاد** في الواجهة الرئيسية مبنية بـ three.js، وتُحمَّل فقط عندما يدعمها الجهاز.
+- **سلة مشتريات** تُرسل الطلب عبر واتساب برسالة عربية جاهزة فيها المنتجات والكميات ورسوم التوصيل.
+- **التوصيل:** داخل عمّان أو خارجها، ولكل منطقة رسومها ومدتها.
+- **الوضع النهاري هو الافتراضي**، مع زر للتبديل إلى الوضع الليلي يحفظ اختيارك.
+- **دعم كامل للعربية** واتجاه الكتابة من اليمين لليسار.
+- **تطبيق ويب (PWA)** يمكن تثبيته على الجوال.
+- **تحسين محركات البحث:** روابط canonical وصورة مشاركة (Open Graph) وبيانات JSON-LD وخريطة الموقع.
+- **أسعار دقيقة:** تُخزَّن بالفلس كأعداد صحيحة بعملة الدينار الأردني، وتُنسَّق عند العرض.
+
+## التقنيات
+
+[Astro 7](https://astro.build) (موقع ثابت) · TypeScript · three.js · ‏Oxlint و Oxfmt عبر Ultracite · ‏Vitest · ‏Playwright مع فحص axe لإمكانية الوصول · ‏pnpm · ‏Node 26
+
+## التشغيل محليًا
+
+</div>
 
 ```sh
-pnpm create astro@latest -- --template basics
+pnpm install
+pnpm dev        # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+<div dir="rtl">
 
-## 🚀 Project Structure
+## الأوامر
 
-Inside of your Astro project, you'll see the following folders and files:
+</div>
+
+| الأمر                      | الوظيفة                                       |
+| :------------------------ | :-------------------------------------------- |
+| `pnpm dev`                | تشغيل خادم التطوير                            |
+| `pnpm build`              | بناء نسخة الإنتاج في `dist/`                   |
+| `pnpm preview`            | معاينة نسخة الإنتاج                            |
+| `pnpm fix` / `pnpm check` | تنسيق الكود وفحصه                             |
+| `pnpm typecheck`          | فحص الأنواع                                    |
+| `pnpm test`               | اختبارات الوحدات                              |
+| `pnpm test:e2e`           | اختبارات المتصفح وإمكانية الوصول              |
+| `pnpm validate`           | كل ما يشغّله CI                                |
+| `pnpm pwa:assets`         | توليد أيقونات التطبيق من `public/favicon.svg` |
+
+<div dir="rtl">
+
+## بنية المشروع
+
+</div>
 
 ```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+src/
+├── content/      # بيانات المتجر: المنتجات، الأقسام، مناطق التوصيل
+├── components/   # مكونات Astro (الهيدر، السلة، بطاقة المنتج، الساعة ثلاثية الأبعاد)
+├── layouts/      # القالب العام للصفحات
+├── lib/          # المنطق: السلة، الأسعار، التوصيل (مع اختباراتها)
+├── pages/        # الصفحات: الرئيسية، صفحة كل ساعة، 404، خريطة الموقع
+└── styles/       # الأنماط العامة
+e2e/              # اختبارات Playwright
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+<div dir="rtl">
 
-## 🧞 Commands
+## إضافة منتج
 
-All commands are run from the root of the project, from a terminal:
+أضف المنتج إلى `src/content/products.json` وصورته إلى `src/assets/products/`. يتحقق مخطط Zod في `src/content.config.ts` من البيانات وقت البناء. السعر عدد صحيح بالفلس، فمثلًا `26000` تعني ٢٦ دينارًا.
 
-| Command                | Action                                           |
-| :--------------------- | :----------------------------------------------- |
-| `pnpm install`         | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## المساهمة
 
-## 👀 Want to learn more?
+قبل أي commit شغّل `pnpm validate`، وشغّل `pnpm test:e2e` أيضًا إذا عدّلت الواجهة. رسائل الـ commit تتبع [Conventional Commits](https://www.conventionalcommits.org). باقي القواعد موجودة في [AGENTS.md](AGENTS.md).
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+</div>
