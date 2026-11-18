@@ -1,8 +1,30 @@
 /*
  * Al-Harameen design tokens and base styles: a white showroom. White and
  * chalk grounds, ink text, hairline rules and one pine accent. One family,
- * IBM Plex Sans Arabic, at 400/500/600; prices use tabular numerals.
+ * Thmanyah Sans, at 400/500/700 (600 maps to Bold); prices use tabular numerals.
  */
+
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: url("../assets/fonts/thmanyahsans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: url("../assets/fonts/thmanyahsans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+/* The family has no SemiBold: serve Bold for the existing 600 weights too. */
+@font-face {
+  font-family: "Thmanyah Sans";
+  src: url("../assets/fonts/thmanyahsans-Bold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
 
 :root {
   color-scheme: light;
@@ -24,7 +46,7 @@
   --shadow: rgb(25 37 31 / 0.16);
 
   /* Type */
-  --font: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font: "Thmanyah Sans", system-ui, sans-serif;
   --text-xs: 0.8125rem;
   --text-sm: 0.875rem;
   --text-md: 0.9375rem;
@@ -81,12 +103,25 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   hanging-punctuation: first last;
+  scrollbar-color: var(--pine) transparent;
+  cursor:
+    url("../assets/cursor.svg") 5 3,
+    auto;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
   }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-feature-settings: "salt" 1;
 }
 
 [id] {
