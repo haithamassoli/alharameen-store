@@ -5,6 +5,7 @@ const links = [
   { href: "/#watches", label: "الساعات" },
   { href: "/#features", label: "المزايا" },
   { href: "/guides/", label: "الشروحات" },
+  { href: "/#faq", label: "الأسئلة الشائعة" },
   { href: "/#contact", label: "تواصل معنا" },
 ] as const;
 ---
@@ -32,13 +33,16 @@ const links = [
       popovertarget="site-nav"
       type="button"
     >
-      <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-        <path
-          d="M4.5 8h15M4.5 16h15"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-width="1.5"
-        ></path>
+      <svg
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+      >
+        <path class="menu-button__line" d="M4.5 8h15"></path>
+        <path class="menu-button__line" d="M4.5 16h15"></path>
       </svg>
     </button>
 
@@ -211,8 +215,41 @@ const links = [
       margin-inline-start: auto;
     }
 
+    /* Open: both lines meet in the middle and turn into an X. */
+    .menu-button__line {
+      transform-box: view-box;
+      transform-origin: center;
+      transition: transform 300ms var(--ease);
+    }
+
+    .site-header:has(.site-nav:popover-open) .menu-button__line:first-child {
+      transform: rotate(45deg) translateY(4px);
+    }
+
+    .site-header:has(.site-nav:popover-open) .menu-button__line:last-child {
+      transform: rotate(-45deg) translateY(-4px);
+    }
+
+    /* The dropdown fades and slides in, and back out before it hides. */
+    .site-nav {
+      transition:
+        opacity 250ms var(--ease),
+        translate 250ms var(--ease),
+        display 250ms allow-discrete,
+        overlay 250ms allow-discrete;
+    }
+
     .site-nav:not(:popover-open) {
       display: none;
+      opacity: 0;
+      translate: 0 -0.5rem;
+    }
+
+    @starting-style {
+      .site-nav:popover-open {
+        opacity: 0;
+        translate: 0 -0.5rem;
+      }
     }
 
     .site-nav {

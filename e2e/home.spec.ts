@@ -45,3 +45,21 @@ test("phone menu opens and closes on a link", async ({ page, isMobile }) => {
   await nav.getByRole("link", { name: "المزايا" }).click();
   await expect(nav).toBeHidden();
 });
+
+test("FAQ answers delivery and ordering questions", async ({ page }) => {
+  await page.goto("/");
+
+  const faq = page.locator("#faq");
+
+  const fees = faq.getByRole("table", {
+    name: "رسوم التوصيل ومدته حسب المنطقة",
+  });
+
+  await expect(fees).toBeHidden();
+  await faq.getByText("كم تكلفة التوصيل وكم يستغرق؟").click();
+  await expect(fees).toBeVisible();
+  // One answer open at a time.
+  await faq.getByText("كيف أطلب ساعتي؟").click();
+  await expect(fees).toBeHidden();
+  await expect(faq.getByText("أرسل الطلب عبر واتساب")).toBeVisible();
+});

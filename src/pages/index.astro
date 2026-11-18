@@ -3,7 +3,7 @@
 // draws its five features out of it, one leader line at a time, until they
 // settle into a calm technical drawing. CSS scroll-driven animations do the
 // work; src/lib/anatomy.ts steps through the same states where they are not
-// supported. Below it: the catalog, how to order, and contact.
+// supported. Below it: the catalog, the FAQ, and contact.
 import { Picture } from "astro:assets";
 import { getCollection } from "astro:content";
 
@@ -37,7 +37,6 @@ const products = allProducts.toSorted(
 const categoryName = (id: string): string => categoryById.get(id)?.name ?? "";
 
 const zones = await getShippingZones();
-const [cheapestZone] = zones;
 
 const digits = new Intl.NumberFormat("ar-JO-u-nu-latn");
 const { contact, returnDays, warrantyYears } = store;
@@ -481,67 +480,126 @@ const storeJsonLd = {
       </div>
     </section>
 
-    <section aria-labelledby="order-title" class="order" id="order">
+    <section aria-labelledby="faq-title" class="faq" id="faq">
       <div class="container">
         <div class="section-head">
           <div>
-            <h2 id="order-title">طريقة الطلب</h2>
+            <h2 id="faq-title">الأسئلة الشائعة</h2>
             <p class="section-note">
-              ثلاث خطوات، ولا تدفع شيئًا قبل أن تصلك الساعة.
+              كل ما تحتاج معرفته قبل أن تطلب، ولا تدفع شيئًا قبل أن تصلك الساعة.
             </p>
           </div>
         </div>
 
-        <ol class="steps">
-          {steps.map((step, index) => (
-            <li class="step">
-              <span aria-hidden="true" class="step__number">
-                {digits.format(index + 1)}
-              </span>
-              <h3 class="step__title">{step.title}</h3>
-              <p class="step__text">{step.text}</p>
-            </li>
-          ))}
-        </ol>
+        <div class="faq__list">
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">كيف أطلب ساعتي؟</summary>
+            <div class="faq__answer">
+              <ol class="steps">
+                {steps.map((step, index) => (
+                  <li class="step">
+                    <span aria-hidden="true" class="step__number">
+                      {digits.format(index + 1)}
+                    </span>
+                    <h3 class="step__title">{step.title}</h3>
+                    <p class="step__text">{step.text}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </details>
 
-        <div class="delivery">
-          <h3 class="delivery__title">التوصيل</h3>
-          <table class="zones">
-            <caption class="visually-hidden">
-              رسوم التوصيل ومدته حسب المنطقة
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">المنطقة</th>
-                <th scope="col">الرسوم</th>
-                <th scope="col">المدة</th>
-              </tr>
-            </thead>
-            <tbody>
-              {zones.map((zone) => (
-                <tr>
-                  <th scope="row">{zone.data.name}</th>
-                  <td class="price">
-                    {formatPrice(zone.data.fee, zone.data.currency)}
-                  </td>
-                  <td>{deliveryTime(zone.data.minDays, zone.data.maxDays)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p class="delivery__cash">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <rect height="11" rx="1.5" width="18" x="3" y="7"></rect>
-              <circle cx="12" cy="12.5" r="2.5"></circle>
-            </svg>
-            الدفع نقدًا عند الاستلام
-            {cheapestZone && (
-              <span class="delivery__from">
-                ، والتوصيل يبدأ من{" "}
-                {formatPrice(cheapestZone.data.fee, cheapestZone.data.currency)}
-              </span>
-            )}
-          </p>
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">
+              كم تكلفة التوصيل وكم يستغرق؟
+            </summary>
+            <div class="faq__answer">
+              <p>نوصل لجميع محافظات الأردن، والرسوم حسب المنطقة:</p>
+              <table class="zones">
+                <caption class="visually-hidden">
+                  رسوم التوصيل ومدته حسب المنطقة
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">المنطقة</th>
+                    <th scope="col">الرسوم</th>
+                    <th scope="col">المدة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {zones.map((zone) => (
+                    <tr>
+                      <th scope="row">{zone.data.name}</th>
+                      <td class="price">
+                        {formatPrice(zone.data.fee, zone.data.currency)}
+                      </td>
+                      <td>
+                        {deliveryTime(zone.data.minDays, zone.data.maxDays)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">كيف أدفع؟</summary>
+            <div class="faq__answer">
+              <p>
+                نقدًا عند الاستلام. تدفع ثمن الساعة مع رسوم التوصيل للمندوب حين
+                تصلك، ولا نطلب أي دفعة مسبقة.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">
+              هل أستطيع طلب أكثر من ساعة في طلب واحد؟
+            </summary>
+            <div class="faq__answer">
+              <p>
+                نعم، أضف ما تشاء إلى السلة، وتُحسب رسوم التوصيل مرة واحدة على
+                الطلب كله.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">هل الساعات أصلية؟</summary>
+            <div class="faq__answer">
+              <p>
+                نعم، كل ساعاتنا من الحرمين الأصلية، وكل ساعة مكفولة بضمان
+                {warranty}.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">
+              ما الضمان، وهل أستطيع إرجاع الساعة؟
+            </summary>
+            <div class="faq__answer">
+              <p>
+                على كل ساعة ضمان {warranty}، ويمكنك إرجاعها خلال{" "}
+                {digits.format(returnDays)} يومًا. راسلنا على واتساب ونرتب معك
+                الإرجاع أو الصيانة.
+              </p>
+            </div>
+          </details>
+
+          <details class="faq__item" name="faq">
+            <summary class="faq__question">
+              كيف أضبط الوقت والمدينة ومواقيت الصلاة؟
+            </summary>
+            <div class="faq__answer">
+              <p>
+                جهّزنا فيديوهات قصيرة تشرح الضبط خطوة بخطوة لكل موديل، تجدها في
+                <a href="/guides/">صفحة الشروحات</a>. وإن احتجت مساعدة فنحن على
+                واتساب.
+              </p>
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -870,7 +928,7 @@ const storeJsonLd = {
   /* Section scaffolding */
 
   .catalog,
-  .order,
+  .faq,
   .contact {
     padding-block: var(--section);
   }
@@ -937,57 +995,117 @@ const storeJsonLd = {
     gap: clamp(2rem, 3.5vw, 3rem) clamp(1rem, 2vw, 1.75rem);
   }
 
-  /* Order */
+  /* FAQ: native exclusive <details>. Where ::details-content and
+     interpolate-size are supported the answers slide open and shut;
+     elsewhere they simply appear. */
 
-  .order {
+  .faq {
     background: var(--chalk);
+    interpolate-size: allow-keywords;
+  }
+
+  .faq__list {
+    max-inline-size: 48rem;
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .faq__item {
+    border-block-end: 1px solid var(--hairline);
+  }
+
+  .faq__question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.25rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .faq__question::-webkit-details-marker {
+    display: none;
+  }
+
+  /* A plus that turns into a cross. */
+  .faq__question::after {
+    content: "";
+    flex-shrink: 0;
+    inline-size: 1rem;
+    block-size: 1rem;
+    background:
+      linear-gradient(var(--pine), var(--pine)) center / 100% 1.5px no-repeat,
+      linear-gradient(var(--pine), var(--pine)) center / 1.5px 100% no-repeat;
+    transition: rotate 350ms var(--ease);
+  }
+
+  .faq__item[open] .faq__question::after {
+    rotate: 135deg;
+  }
+
+  .faq__item::details-content {
+    block-size: 0;
+    overflow: clip;
+    opacity: 0;
+    transition:
+      block-size 350ms var(--ease),
+      opacity 350ms var(--ease),
+      content-visibility 350ms allow-discrete;
+  }
+
+  .faq__item[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  .faq__answer {
+    display: grid;
+    gap: 1rem;
+    padding-block-end: 1.5rem;
+    color: var(--muted);
+  }
+
+  .faq__answer a {
+    color: var(--ink);
+    text-decoration-color: var(--pine);
+    text-underline-offset: 0.35em;
   }
 
   .steps {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2rem clamp(1.5rem, 4vw, 3rem);
+    gap: 1.25rem;
   }
 
   .step {
-    padding-block-start: 1.25rem;
-    border-block-start: 1px solid var(--ink);
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    column-gap: 1rem;
   }
 
   .step__number {
-    display: block;
-    margin-block-end: 0.75rem;
+    grid-row: span 2;
     color: var(--pine);
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 400;
     line-height: 1;
   }
 
   .step__title {
-    font-size: 1.125rem;
+    color: var(--ink);
+    font-size: 1rem;
     font-weight: 600;
   }
 
   .step__text {
-    margin-block-start: 0.25rem;
-    color: var(--muted);
-  }
-
-  .delivery {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    gap: 1rem clamp(2rem, 6vw, 6rem);
-    margin-block-start: clamp(3rem, 6vw, 4.5rem);
-  }
-
-  .delivery__title {
-    font-size: 1.25rem;
-    font-weight: 600;
+    grid-column: 2;
   }
 
   .zones {
     inline-size: 100%;
     border-collapse: collapse;
+    color: var(--ink);
     text-align: start;
   }
 
@@ -1014,33 +1132,6 @@ const storeJsonLd = {
 
   .zones td.price {
     font-weight: 500;
-  }
-
-  .delivery__cash {
-    display: inline-flex;
-    grid-column: 2;
-    align-items: center;
-    gap: 0.625rem;
-    color: var(--ink);
-    font-size: 0.9375rem;
-    font-weight: 500;
-  }
-
-  .delivery__cash svg {
-    flex-shrink: 0;
-    inline-size: 1.375rem;
-    block-size: 1.375rem;
-    fill: none;
-    stroke: var(--pine);
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.4;
-  }
-
-  .delivery__from {
-    margin-inline-start: -0.625rem;
-    color: var(--muted);
-    font-weight: 400;
   }
 
   /* Contact */
@@ -1150,36 +1241,6 @@ const storeJsonLd = {
       position: static;
       inset: auto;
       inline-size: auto;
-    }
-  }
-
-  @media (max-width: 52rem) {
-    .delivery {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .delivery__cash {
-      grid-column: auto;
-    }
-
-    .steps {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1.5rem;
-    }
-
-    .step {
-      display: grid;
-      grid-template-columns: 2.5rem minmax(0, 1fr);
-      column-gap: 1rem;
-    }
-
-    .step__number {
-      grid-row: span 2;
-      font-size: 2rem;
-    }
-
-    .step__text {
-      grid-column: 2;
     }
   }
 
