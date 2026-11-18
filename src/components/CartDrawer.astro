@@ -225,6 +225,37 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
           </div>
         </fieldset>
 
+        <fieldset class="cart-drawer__fieldset gift">
+          <legend class="visually-hidden">الإهداء</legend>
+          <label class="gift__toggle">
+            <input
+              aria-describedby="cart-gift-hint"
+              class="gift__input"
+              id="cart-gift"
+              name="gift"
+              type="checkbox"
+            />
+            <span class="gift__title">هذا الطلب هدية</span>
+            <small class="field__hint" id="cart-gift-hint">
+              اكتب عنوان من ستُهديه في خانة العنوان، ونتفق معك على تفاصيل التسليم
+              عبر واتساب.
+            </small>
+          </label>
+          <div class="field gift__message">
+            <label class="field__label" for="cart-gift-message">
+              رسالة الإهداء <span class="field__optional">(اختياري)</span>
+            </label>
+            <textarea
+              class="field__input"
+              id="cart-gift-message"
+              maxlength="200"
+              name="giftMessage"
+              placeholder="مثال: تقبّل الله منك، وجعلها تذكرة لك بكل صلاة"
+              rows="2"
+            ></textarea>
+          </div>
+        </fieldset>
+
         <dl class="totals">
           <div class="totals__row">
             <dt>المجموع الفرعي</dt>
@@ -428,6 +459,14 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
   const phoneInput = queryElement(form, "#cart-phone", HTMLInputElement);
   const addressInput = queryElement(form, "#cart-address", HTMLInputElement);
   const notesInput = queryElement(form, "#cart-notes", HTMLTextAreaElement);
+  const giftInput = queryElement(form, "#cart-gift", HTMLInputElement);
+
+  const giftMessageInput = queryElement(
+    form,
+    "#cart-gift-message",
+    HTMLTextAreaElement
+  );
+
   const firstZone = queryElement(form, 'input[name="zone"]', HTMLInputElement);
   const toast = queryElement(document, "[data-cart-toast]", HTMLElement);
   const toastText = queryElement(toast, "[data-cart-toast-text]", HTMLElement);
@@ -919,6 +958,9 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
       catalog,
       customer: {
         address: addressInput.value,
+        gift: giftInput.checked
+          ? { message: giftMessageInput.value }
+          : undefined,
         name: nameInput.value,
         notes: notesInput.value,
         phone: normalizePhone(phoneInput.value),
@@ -1388,6 +1430,52 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
 
   textarea.field__input {
     resize: vertical;
+  }
+
+  /* ---------- Gift: the card message shows only once the box is ticked ---------- */
+
+  .gift__toggle {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .gift__toggle:has(:checked) {
+    border-color: var(--pine);
+    background: var(--chalk);
+  }
+
+  .gift__toggle:has(:focus-visible) {
+    outline: 2px solid var(--pine);
+    outline-offset: 3px;
+  }
+
+  .gift__input {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    margin: 0;
+    accent-color: var(--pine);
+  }
+
+  .gift__input:focus-visible {
+    outline: none;
+  }
+
+  .gift__title {
+    font-weight: 600;
+  }
+
+  .gift__toggle .field__hint {
+    grid-column: 2;
+  }
+
+  .gift:not(:has(.gift__input:checked)) .gift__message {
+    display: none;
   }
 
   .cart-drawer__sent {

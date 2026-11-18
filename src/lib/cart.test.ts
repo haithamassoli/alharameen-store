@@ -138,6 +138,14 @@ describe("cartTotals", () => {
   });
 });
 
+const giftOrder = (cardText: string): string =>
+  buildWhatsAppMessage({
+    catalog,
+    customer: { ...customer, gift: { message: cardText } },
+    lines: [{ id: "ha-1013", qty: 1 }],
+    zone: amman,
+  });
+
 describe("buildWhatsAppMessage", () => {
   const message = buildWhatsAppMessage({
     catalog,
@@ -182,7 +190,16 @@ describe("buildWhatsAppMessage", () => {
     });
 
     expect(withoutNotes).not.toContain("ملاحظات");
+    expect(withoutNotes).not.toContain("هدية");
     expect(withoutNotes).toContain(`الإجمالي: ${formatPrice(10_000)}`);
+  });
+
+  it("marks gift orders and adds the card message when given", () => {
+    expect(giftOrder(" كل عام وأنت بخير ")).toContain(
+      "هذا الطلب هدية 🎁\nرسالة الإهداء: كل عام وأنت بخير"
+    );
+    expect(giftOrder("  ")).toContain("هذا الطلب هدية");
+    expect(giftOrder("  ")).not.toContain("رسالة الإهداء");
   });
 });
 
