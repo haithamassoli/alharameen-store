@@ -115,7 +115,7 @@ if (!heroImage) {
 
 // ---- The drawing ----
 // Coordinates are in the photo's own 1000 × 1000 box, measured on
-// ha-6506bw-1.jpg. The drawing is 1600 wide, so the photo sits between
+// ha-6506bw-1.webp. The drawing is 1600 wide, so the photo sits between
 // x = 0 and x = 1000 with 300 units of margin on either side.
 const NOTE_EDGE = { left: 230, right: 770 } as const;
 const ELBOW = 50;
@@ -710,27 +710,16 @@ const storeJsonLd = {
     inline-size: 62.5%;
   }
 
-  /* Dark: the photo sits on a light plate, faded at the edges into a
-     spotlight so the headline beside it stays on the dark page. */
   .figure__zoom {
     position: relative;
     inline-size: 100%;
     block-size: 100%;
-    background: light-dark(transparent, var(--plate));
-    mask-image: radial-gradient(
-      closest-side,
-      #000 48%,
-      light-dark(#000, transparent) 72%
-    );
   }
 
-  /* The studio backdrop is 254 white in places; lift it to the page. */
   .figure__zoom :global(img) {
     inline-size: 100%;
     block-size: 100%;
     object-fit: contain;
-    filter: brightness(1.02);
-    mix-blend-mode: multiply;
   }
 
   .marks {

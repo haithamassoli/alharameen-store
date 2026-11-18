@@ -33,8 +33,6 @@
   /* Colour: each token is light-dark(light, dark). */
   --white: light-dark(#ffffff, #121815);
   --chalk: light-dark(#f5f6f3, #1a221e);
-  /* Behind product photos: stays light so multiply keeps the studio white. */
-  --plate: light-dark(#f5f6f3, #dfe2dd);
   --ink: light-dark(#19251f, #e6ebe8);
   --muted: light-dark(#56625b, #a1aca6);
   --hairline: light-dark(#e3e3de, #2a332e);
