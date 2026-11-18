@@ -12,7 +12,7 @@ const facade = ({ title, youtubeId }: Props["videos"][number]): string => {
   const label = `تشغيل فيديو: ${title}`.replaceAll('"', "&quot;");
 
   return `<!doctype html><html lang="ar" dir="rtl"><title>${label}</title><style>
-*{margin:0}html,body,a{block-size:100%}
+*{margin:0;box-sizing:border-box}html,body,a{block-size:100%}
 a{display:grid;place-items:end start;padding:10px;text-decoration:none;background:#000 center/cover url(https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg)}
 span{display:grid;place-items:center;inline-size:56px;block-size:40px;border-radius:10px;background:rgb(0 0 0/.72);color:#fff;font:24px/1 sans-serif}
 a:hover span,a:focus-visible span{background:#285a47}
