@@ -131,6 +131,9 @@ body {
   font-size: var(--text-base);
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
+  /* Lets full-bleed strips size to 100cqi, which, unlike 100vw,
+     excludes a classic scrollbar and so never overflows the page. */
+  container-type: inline-size;
 }
 
 img,

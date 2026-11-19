@@ -701,16 +701,25 @@ const productJsonLd = {
     grid-auto-columns: minmax(14rem, 17rem);
     grid-auto-flow: column;
     gap: var(--space-5);
-    /* Bleed into the container gutter so cards scroll edge to edge;
-       the gutter only reappears as padding at either end of the strip. */
-    margin-inline: calc(-1 * var(--gutter));
-    padding-inline: var(--gutter);
+    /* Bleed to both viewport edges so cards scroll edge to edge; the
+       offset back to the content column only shows at either end.
+       No % here: scroll-padding would resolve it against the strip. */
+    --bleed: max(
+      var(--gutter),
+      (100cqi - var(--container)) / 2 + var(--gutter)
+    );
+    margin-inline: calc(-1 * var(--bleed));
+    padding-inline: var(--bleed);
     padding-block-end: var(--space-5);
-    scroll-padding-inline: var(--gutter);
+    scroll-padding-inline: var(--bleed);
     overflow-x: auto;
     overscroll-behavior-inline: contain;
     scroll-snap-type: inline mandatory;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+  }
+
+  .more__strip::-webkit-scrollbar {
+    display: none;
   }
 
   .more__strip > li {
