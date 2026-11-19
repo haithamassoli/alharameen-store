@@ -56,6 +56,24 @@ const chatUrl = whatsappUrl(
   "السلام عليكم، أرغب بالاستفسار عن ساعات الحرمين."
 );
 
+// Who an adhan watch suits as a gift, and why.
+const giftIdeas = [
+  {
+    text: "تؤذن بالأذان كاملًا بصوت واضح، وتعرض مواقيت اليوم كلها على شاشة واحدة.",
+    title: "للوالدين",
+  },
+  {
+    text: "خفيفة ومتينة تنبّههم لكل صلاة، بالأسود والأبيض والوردي.",
+    title: "للأبناء عند سن الصلاة",
+  },
+  {
+    text: "تحدد القبلة وتعرض مواقيت مدن العالم، فترافقه في سفره.",
+    title: "للحاج والمعتمر",
+  },
+  { text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.", title: "لها" },
+  { text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.", title: "للبيت الجديد" },
+] as const;
+
 const steps = [
   { text: "تصفّح التشكيلة واختر الساعة التي تناسبك.", title: "اختر ساعتك" },
   { text: "أضف ما تريد إلى السلة واختر منطقة التوصيل.", title: "أضفها للسلة" },
@@ -478,6 +496,14 @@ const storeJsonLd = {
           نغلّف الساعة مع بطاقة مطبوعة برسالتك مقابل{" "}
           <span class="price">{giftWrapFee}</span> للطلب كله.
         </p>
+        <ul class="gifts__list">
+          {giftIdeas.map((idea) => (
+            <li class="gift-idea">
+              <h3 class="gift-idea__title">{idea.title}</h3>
+              <p class="gift-idea__text">{idea.text}</p>
+            </li>
+          ))}
+        </ul>
         <a class="btn btn-primary gifts__cta" href="#watches">
           اختر ساعتك
         </a>
@@ -1163,7 +1189,7 @@ const storeJsonLd = {
     }
   }
 
-  /* Gifts: one heading, the wrap offer, a way back to the watches. */
+  /* Gifts: one heading, the wrap offer, who it suits, a way back to the watches. */
 
   .gifts {
     padding-block: var(--section);
@@ -1183,8 +1209,37 @@ const storeJsonLd = {
     color: var(--pine);
   }
 
+  .gifts__list {
+    margin-block-start: var(--space-6);
+    border-block-start: 1px solid var(--ink);
+  }
+
+  .gift-idea {
+    display: grid;
+    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+    gap: var(--space-1) var(--space-5);
+    align-items: baseline;
+    padding-block: var(--space-4);
+    border-block-end: 1px solid var(--hairline);
+  }
+
+  .gift-idea__title {
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+
+  .gift-idea__text {
+    color: var(--muted);
+  }
+
   .gifts__cta {
-    margin-block-start: var(--space-5);
+    margin-block-start: var(--space-6);
+  }
+
+  @media (max-width: 48rem) {
+    .gift-idea {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   /* FAQ: native exclusive <details>. Where ::details-content and
