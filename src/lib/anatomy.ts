@@ -2,12 +2,34 @@
 // calendar annotation, and a scroll fallback that steps through the
 // annotations where CSS scroll-driven animations are not supported.
 
-const HIJRI = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-latn", {
+const HIJRI_LOCALE = "ar-SA-u-ca-islamic-umalqura-nu-latn";
+const TIME_ZONE = "Asia/Amman";
+
+const HIJRI = new Intl.DateTimeFormat(HIJRI_LOCALE, {
   day: "numeric",
   month: "long",
-  timeZone: "Asia/Amman",
+  timeZone: TIME_ZONE,
   year: "numeric",
 });
+
+// The watch screen splits the date: the day big, the month and year under it.
+const HIJRI_PARTS = new Map([
+  [
+    "day",
+    new Intl.DateTimeFormat(HIJRI_LOCALE, {
+      day: "numeric",
+      timeZone: TIME_ZONE,
+    }),
+  ],
+  [
+    "month",
+    new Intl.DateTimeFormat(HIJRI_LOCALE, {
+      month: "long",
+      timeZone: TIME_ZONE,
+      year: "numeric",
+    }),
+  ],
+]);
 
 /** Percent of the stage scroll where the first annotation starts. */
 const FIRST_START = 8;
@@ -38,13 +60,13 @@ const stateAt = (progress: number, index: number): NoteState => {
   return progress < quietAt ? "active" : "quiet";
 };
 
-export const hijriToday = (): string => HIJRI.format(new Date());
+/** Today's Hijri date, or just its day or month and year when `part` asks. */
+export const hijriToday = (part?: string): string =>
+  (HIJRI_PARTS.get(part ?? "") ?? HIJRI).format(new Date());
 
 const showHijriDate = (): void => {
-  const today = hijriToday();
-
   for (const slot of document.querySelectorAll<HTMLElement>("[data-hijri]")) {
-    slot.textContent = today;
+    slot.textContent = hijriToday(slot.dataset.hijri);
   }
 };
 

@@ -201,6 +201,14 @@ const features: Feature[] = [
   },
 ];
 
+// ---- The watch screen ----
+// A loop of three readouts laid over the photo's LCD. The prayer time and
+// the Qibla are examples; the Hijri date is today's.
+const FAJR_TIME = "4:52";
+
+// Qibla from Amman, from true north. An example, not a calculation.
+const QIBLA_BEARING = 157;
+
 const leaderPath = (
   [x, y]: readonly [number, number],
   side: Side,
@@ -346,6 +354,46 @@ const storeJsonLd = {
                   width={HERO_SIZE}
                   widths={[480, 720, HERO_SIZE]}
                 />
+
+                <div aria-hidden="true" class="lcd">
+                  <div class="readout" style="--i: 0">
+                    <span class="readout__line">
+                      <svg class="readout__bell" viewBox="0 0 24 24">
+                        <path d="M6 16.5h12l-1.6-2.2V10a4.4 4.4 0 0 0-8.8 0v4.3z" />
+                        <path d="M10.2 19a1.9 1.9 0 0 0 3.6 0" />
+                      </svg>
+                      الفجر
+                    </span>
+                    <span class="readout__big">{FAJR_TIME}</span>
+                    <span class="readout__small">مثال لموعد الأذان</span>
+                  </div>
+
+                  <div class="readout" style="--i: 1">
+                    <svg
+                      class="readout__compass"
+                      style={`--bearing: ${QIBLA_BEARING}deg`}
+                      viewBox="0 0 40 40"
+                    >
+                      <circle cx="20" cy="20" r="17" />
+                      <g class="readout__needle">
+                        <path d="M20 5 23.2 20h-6.4z" />
+                        <path class="readout__tail" d="M16.8 20h6.4L20 35z" />
+                      </g>
+                    </svg>
+                    <span class="readout__mid">{QIBLA_BEARING}°</span>
+                    <span class="readout__small">القبلة من عمّان</span>
+                  </div>
+
+                  <div class="readout" style="--i: 2">
+                    <span class="readout__line">هجري</span>
+                    <span class="readout__big" data-hijri="day">
+                      {hijriToday("day")}
+                    </span>
+                    <span class="readout__small" data-hijri="month">
+                      {hijriToday("month")}
+                    </span>
+                  </div>
+                </div>
 
                 <svg aria-hidden="true" class="marks" viewBox="0 0 1000 1000">
                   {notes.map((note) => (
@@ -832,6 +880,151 @@ const storeJsonLd = {
     inline-size: 100%;
     block-size: 100%;
     object-fit: contain;
+  }
+
+  /* ---- The watch screen ----
+     A disc of LCD grey laid exactly over the photo's screen (centre 48.9% /
+     46.4%, radius 15.1% of the photo), cycling three readouts. Only with
+     motion welcome: otherwise the photo's own screen stays, which is what
+     the static drawing's leaders point at. */
+  .lcd {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lcd {
+      --cycle: 12s;
+
+      position: absolute;
+      z-index: 1;
+      inset-block-start: 31.37%;
+      /* The page is RTL, so inline-end is the photo's left edge. */
+      inset-inline-end: 33.82%;
+      display: block;
+      inline-size: 30.14%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(
+        closest-side,
+        #d5dede 96.5%,
+        rgb(213 222 222 / 0) 100%
+      );
+      color: #1d2523;
+      container-type: inline-size;
+      animation: lcd-on 700ms var(--ease) 300ms backwards;
+    }
+
+    .readout {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2cqi;
+      line-height: 1.15;
+      animation: lcd-readout var(--cycle) var(--ease) infinite backwards;
+      animation-delay: calc(var(--i) * var(--cycle) / 3 + 700ms);
+    }
+
+    .readout__line {
+      display: inline-flex;
+      align-items: center;
+      gap: 3cqi;
+      font-size: 10cqi;
+      font-weight: 500;
+    }
+
+    .readout__bell {
+      inline-size: 10cqi;
+      block-size: 10cqi;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+
+    .readout__big {
+      font-size: 29cqi;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .readout__mid {
+      font-size: 18cqi;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout__small {
+      font-size: 7.5cqi;
+      font-weight: 500;
+    }
+
+    .readout__compass {
+      inline-size: 34cqi;
+      block-size: 34cqi;
+    }
+
+    .readout__compass circle {
+      fill: none;
+      stroke: currentColor;
+      stroke-dasharray: 1 2.2;
+      stroke-width: 1;
+    }
+
+    /* The needle swings from north to the Qibla each time its readout lights. */
+    .readout__needle {
+      fill: currentColor;
+      transform-origin: 20px 20px;
+      animation: lcd-needle var(--cycle) var(--ease) infinite backwards;
+      animation-delay: calc(var(--cycle) / 3 + 700ms);
+    }
+
+    .readout__tail {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1;
+    }
+  }
+
+  @keyframes lcd-on {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Each readout owns a third of the cycle. */
+  @keyframes lcd-readout {
+    0% {
+      opacity: 0;
+      translate: 0 3cqi;
+    }
+
+    5%,
+    29% {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    33.4%,
+    100% {
+      opacity: 0;
+      translate: 0 0;
+    }
+  }
+
+  @keyframes lcd-needle {
+    0%,
+    6% {
+      rotate: 0deg;
+    }
+
+    20%,
+    100% {
+      rotate: var(--bearing);
+    }
   }
 
   .marks {
