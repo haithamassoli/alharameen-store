@@ -1,0 +1,94 @@
+---
+import Logo from "../assets/logo.svg";
+import { getStore } from "../lib/store";
+
+const store = await getStore();
+---
+
+<!-- Decorative, so hidden from assistive tech; pointer-events: none so it never blocks the page. -->
+<script is:inline>
+  // ponytail: once per browser session; sessionStorage can throw in private modes, then we just skip it.
+  try {
+    if (!sessionStorage.getItem("intro-seen")) {
+      sessionStorage.setItem("intro-seen", "1");
+      document.documentElement.classList.add("intro-on");
+    }
+  } catch {
+    // Storage blocked: skip the intro rather than show it on every page.
+  }
+</script>
+<div aria-hidden="true" class="intro">
+  <Logo class="intro__logo" />
+  <p class="intro__name">{store.name}</p>
+  <span class="intro__rule"></span>
+</div>
+
+<style>
+  .intro {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.intro-on) .intro {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: var(--space-4);
+      background: var(--white);
+      pointer-events: none;
+      animation: intro-out 700ms var(--ease) 2000ms forwards;
+    }
+  }
+
+  .intro__logo {
+    inline-size: clamp(4.5rem, 14vw, 7rem);
+    block-size: auto;
+    animation: intro-logo 1100ms var(--ease) both;
+  }
+
+  .intro__name {
+    margin: 0;
+    color: var(--ink);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    animation: intro-rise 800ms var(--ease) 500ms both;
+  }
+
+  .intro__rule {
+    inline-size: 4rem;
+    block-size: 2px;
+    background: var(--pine);
+    transform-origin: center;
+    animation: intro-grow 700ms var(--ease) 900ms both;
+  }
+
+  @keyframes intro-logo {
+    from {
+      opacity: 0;
+      transform: scale(0.6) rotate(-90deg);
+    }
+  }
+
+  @keyframes intro-rise {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+  }
+
+  @keyframes intro-grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  @keyframes intro-out {
+    to {
+      clip-path: inset(0 0 100% 0);
+      visibility: hidden;
+    }
+  }
+</style>
