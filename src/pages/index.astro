@@ -500,9 +500,9 @@ const storeJsonLd = {
           <div>
             <h2 id="gifts-title">هدية يبقى أجرها</h2>
             <p class="section-note">
-              ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره
-              في كل صلاة يدركها على وقتها. اختر «تغليف هدية» في السلة ونغلّفها مع
-              بطاقة برسالتك مقابل {giftWrapFee}.
+              قال ﷺ: «تَهادَوا تَحابُّوا»، وساعة الأذان تذكّر من تحب بالصلاة خمس مرات
+              كل يوم، فلعل لك مثل أجره في كل صلاة يدركها على وقتها. اختر «تغليف
+              هدية» في السلة ونغلّفها مع بطاقة برسالتك مقابل {giftWrapFee}.
             </p>
           </div>
         </div>
@@ -554,15 +554,6 @@ const storeJsonLd = {
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="container">
-        <figure class="hadith">
-          <blockquote>
-            <p>«تَهادَوا تَحابُّوا»</p>
-          </blockquote>
-          <figcaption>رواه البخاري في الأدب المفرد</figcaption>
-        </figure>
       </div>
     </section>
 
@@ -1245,8 +1236,7 @@ const storeJsonLd = {
     }
   }
 
-  /* Gifts: the wrapped box and who it suits under one heading, then a
-     hadith set quietly and centred. */
+  /* Gifts: the wrapped box and who it suits, under one heading. */
 
   .gifts {
     padding-block: var(--section);
@@ -1491,28 +1481,6 @@ const storeJsonLd = {
       opacity: 1;
       translate: 0 0;
     }
-  }
-
-  .hadith {
-    margin-block-start: clamp(3rem, 7vw, 5rem);
-    padding-block-start: clamp(3rem, 7vw, 5rem);
-    border-block-start: 1px solid var(--hairline);
-    text-align: center;
-    display: grid;
-    justify-items: center;
-    gap: var(--space-3);
-  }
-
-  .hadith blockquote {
-    margin: 0;
-    font-size: var(--text-xl);
-    font-weight: 400;
-    line-height: 1.6;
-  }
-
-  .hadith figcaption {
-    color: var(--muted);
-    font-size: var(--text-sm);
   }
 
   /* FAQ: native exclusive <details>. Where ::details-content and

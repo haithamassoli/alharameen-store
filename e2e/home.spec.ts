@@ -25,7 +25,6 @@ test("home page lists all eight products", async ({ page }) => {
   await expect(page.locator("#watches [data-add-to-cart]")).toHaveCount(8);
   await expect(page.locator("#features li")).toHaveCount(5);
   await expect(page.locator("#gifts a[href^='/watches/']")).toHaveCount(0);
-  await expect(page.locator("#gifts .hadith")).toHaveCount(1);
   await expect(page.locator("#gifts .gift-idea")).toHaveCount(5);
 });
 
