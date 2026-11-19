@@ -65,21 +65,9 @@ const steps = [
   },
 ] as const;
 
-// What the gift service adds to an order, shown above the hadiths.
-const giftServices = [
-  {
-    text: `نغلّف الطلب كله في علبة هدية أنيقة جاهزة للتقديم، مقابل ${giftWrapFee} فقط.`,
-    title: "تغليف الهدية",
-  },
-  {
-    text: "اكتب رسالتك في السلة ونطبعها على بطاقة مرفقة، وإن شئت نرسلها مباشرة إلى عنوان من تُهديه.",
-    title: "رسالة مطبوعة",
-  },
-] as const;
-
 // Who each piece suits as a gift. In the scroll story each one takes its
-// turn on the gift tag, sharing the last 48% of the stage scroll.
-const IDEAS_START = 52;
+// turn on the gift tag, sharing the scroll after the tag hangs.
+const IDEAS_START = 36;
 
 const giftIdeas = [
   {
@@ -102,11 +90,6 @@ const giftIdeas = [
 ] as const;
 
 const IDEA_SPAN = (100 - IDEAS_START) / giftIdeas.length;
-
-const hadiths = [
-  { source: "رواه البخاري في الأدب المفرد", text: "تَهادَوا تَحابُّوا" },
-  { source: "رواه مسلم", text: "مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله" },
-] as const;
 
 const HERO_SIZE = 992;
 const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
@@ -518,8 +501,8 @@ const storeJsonLd = {
             <h2 id="gifts-title">هدية يبقى أجرها</h2>
             <p class="section-note">
               ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره
-              في كل صلاة يدركها على وقتها. اختر «تغليف هدية» في السلة ونتولى
-              الباقي.
+              في كل صلاة يدركها على وقتها. اختر «تغليف هدية» في السلة ونغلّفها مع
+              بطاقة برسالتك مقابل {giftWrapFee}.
             </p>
           </div>
         </div>
@@ -527,15 +510,6 @@ const storeJsonLd = {
 
       <div class="gifts__story">
         <div class="gifts__stage container">
-          <ul class="gifts__services">
-            {giftServices.map((service) => (
-              <li class="gift-service">
-                <h3 class="gift-service__title">{service.title}</h3>
-                <p class="gift-service__text">{service.text}</p>
-              </li>
-            ))}
-          </ul>
-
           <div class="gift">
             <svg
               aria-hidden="true"
@@ -583,16 +557,12 @@ const storeJsonLd = {
       </div>
 
       <div class="container">
-        <div class="gifts__hadiths">
-          {hadiths.map((hadith) => (
-            <figure class="hadith">
-              <blockquote>
-                <p>«{hadith.text}»</p>
-              </blockquote>
-              <figcaption>{hadith.source}</figcaption>
-            </figure>
-          ))}
-        </div>
+        <figure class="hadith">
+          <blockquote>
+            <p>«تَهادَوا تَحابُّوا»</p>
+          </blockquote>
+          <figcaption>رواه البخاري في الأدب المفرد</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -1275,39 +1245,19 @@ const storeJsonLd = {
     }
   }
 
-  /* Gifts: the service (wrap + printed card) under one heading, then the
-     hadiths that make the case for it, set quietly and centred. */
+  /* Gifts: the wrapped box and who it suits under one heading, then a
+     hadith set quietly and centred. */
 
   .gifts {
     padding-block: var(--section);
     border-block-start: 1px solid var(--hairline);
   }
 
-  /* Static (reduced motion, no scroll timelines): services beside the
-     drawing, the tag lists every idea. */
+  /* Static (reduced motion, no scroll timelines): the tag lists every
+     idea. */
 
   .gifts__stage {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--space-7) clamp(2rem, 6vw, 6rem);
-    align-items: center;
-  }
-
-  .gift-service {
-    display: grid;
-    gap: var(--space-2);
-    padding-block: var(--space-5);
-    border-block-start: 1px solid var(--ink);
-  }
-
-  .gift-service__title {
-    font-size: var(--text-lg);
-    font-weight: 600;
-  }
-
-  .gift-service__text {
-    max-inline-size: 36rem;
-    color: var(--muted);
   }
 
   .gift {
@@ -1391,24 +1341,17 @@ const storeJsonLd = {
     font-size: var(--text-sm);
   }
 
-  @media (max-width: 48rem) {
-    .gifts__stage {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
   /* ---- The gift story ----
      Like the hero: the story grows tall, the stage sticks, and progress
-     through it draws the box (0-12%), wraps it while the first service
-     lights (12-36%), hangs the tag while the second lights (38-52%), then
-     turns the tag through each idea. */
+     through it draws and wraps the box (0-24%), hangs the tag (24-36%),
+     then turns the tag through each idea. */
   /* ponytail: no JS fallback like the hero's; browsers without scroll
      timelines (Firefox) keep the static layout above. */
 
   @media (prefers-reduced-motion: no-preference) {
     @supports (animation-timeline: view()) {
       :global(.scrolly) .gifts__story {
-        block-size: 400vh;
+        block-size: 200vh;
         view-timeline-name: --gifts;
         view-timeline-axis: block;
       }
@@ -1441,7 +1384,6 @@ const storeJsonLd = {
         border-block-end: 0;
       }
 
-      :global(.scrolly) .gift-service,
       :global(.scrolly) .gift__drawing path,
       :global(.scrolly) .gift__tag,
       :global(.scrolly) .gift-idea {
@@ -1459,41 +1401,27 @@ const storeJsonLd = {
 
       :global(.scrolly) .gift__box {
         --from: 0%;
-        --to: 12%;
+        --to: 10%;
       }
 
       :global(.scrolly) .gift__ribbon {
-        --from: 14%;
-        --to: 26%;
+        --from: 10%;
+        --to: 18%;
       }
 
       :global(.scrolly) .gift__bow {
-        --from: 24%;
-        --to: 36%;
+        --from: 16%;
+        --to: 24%;
       }
 
       :global(.scrolly) .gift__string {
-        --from: 38%;
-        --to: 44%;
-      }
-
-      :global(.scrolly) .gift-service {
-        animation-name: gift-lit;
-      }
-
-      :global(.scrolly) .gift-service:first-child {
-        --from: 12%;
-        --to: 16%;
-      }
-
-      :global(.scrolly) .gift-service:last-child {
-        --from: 38%;
-        --to: 42%;
+        --from: 24%;
+        --to: 28%;
       }
 
       :global(.scrolly) .gift__tag {
-        --from: 42%;
-        --to: 52%;
+        --from: 28%;
+        --to: 36%;
 
         animation-name: gift-tag;
         animation-timing-function: var(--ease);
@@ -1506,45 +1434,6 @@ const storeJsonLd = {
       :global(.scrolly) .gift-idea:last-child {
         animation-name: gift-idea-last;
       }
-
-      /* Phones: the drawing on top, and the services share one slot so
-         the stage fits a short screen. */
-      @media (max-width: 48rem) {
-        :global(.scrolly) .gifts__stage {
-          gap: var(--space-4);
-        }
-
-        :global(.scrolly) .gift {
-          order: -1;
-          inline-size: min(100%, 17rem);
-        }
-
-        :global(.scrolly) .gift__tag {
-          inline-size: 90%;
-        }
-
-        :global(.scrolly) .gifts__services {
-          display: grid;
-        }
-
-        :global(.scrolly) .gift-service {
-          grid-area: 1 / 1;
-        }
-
-        :global(.scrolly) .gift-service:first-child {
-          --from: 6%;
-          --to: 40%;
-
-          animation-name: gift-idea;
-        }
-
-        :global(.scrolly) .gift-service:last-child {
-          --from: 40%;
-          --to: 100%;
-
-          animation-name: gift-idea-last;
-        }
-      }
     }
   }
 
@@ -1555,13 +1444,6 @@ const storeJsonLd = {
 
     to {
       stroke-dashoffset: 0;
-    }
-  }
-
-  @keyframes gift-lit {
-    from {
-      border-block-start-color: var(--hairline);
-      opacity: 0.35;
     }
   }
 
@@ -1611,17 +1493,11 @@ const storeJsonLd = {
     }
   }
 
-  .gifts__hadiths {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-    gap: var(--space-6);
+  .hadith {
     margin-block-start: clamp(3rem, 7vw, 5rem);
     padding-block-start: clamp(3rem, 7vw, 5rem);
     border-block-start: 1px solid var(--hairline);
     text-align: center;
-  }
-
-  .hadith {
     display: grid;
     justify-items: center;
     gap: var(--space-3);
