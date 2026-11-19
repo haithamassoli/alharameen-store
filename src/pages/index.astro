@@ -65,42 +65,29 @@ const steps = [
   },
 ] as const;
 
-// Who each piece suits as a gift, pointing at a real product page.
+// Who each piece suits as a gift.
 const giftIdeas = [
   {
-    product: "ha-4010sw",
     text: "تؤذن بالأذان كاملًا بصوت واضح، وتعرض مواقيت اليوم كلها على شاشة واحدة.",
     title: "للوالدين",
   },
   {
-    product: "ha-6506bw",
     text: "خفيفة ومتينة تنبّههم لكل صلاة، بالأسود والأبيض والوردي.",
     title: "للأبناء عند سن الصلاة",
   },
   {
-    product: "ha-6502gbw",
     text: "تحدد القبلة وتعرض مواقيت مدن العالم، فترافقه في سفره.",
     title: "للحاج والمعتمر",
   },
   {
-    product: "ha-6314fgw",
     text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.",
     title: "لها",
   },
   {
-    product: "ha-1013",
     text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.",
     title: "للبيت الجديد",
   },
-].map((idea) => {
-  const product = allProducts.find(({ id }) => id === idea.product);
-
-  if (!product) {
-    throw new Error(`Gift idea points at a missing product: ${idea.product}`);
-  }
-
-  return { ...idea, name: product.data.name };
-});
+] as const;
 
 const HERO_SIZE = 992;
 const JORDAN_PHONE = /^\+962(?<area>\d{2})(?<mid>\d{3})(?<end>\d{4})$/u;
@@ -533,9 +520,6 @@ const storeJsonLd = {
             <li class="gift-idea">
               <h3 class="gift-idea__title">{idea.title}</h3>
               <p class="gift-idea__text">{idea.text}</p>
-              <a class="gift-idea__link" href={`/watches/${idea.product}/`}>
-                {idea.name}
-              </a>
             </li>
           ))}
         </ul>
@@ -1259,8 +1243,7 @@ const storeJsonLd = {
 
   .gift-idea {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-1) var(--space-5);
+    gap: var(--space-1);
     padding-block: var(--space-5);
     border-block-end: 1px solid var(--hairline);
   }
@@ -1271,33 +1254,12 @@ const storeJsonLd = {
   }
 
   .gift-idea__text {
-    grid-column: 1;
     color: var(--muted);
   }
 
-  .gift-idea__link {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
-    color: var(--pine);
-    font-weight: 500;
-    text-underline-offset: 0.2em;
-  }
-
-  .gift-idea__link::after {
-    content: " ←" / "";
-  }
-
   @media (max-width: 48rem) {
-    .gifts__inner,
-    .gift-idea {
+    .gifts__inner {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .gift-idea__link {
-      grid-column: 1;
-      grid-row: auto;
-      justify-self: start;
     }
   }
 
