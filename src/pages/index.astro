@@ -65,7 +65,22 @@ const steps = [
   },
 ] as const;
 
-// Who each piece suits as a gift.
+// What the gift service adds to an order, shown above the hadiths.
+const giftServices = [
+  {
+    text: `نغلّف الطلب كله في علبة هدية أنيقة جاهزة للتقديم، مقابل ${giftWrapFee} فقط.`,
+    title: "تغليف الهدية",
+  },
+  {
+    text: "اكتب رسالتك في السلة ونطبعها على بطاقة مرفقة، وإن شئت نرسلها مباشرة إلى عنوان من تُهديه.",
+    title: "رسالة مطبوعة",
+  },
+] as const;
+
+// Who each piece suits as a gift. In the scroll story each one takes its
+// turn on the gift tag, sharing the last 48% of the stage scroll.
+const IDEAS_START = 52;
+
 const giftIdeas = [
   {
     text: "تؤذن بالأذان كاملًا بصوت واضح، وتعرض مواقيت اليوم كلها على شاشة واحدة.",
@@ -79,14 +94,18 @@ const giftIdeas = [
     text: "تحدد القبلة وتعرض مواقيت مدن العالم، فترافقه في سفره.",
     title: "للحاج والمعتمر",
   },
-  {
-    text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.",
-    title: "لها",
-  },
+  { text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.", title: "لها" },
   {
     text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.",
     title: "للبيت الجديد",
   },
+] as const;
+
+const IDEA_SPAN = (100 - IDEAS_START) / giftIdeas.length;
+
+const hadiths = [
+  { source: "رواه البخاري في الأدب المفرد", text: "تَهادَوا تَحابُّوا" },
+  { source: "رواه مسلم", text: "مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله" },
 ] as const;
 
 const HERO_SIZE = 992;
@@ -493,36 +512,87 @@ const storeJsonLd = {
     </section>
 
     <section aria-labelledby="gifts-title" class="gifts" id="gifts">
-      <div class="gifts__inner container">
-        <div class="gifts__intro">
-          <h2 id="gifts-title">هدية يبقى أجرها</h2>
-          <p class="section-note">
-            ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره في
-            كل صلاة يدركها على وقتها. ونغلّفها لك مع بطاقة مطبوعة برسالتك مقابل{" "}
-            {giftWrapFee} للطلب كله.
-          </p>
-          <figure class="gifts__quote">
-            <blockquote>
-              <p>«تَهادَوا تَحابُّوا»</p>
-            </blockquote>
-            <figcaption>رواه البخاري في الأدب المفرد</figcaption>
-          </figure>
-          <figure class="gifts__quote">
-            <blockquote>
-              <p>«مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله»</p>
-            </blockquote>
-            <figcaption>رواه مسلم</figcaption>
-          </figure>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 id="gifts-title">هدية يبقى أجرها</h2>
+            <p class="section-note">
+              ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره
+              في كل صلاة يدركها على وقتها. اختر «تغليف هدية» في السلة ونتولى
+              الباقي.
+            </p>
+          </div>
         </div>
+      </div>
 
-        <ul class="gifts__list">
-          {giftIdeas.map((idea) => (
-            <li class="gift-idea">
-              <h3 class="gift-idea__title">{idea.title}</h3>
-              <p class="gift-idea__text">{idea.text}</p>
-            </li>
+      <div class="gifts__story">
+        <div class="gifts__stage container">
+          <ul class="gifts__services">
+            {giftServices.map((service) => (
+              <li class="gift-service">
+                <h3 class="gift-service__title">{service.title}</h3>
+                <p class="gift-service__text">{service.text}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div class="gift">
+            <svg
+              aria-hidden="true"
+              class="gift__drawing"
+              viewBox="0 60 320 260"
+            >
+              <path
+                class="gift__box"
+                d="M40 112h240v48H40zM56 160h208v120H56z"
+                pathLength="1"
+              />
+              <path
+                class="gift__ribbon"
+                d="M150 112v168M170 112v168"
+                pathLength="1"
+              />
+              <path
+                class="gift__bow"
+                d="M160 112c-40-50-82-24-60-6 12 9 40 8 60 6m0 0c40-50 82-24 60-6-12 9-40 8-60 6m0 0l-26 34m26-34l26 34"
+                pathLength="1"
+              />
+              <path
+                class="gift__string"
+                d="M160 112c-50 40-118 60-128 208"
+                pathLength="1"
+              />
+            </svg>
+
+            <div class="gift__tag">
+              <h3 class="gift__tag-title">لمن تناسب</h3>
+              <ul class="gift-ideas">
+                {giftIdeas.map((idea, index) => (
+                  <li
+                    class="gift-idea"
+                    style={`--from: ${IDEAS_START + index * IDEA_SPAN}%; --to: ${IDEAS_START + (index + 1) * IDEA_SPAN}%`}
+                  >
+                    <strong class="gift-idea__title">{idea.title}</strong>
+                    <span class="gift-idea__text">{idea.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="gifts__hadiths">
+          {hadiths.map((hadith) => (
+            <figure class="hadith">
+              <blockquote>
+                <p>«{hadith.text}»</p>
+              </blockquote>
+              <figcaption>{hadith.source}</figcaption>
+            </figure>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
 
@@ -1205,62 +1275,368 @@ const storeJsonLd = {
     }
   }
 
-  /* Gifts: the case for gifting on one side, who each piece suits on the other. */
+  /* Gifts: the service (wrap + printed card) under one heading, then the
+     hadiths that make the case for it, set quietly and centred. */
 
   .gifts {
     padding-block: var(--section);
     border-block-start: 1px solid var(--hairline);
   }
 
-  .gifts__inner {
+  /* Static (reduced motion, no scroll timelines): services beside the
+     drawing, the tag lists every idea. */
+
+  .gifts__stage {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-7) clamp(2rem, 6vw, 6rem);
-    align-items: start;
+    align-items: center;
   }
 
-  .gifts__quote {
-    margin-block-start: var(--space-5);
-    padding-inline-start: var(--space-4);
-    border-inline-start: 2px solid var(--pine);
+  .gift-service {
+    display: grid;
+    gap: var(--space-2);
+    padding-block: var(--space-5);
+    border-block-start: 1px solid var(--ink);
   }
 
-  .gifts__quote blockquote {
-    margin: 0;
+  .gift-service__title {
     font-size: var(--text-lg);
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  .gifts__quote figcaption {
-    margin-block-start: var(--space-1);
+  .gift-service__text {
+    max-inline-size: 36rem;
+    color: var(--muted);
+  }
+
+  .gift {
+    display: grid;
+    justify-self: center;
+    inline-size: min(100%, 26rem);
+  }
+
+  .gift__drawing {
+    inline-size: 100%;
+    block-size: auto;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .gift__box {
+    stroke: var(--ink);
+  }
+
+  .gift__ribbon,
+  .gift__bow {
+    stroke: var(--pine);
+  }
+
+  .gift__string {
+    stroke: var(--line-strong);
+    stroke-width: 1.5;
+  }
+
+  /* The tag hangs off the string at the drawing's bottom corner. */
+  .gift__tag {
+    position: relative;
+    justify-self: end;
+    inline-size: 70%;
+    margin-block-start: -0.75rem;
+    padding: var(--space-6) var(--space-5) var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    transform-origin: 13% 0;
+  }
+
+  .gift__tag::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-end: calc(13% - 0.3rem);
+    inline-size: 0.6rem;
+    block-size: 0.6rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+  }
+
+  .gift__tag-title {
     color: var(--muted);
     font-size: var(--text-sm);
-  }
-
-  .gifts__list {
-    border-block-start: 1px solid var(--ink);
+    font-weight: 500;
   }
 
   .gift-idea {
     display: grid;
     gap: var(--space-1);
-    padding-block: var(--space-5);
+    padding-block: var(--space-3);
     border-block-end: 1px solid var(--hairline);
   }
 
+  .gift-idea:last-child {
+    border-block-end: 0;
+    padding-block-end: 0;
+  }
+
   .gift-idea__title {
-    font-size: var(--text-base);
+    font-size: var(--text-lg);
     font-weight: 600;
   }
 
   .gift-idea__text {
     color: var(--muted);
+    font-size: var(--text-sm);
   }
 
   @media (max-width: 48rem) {
-    .gifts__inner {
+    .gifts__stage {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+
+  /* ---- The gift story ----
+     Like the hero: the story grows tall, the stage sticks, and progress
+     through it draws the box (0-12%), wraps it while the first service
+     lights (12-36%), hangs the tag while the second lights (38-52%), then
+     turns the tag through each idea. */
+  /* ponytail: no JS fallback like the hero's; browsers without scroll
+     timelines (Firefox) keep the static layout above. */
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :global(.scrolly) .gifts__story {
+        block-size: 400vh;
+        view-timeline-name: --gifts;
+        view-timeline-axis: block;
+      }
+
+      :global(.scrolly) .gifts__stage {
+        position: sticky;
+        inset-block-start: 0;
+        block-size: 100vh;
+        block-size: 100svh;
+        padding-block: calc(var(--header-height) + 1rem) 1rem;
+        align-content: center;
+      }
+
+      :global(.scrolly) .gift__drawing path {
+        stroke-dasharray: 1;
+      }
+
+      :global(.scrolly) .gift__tag {
+        rotate: -3deg;
+      }
+
+      /* Every idea shares one slot and takes its turn. */
+      :global(.scrolly) .gift-ideas {
+        display: grid;
+      }
+
+      :global(.scrolly) .gift-idea {
+        grid-area: 1 / 1;
+        padding-block-end: 0;
+        border-block-end: 0;
+      }
+
+      :global(.scrolly) .gift-service,
+      :global(.scrolly) .gift__drawing path,
+      :global(.scrolly) .gift__tag,
+      :global(.scrolly) .gift-idea {
+        animation-duration: auto;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: --gifts;
+        animation-range-start: contain var(--from);
+        animation-range-end: contain var(--to);
+      }
+
+      :global(.scrolly) .gift__drawing path {
+        animation-name: gift-draw;
+      }
+
+      :global(.scrolly) .gift__box {
+        --from: 0%;
+        --to: 12%;
+      }
+
+      :global(.scrolly) .gift__ribbon {
+        --from: 14%;
+        --to: 26%;
+      }
+
+      :global(.scrolly) .gift__bow {
+        --from: 24%;
+        --to: 36%;
+      }
+
+      :global(.scrolly) .gift__string {
+        --from: 38%;
+        --to: 44%;
+      }
+
+      :global(.scrolly) .gift-service {
+        animation-name: gift-lit;
+      }
+
+      :global(.scrolly) .gift-service:first-child {
+        --from: 12%;
+        --to: 16%;
+      }
+
+      :global(.scrolly) .gift-service:last-child {
+        --from: 38%;
+        --to: 42%;
+      }
+
+      :global(.scrolly) .gift__tag {
+        --from: 42%;
+        --to: 52%;
+
+        animation-name: gift-tag;
+        animation-timing-function: var(--ease);
+      }
+
+      :global(.scrolly) .gift-idea {
+        animation-name: gift-idea;
+      }
+
+      :global(.scrolly) .gift-idea:last-child {
+        animation-name: gift-idea-last;
+      }
+
+      /* Phones: the drawing on top, and the services share one slot so
+         the stage fits a short screen. */
+      @media (max-width: 48rem) {
+        :global(.scrolly) .gifts__stage {
+          gap: var(--space-4);
+        }
+
+        :global(.scrolly) .gift {
+          order: -1;
+          inline-size: min(100%, 17rem);
+        }
+
+        :global(.scrolly) .gift__tag {
+          inline-size: 90%;
+        }
+
+        :global(.scrolly) .gifts__services {
+          display: grid;
+        }
+
+        :global(.scrolly) .gift-service {
+          grid-area: 1 / 1;
+        }
+
+        :global(.scrolly) .gift-service:first-child {
+          --from: 6%;
+          --to: 40%;
+
+          animation-name: gift-idea;
+        }
+
+        :global(.scrolly) .gift-service:last-child {
+          --from: 40%;
+          --to: 100%;
+
+          animation-name: gift-idea-last;
+        }
+      }
+    }
+  }
+
+  @keyframes gift-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes gift-lit {
+    from {
+      border-block-start-color: var(--hairline);
+      opacity: 0.35;
+    }
+  }
+
+  /* The tag drops in on its string and swings to rest. */
+  @keyframes gift-tag {
+    0% {
+      opacity: 0;
+      rotate: 14deg;
+      translate: 0 -1.5rem;
+    }
+
+    60% {
+      opacity: 1;
+      rotate: -6deg;
+      translate: 0 0;
+    }
+  }
+
+  @keyframes gift-idea {
+    0% {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+
+    20%,
+    80% {
+      opacity: 1;
+      translate: 0 0;
+    }
+
+    100% {
+      opacity: 0;
+      translate: 0 -0.5rem;
+    }
+  }
+
+  @keyframes gift-idea-last {
+    0% {
+      opacity: 0;
+      translate: 0 0.5rem;
+    }
+
+    20%,
+    100% {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .gifts__hadiths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--space-6);
+    margin-block-start: clamp(3rem, 7vw, 5rem);
+    padding-block-start: clamp(3rem, 7vw, 5rem);
+    border-block-start: 1px solid var(--hairline);
+    text-align: center;
+  }
+
+  .hadith {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+  }
+
+  .hadith blockquote {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .hadith figcaption {
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 
   /* FAQ: native exclusive <details>. Where ::details-content and
