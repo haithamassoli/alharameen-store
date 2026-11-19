@@ -65,28 +65,21 @@ const steps = [
   },
 ] as const;
 
-// Who each piece suits as a gift.
-const giftIdeas = [
+// What the gift service adds to an order, shown above the hadiths.
+const giftServices = [
   {
-    text: "تؤذن بالأذان كاملًا بصوت واضح، وتعرض مواقيت اليوم كلها على شاشة واحدة.",
-    title: "للوالدين",
+    text: `نغلّف الطلب كله في علبة هدية أنيقة جاهزة للتقديم، مقابل ${giftWrapFee} فقط.`,
+    title: "تغليف الهدية",
   },
   {
-    text: "خفيفة ومتينة تنبّههم لكل صلاة، بالأسود والأبيض والوردي.",
-    title: "للأبناء عند سن الصلاة",
+    text: "اكتب رسالتك في السلة ونطبعها على بطاقة مرفقة، وإن شئت نرسلها مباشرة إلى عنوان من تُهديه.",
+    title: "رسالة مطبوعة",
   },
-  {
-    text: "تحدد القبلة وتعرض مواقيت مدن العالم، فترافقه في سفره.",
-    title: "للحاج والمعتمر",
-  },
-  {
-    text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.",
-    title: "لها",
-  },
-  {
-    text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.",
-    title: "للبيت الجديد",
-  },
+] as const;
+
+const hadiths = [
+  { source: "رواه البخاري في الأدب المفرد", text: "تَهادَوا تَحابُّوا" },
+  { source: "رواه مسلم", text: "مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله" },
 ] as const;
 
 const HERO_SIZE = 992;
@@ -493,36 +486,37 @@ const storeJsonLd = {
     </section>
 
     <section aria-labelledby="gifts-title" class="gifts" id="gifts">
-      <div class="gifts__inner container">
-        <div class="gifts__intro">
-          <h2 id="gifts-title">هدية يبقى أجرها</h2>
-          <p class="section-note">
-            ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره في
-            كل صلاة يدركها على وقتها. ونغلّفها لك مع بطاقة مطبوعة برسالتك مقابل{" "}
-            {giftWrapFee} للطلب كله.
-          </p>
-          <figure class="gifts__quote">
-            <blockquote>
-              <p>«تَهادَوا تَحابُّوا»</p>
-            </blockquote>
-            <figcaption>رواه البخاري في الأدب المفرد</figcaption>
-          </figure>
-          <figure class="gifts__quote">
-            <blockquote>
-              <p>«مَن دلَّ على خيرٍ فله مثلُ أجرِ فاعله»</p>
-            </blockquote>
-            <figcaption>رواه مسلم</figcaption>
-          </figure>
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 id="gifts-title">هدية يبقى أجرها</h2>
+            <p class="section-note">
+              ساعة الأذان تذكّر من تحب بالصلاة خمس مرات كل يوم، فلعل لك مثل أجره
+              في كل صلاة يدركها على وقتها. اختر «تغليف هدية» في السلة ونتولى
+              الباقي.
+            </p>
+          </div>
         </div>
 
-        <ul class="gifts__list">
-          {giftIdeas.map((idea) => (
-            <li class="gift-idea">
-              <h3 class="gift-idea__title">{idea.title}</h3>
-              <p class="gift-idea__text">{idea.text}</p>
+        <ul class="gifts__services">
+          {giftServices.map((service) => (
+            <li class="gift-service">
+              <h3 class="gift-service__title">{service.title}</h3>
+              <p class="gift-service__text">{service.text}</p>
             </li>
           ))}
         </ul>
+
+        <div class="gifts__hadiths">
+          {hadiths.map((hadith) => (
+            <figure class="hadith">
+              <blockquote>
+                <p>«{hadith.text}»</p>
+              </blockquote>
+              <figcaption>{hadith.source}</figcaption>
+            </figure>
+          ))}
+        </div>
       </div>
     </section>
 
@@ -1205,62 +1199,73 @@ const storeJsonLd = {
     }
   }
 
-  /* Gifts: the case for gifting on one side, who each piece suits on the other. */
+  /* Gifts: the service (wrap + printed card) under one heading, then the
+     hadiths that make the case for it, set quietly and centred. */
 
   .gifts {
     padding-block: var(--section);
     border-block-start: 1px solid var(--hairline);
   }
 
-  .gifts__inner {
+  .gifts__services {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: var(--space-7) clamp(2rem, 6vw, 6rem);
-    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: 0 clamp(2rem, 6vw, 6rem);
   }
 
-  .gifts__quote {
-    margin-block-start: var(--space-5);
-    padding-inline-start: var(--space-4);
-    border-inline-start: 2px solid var(--pine);
-  }
-
-  .gifts__quote blockquote {
-    margin: 0;
-    font-size: var(--text-lg);
-    font-weight: 500;
-  }
-
-  .gifts__quote figcaption {
-    margin-block-start: var(--space-1);
-    color: var(--muted);
-    font-size: var(--text-sm);
-  }
-
-  .gifts__list {
+  .gift-service {
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+    padding-block: var(--space-5);
     border-block-start: 1px solid var(--ink);
   }
 
-  .gift-idea {
-    display: grid;
-    gap: var(--space-1);
-    padding-block: var(--space-5);
-    border-block-end: 1px solid var(--hairline);
-  }
-
-  .gift-idea__title {
-    font-size: var(--text-base);
+  .gift-service__title {
+    font-size: var(--text-lg);
     font-weight: 600;
   }
 
-  .gift-idea__text {
+  .gift-service__text {
+    max-inline-size: 36rem;
     color: var(--muted);
   }
 
-  @media (max-width: 48rem) {
-    .gifts__inner {
-      grid-template-columns: minmax(0, 1fr);
-    }
+  .gifts__hadiths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--space-6);
+    margin-block-start: clamp(3rem, 7vw, 5rem);
+    padding-block-start: clamp(3rem, 7vw, 5rem);
+    border-block-start: 1px solid var(--hairline);
+    text-align: center;
+  }
+
+  .hadith {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+  }
+
+  /* A small pine diamond above each hadith, in place of quote marks. */
+  .hadith::before {
+    content: "";
+    inline-size: 0.4rem;
+    block-size: 0.4rem;
+    background: var(--pine);
+    rotate: 45deg;
+  }
+
+  .hadith blockquote {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .hadith figcaption {
+    color: var(--muted);
+    font-size: var(--text-sm);
   }
 
   /* FAQ: native exclusive <details>. Where ::details-content and
