@@ -514,7 +514,7 @@ const toScriptJson = (value: CatalogItem[] | CartConfig): string =>
     const count = cartCount(cart);
 
     const label =
-      count === 0 ? "السلة فارغة" : `السلة (عدد القطع: ${formatNumber(count)})`;
+      count === 0 ? "السلة فارغة" : `السلة، عدد القطع: ${formatNumber(count)}`;
 
     for (const badge of document.querySelectorAll<HTMLElement>(
       "[data-cart-count]"
