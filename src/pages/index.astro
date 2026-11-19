@@ -4,6 +4,11 @@
 // settle into a calm technical drawing. CSS scroll-driven animations do the
 // work; src/lib/anatomy.ts steps through the same states where they are not
 // supported. Below it: the catalog, the FAQ, and contact.
+import DoorOpen from "@lucide/astro/icons/door-open";
+import Gem from "@lucide/astro/icons/gem";
+import HandHeart from "@lucide/astro/icons/hand-heart";
+import Luggage from "@lucide/astro/icons/luggage";
+import Sprout from "@lucide/astro/icons/sprout";
 import { Picture } from "astro:assets";
 import { getCollection } from "astro:content";
 
@@ -59,20 +64,31 @@ const chatUrl = whatsappUrl(
 // Who an adhan watch suits as a gift, and why.
 const giftIdeas = [
   {
+    icon: HandHeart,
     text: "تؤذن بالأذان كاملًا بصوت واضح، وتعرض مواقيت اليوم كلها على شاشة واحدة.",
     title: "للوالدين",
   },
   {
+    icon: Sprout,
     text: "خفيفة ومتينة تنبّههم لكل صلاة، بالأسود والأبيض والوردي.",
     title: "للأبناء عند سن الصلاة",
   },
   {
+    icon: Luggage,
     text: "تحدد القبلة وتعرض مواقيت مدن العالم، فترافقه في سفره.",
     title: "للحاج والمعتمر",
   },
-  { text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.", title: "لها" },
-  { text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.", title: "للبيت الجديد" },
-] as const;
+  {
+    icon: Gem,
+    text: "ستانلس ستيل ذهبي وزجاج ياقوتي مضاد للخدش.",
+    title: "لها",
+  },
+  {
+    icon: DoorOpen,
+    text: "يردّد أذكار الدخول والخروج كلما فُتح الباب.",
+    title: "للبيت الجديد",
+  },
+];
 
 const steps = [
   { text: "تصفّح التشكيلة واختر الساعة التي تناسبك.", title: "اختر ساعتك" },
@@ -497,10 +513,15 @@ const storeJsonLd = {
           <span class="price">{giftWrapFee}</span> للطلب كله.
         </p>
         <ul class="gifts__list">
-          {giftIdeas.map((idea) => (
+          {giftIdeas.map(({ icon: Icon, text, title }) => (
             <li class="gift-idea">
-              <h3 class="gift-idea__title">{idea.title}</h3>
-              <p class="gift-idea__text">{idea.text}</p>
+              <Icon
+                aria-hidden="true"
+                class="gift-idea__icon"
+                stroke-width={1.5}
+              />
+              <h3 class="gift-idea__title">{title}</h3>
+              <p class="gift-idea__text">{text}</p>
             </li>
           ))}
         </ul>
@@ -1209,18 +1230,37 @@ const storeJsonLd = {
     color: var(--pine);
   }
 
+  /* Five columns split by hairlines on wide screens; rows with the icon
+     at the start on narrow ones. */
   .gifts__list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin-block-start: var(--space-6);
-    border-block-start: 1px solid var(--ink);
+    border-block: 1px solid var(--ink);
   }
 
   .gift-idea {
-    display: grid;
-    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
-    gap: var(--space-1) var(--space-5);
-    align-items: baseline;
-    padding-block: var(--space-4);
-    border-block-end: 1px solid var(--hairline);
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .gift-idea:first-child {
+    padding-inline-start: 0;
+  }
+
+  .gift-idea:last-child {
+    padding-inline-end: 0;
+  }
+
+  .gift-idea + .gift-idea {
+    border-inline-start: 1px solid var(--hairline);
+  }
+
+  .gift-idea__icon {
+    display: block;
+    inline-size: 2rem;
+    block-size: 2rem;
+    margin-block-end: var(--space-4);
+    color: var(--pine);
   }
 
   .gift-idea__title {
@@ -1229,16 +1269,35 @@ const storeJsonLd = {
   }
 
   .gift-idea__text {
+    margin-block-start: var(--space-1);
     color: var(--muted);
+    font-size: var(--text-md);
   }
 
   .gifts__cta {
     margin-block-start: var(--space-6);
   }
 
-  @media (max-width: 48rem) {
-    .gift-idea {
+  @media (max-width: 64rem) {
+    .gifts__list {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gift-idea {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: var(--space-4);
+      padding-inline: 0;
+    }
+
+    .gift-idea + .gift-idea {
+      border-inline-start: 0;
+      border-block-start: 1px solid var(--hairline);
+    }
+
+    .gift-idea__icon {
+      grid-row: span 2;
+      margin-block-end: 0;
     }
   }
 
